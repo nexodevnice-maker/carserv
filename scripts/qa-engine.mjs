@@ -145,14 +145,24 @@ console.log(`\nBUREAU 1440×900 — ${BASE}/lab/engine`);
   const probe = await page.evaluate(() => window.__lab.probe?.());
   check(G, 'environnement pré-calculé chargé', probe?.envLoaded === true, probe);
 
-  // Repos : plus aucune image demandée.
+  // Repos : plus aucune image demandée. Sur un vrai réseau, un média qui finit de se charger réveille légitimement la
+  // boucle (mesuré sur le site publié : 3 et 2 images pendant le téléchargement de la vidéo, puis 0) — la mesure
+  // attend la fin des chargements.
   await settleAt(page, 0.3);
   await waitRest(page);
-  await page.waitForTimeout(600);
-  const raf0 = await page.evaluate(() => window.__rafCount());
-  await page.waitForTimeout(1500);
-  const raf1 = await page.evaluate(() => window.__rafCount());
-  check(G, 'au repos : aucune boucle (rAF sur 1,5 s)', raf1 - raf0 <= 2, `${raf1 - raf0} rAF`);
+  await page
+    .waitForFunction(() => window.__experience.info().media.every((m) => m.status !== 'loading'), null, { timeout: 60000, polling: 250 })
+    .catch(() => {});
+  // Après un chargement, la vidéo émet encore quelques événements (canplay, premier seek) : chacun réveille la boucle
+  // une fois. Critère : elle s'endort (≤ 2 rAF sur 1,5 s) en moins de 12 s — une boucle folle n'y arrive jamais.
+  const windows = [];
+  for (let k = 0; k < 8; k++) {
+    const raf0 = await page.evaluate(() => window.__rafCount());
+    await page.waitForTimeout(1500);
+    windows.push((await page.evaluate(() => window.__rafCount())) - raf0);
+    if (windows.at(-1) <= 2) break;
+  }
+  check(G, 'au repos : la boucle s’endort (≤ 2 rAF sur 1,5 s)', windows.at(-1) <= 2, `rAF par fenêtre : ${windows.join(', ')}`);
   const renders0 = (await info(page)).stage.renders;
   await page.waitForTimeout(800);
   check(G, 'au repos : aucun rendu WebGL', (await info(page)).stage.renders === renders0);
@@ -384,6 +394,16 @@ for (const profile of ['desktop', 'mobile']) {
   check(G, 'sept chapitres dans l’ordre du registre', structure.chapters.join() === 'arrivee,intervention,transformation,prestations,bascule,location,contact', structure.chapters.join());
   check(G, 'titre, description, langue', structure.title.length > 20 && structure.description.length > 50 && structure.lang === 'fr');
   check(G, 'aucun débordement horizontal', !structure.overflowX);
+  // Les éléments fixes (en-tête) n'agrandissent pas la page : chaque lien doit être vérifié dans la vue.
+  const clipped = await page.evaluate(() =>
+    [...document.querySelectorAll('header a')]
+      .filter((a) => {
+        const r = a.getBoundingClientRect();
+        return r.left < 0 || r.right > innerWidth + 0.5;
+      })
+      .map((a) => a.textContent.trim()),
+  );
+  check(G, 'en-tête : aucun lien coupé par le bord', clipped.length === 0, clipped);
   check(G, 'la piste ne porte pas data-chapter', structure.trackAttribute === false);
   const trackState = await page.evaluate(() => {
     const track = document.querySelector('[data-track]');

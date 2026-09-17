@@ -20,13 +20,16 @@ Socle validé le 17/09/2026 (58/58, `npm run qa:engine`). Vertical slice pas com
   avant dans un fichier publié.
 - Commentaires en français, sobres, qui disent pourquoi.
 
-## Déployer (méthode MECA RIVIERA)
+## Déployer
 
-Envoi web GitHub `nexodevnice-maker/carservice` (branche `main`) → Cloudflare **Worker** `carservice` (pas Pages) :
-`wrangler.jsonc` publie `dist` → https://carservice.nexodevnice.workers.dev. Le serveur de Cloudflare peut ignorer
-Range : vidéo de scrub en URL blob, séquence regroupée avec sonde.
-`npm run deploy:prepare -- --simulate` : dossier `Desktop/carservice-envoi-github/envoi-N` (≤ 95 fichiers, ≤ 25 Mio)
-et `npm ci` + `wrangler deploy --dry-run` vérifiés sur copie vierge. Le paquet du site ne contient que ce que le build utilise ; les outils vidéo vivent
+- Code : ce dossier est un dépôt git relié à **`nexodevnice-maker/carserv`** (`main`) → `git push` (identifiants dans
+  le gestionnaire de Git).
+- Site : Cloudflare **Worker** `carservice` (pas Pages) → **`npm run deploy`** (wrangler connecté ; `wrangler.jsonc`
+  construit et publie `dist`) → https://carservice.nexodevnice.workers.dev.
+- Puis `npm run qa:engine -- https://carservice.nexodevnice.workers.dev` et regarder les captures.
+- La production Cloudflare ignore les requêtes Range : vidéo de scrub en URL blob, séquence regroupée avec sonde.
+- `npm run deploy:prepare -- --simulate` : `npm ci` + `wrangler deploy --dry-run` sur copie vierge (et lots d'envoi web
+  si git n'est pas disponible). Le paquet du site ne contient que ce que le build utilise ; les outils vidéo vivent
 dans `scripts/media-tools` (`npm run media:setup`). Jamais de dossier de plus de 100 fichiers publiés.
 
 ## Vérifier

@@ -128,6 +128,20 @@ répond « Hello world » (text/plain) — le Worker d'exemple ; le site n'a jam
 Le comportement Range de la production Cloudflare n'est pas vérifiable avant publication : `curl -H "Range: bytes=0-99"`
 sur l'adresse publiée le dira ; le site fonctionne dans les deux cas.
 
+## 2026-09-17 — Mise en ligne (demande du porteur : « fais tout ce qui est nécessaire »)
+
+| Constat | Action |
+|---|---|
+| Le dépôt public du porteur est **`nexodevnice-maker/carserv`** (et non `carservice`), qui ne contenait qu'un README | le dossier du projet devient un dépôt git relié à `carserv` (`main`), commit par-dessus l'« Initial commit » ; `.gitattributes` : médias binaires (un `.hdr` commence par du texte) |
+| Aucun identifiant GitHub sur la machine | connexion du gestionnaire d'identifiants de Git par le navigateur (autorisation OAuth dans le navigateur du PC ; aucun mot de passe manipulé) → `git push` |
+| Aucun build Cloudflare déclenché dans les 6 minutes suivant l'envoi (le Worker ne semble pas relié au dépôt) | `wrangler login` (autorisation OAuth dans le navigateur), puis **`npm run deploy`** (`wrangler deploy` : build Astro + publication de `dist`) |
+| **Production Cloudflare : requêtes Range ignorées** (200 complet sur la vidéo et la séquence) | confirmé : la vidéo en URL blob et la sonde de la séquence étaient indispensables |
+| QA sur l'adresse publique : l'en-tête mobile coupait « Contact » (non détecté : un élément fixe n'agrandit pas la page) | en-tête du squelette sur deux lignes sous 600 px ; contrôle ajouté (chaque lien entièrement dans la vue) |
+| QA sur l'adresse publique : images demandées « au repos » pendant le chargement réseau de la vidéo | mesuré : 3 puis 2 réveils légitimes (chargement, canplay, premier seek), puis 0 sur 12 s ; le contrôle vérifie désormais que la boucle s'endort |
+
+Résultat : https://carservice.nexodevnice.workers.dev en ligne, **60/60** (`npm run qa:engine -- https://carservice.nexodevnice.workers.dev`),
+404 réelle, robots et sitemap, indexable. Publier ensuite : `git push` puis `npm run deploy`.
+
 ### En attente du porteur
 
 | Question | Pourquoi |

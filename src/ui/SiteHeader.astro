@@ -65,9 +65,24 @@ const labels: Record<string, string> = {
     color: var(--text-2);
   }
 
+  /* Téléphone : marque au-dessus, liens en dessous — aucun lien coupé par le bord de l'écran. */
   @media (max-width: 599px) {
+    .site-header {
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0;
+      height: auto;
+      min-height: var(--header-h);
+      padding-block: 0.5rem 0;
+    }
+
     .site-header__nav {
-      gap: 0.9rem;
+      gap: 1rem;
+    }
+
+    .site-header__nav a {
+      padding: 0.6rem 0;
     }
   }
 </style>
