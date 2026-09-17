@@ -1,0 +1,73 @@
+---
+import { chapters } from '../experience/chapters';
+import { property } from '../domain/property';
+
+/**
+ * En-tête : la marque et la navigation par chapitres (saut direct au clavier, au lecteur d'écran, au doigt).
+ * Structure seulement — la présentation est à concevoir au vertical slice.
+ */
+const nav = chapters.filter((c) => ['arrivee', 'prestations', 'location', 'contact'].includes(c.id));
+const labels: Record<string, string> = {
+  arrivee: 'Nettoyage',
+  prestations: 'Prestations',
+  location: 'Location',
+  contact: 'Contact',
+};
+---
+
+<header class="site-header">
+  <a class="site-header__brand" href="#arrivee">{property.name.value}</a>
+  <nav aria-label="Chapitres">
+    <ul class="site-header__nav">
+      {
+        nav.map((c) => (
+          <li>
+            <a href={`#${c.id}`}>{labels[c.id]}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</header>
+
+<style>
+  .site-header {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: var(--z-header);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    height: var(--header-h);
+    padding: 0 var(--gutter);
+  }
+
+  .site-header__brand {
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .site-header__nav {
+    display: flex;
+    gap: 1.25rem;
+    padding: 0;
+    list-style: none;
+    font-size: var(--step--1);
+  }
+
+  .site-header__nav a {
+    display: inline-block;
+    padding: 0.75rem 0;
+    text-decoration: none;
+    color: var(--text-2);
+  }
+
+  @media (max-width: 599px) {
+    .site-header__nav {
+      gap: 0.9rem;
+    }
+  }
+</style>

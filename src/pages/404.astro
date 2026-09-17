@@ -1,0 +1,24 @@
+---
+import Base from '../layouts/Base.astro';
+
+// Servie avec le statut 404 pour toute adresse inconnue (sans elle, Cloudflare Pages renvoie l'accueil en 200 —
+// leçon MECA RIVIERA). Hors index, hors sitemap.
+---
+
+<Base title="Page introuvable — CAR SERVICE 06" description="Cette adresse ne correspond à aucune page du site CAR SERVICE 06." noindex>
+  <main id="contenu" class="lost">
+    <h1>Page introuvable</h1>
+    <p>Cette adresse ne mène à aucune page du site.</p>
+    <p><a href="/">Retour à l’accueil</a></p>
+  </main>
+</Base>
+
+<style>
+  .lost {
+    display: grid;
+    align-content: center;
+    gap: 1rem;
+    min-height: 100svh;
+    padding: var(--gutter);
+  }
+</style>

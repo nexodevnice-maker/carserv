@@ -1,0 +1,11 @@
+# Texte en LF dans le dépôt ; médias jamais convertis (un .hdr commence par un en-tête texte : sans cette règle,
+# la conversion des fins de ligne pourrait le corrompre).
+* text=auto eol=lf
+*.mp4 binary
+*.bin binary
+*.hdr binary
+*.avif binary
+*.webp binary
+*.png binary
+*.jpg binary
+*.woff2 binary

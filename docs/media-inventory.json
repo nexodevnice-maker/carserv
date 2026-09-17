@@ -1,0 +1,215 @@
+{
+  "generated": "2026-09-16T22:58:15.444Z",
+  "sourceDirectories": [
+    "tools/flyers",
+    "tools/3d"
+  ],
+  "assets": [
+    {
+      "filename": "tools/flyers/LOC.png",
+      "sizeMB": 1.56,
+      "type": "image",
+      "format": "png",
+      "dimensions": [
+        1170,
+        2532
+      ],
+      "channels": 3,
+      "hasAlpha": false,
+      "meanRGB": [
+        32,
+        24,
+        25
+      ]
+    },
+    {
+      "filename": "tools/flyers/MAIN.png",
+      "sizeMB": 2.64,
+      "type": "image",
+      "format": "png",
+      "dimensions": [
+        1170,
+        2532
+      ],
+      "channels": 3,
+      "hasAlpha": false,
+      "meanRGB": [
+        47,
+        43,
+        33
+      ]
+    },
+    {
+      "filename": "tools/3d/rogland_clear_night_4k.hdr",
+      "sizeMB": 26.62,
+      "type": "hdri",
+      "format": "Radiance RGBE (.hdr), équirectangulaire",
+      "header": [
+        "#?RADIANCE",
+        "FORMAT=32-bit_rle_rgbe",
+        "-Y 2048 +X 4096",
+        "\u0002\u0002\u0010\u0000ØÙ\u0001lm¡n«opqrstuvwxyz{|Å}\u0002|}|{zy\u0004zyyyz{|}~¬¥¡¹§\u0004 ÿÃ\u0003\u0003~}|¼{|\u0002}|}~Î\u0002"
+      ],
+      "dimensions": [
+        4096,
+        2048
+      ],
+      "decodedFloatMB": 128,
+      "luminance": {
+        "min": 0.0009575,
+        "p05": 0.01831,
+        "median": 0.08508,
+        "p95": 0.4346,
+        "p999": 1.185,
+        "max": 497.3
+      },
+      "brightest": {
+        "pixel": [
+          1921,
+          638
+        ],
+        "azimuthDeg": -11.2,
+        "elevationDeg": 33.9
+      },
+      "hemisphereEnergy": {
+        "upper": 0.148,
+        "lower": 0.0255
+      },
+      "pointSourcesPx": 1048,
+      "elevationBands": [
+        {
+          "elevation": "90°..80°",
+          "mean": 0.293
+        },
+        {
+          "elevation": "80°..70°",
+          "mean": 0.334
+        },
+        {
+          "elevation": "70°..60°",
+          "mean": 0.335
+        },
+        {
+          "elevation": "60°..50°",
+          "mean": 0.321
+        },
+        {
+          "elevation": "50°..40°",
+          "mean": 0.312
+        },
+        {
+          "elevation": "40°..30°",
+          "mean": 0.324
+        },
+        {
+          "elevation": "30°..20°",
+          "mean": 0.361
+        },
+        {
+          "elevation": "20°..10°",
+          "mean": 0.31
+        },
+        {
+          "elevation": "10°..0°",
+          "mean": 0.146
+        },
+        {
+          "elevation": "0°..-10°",
+          "mean": 0.0369
+        },
+        {
+          "elevation": "-10°..-20°",
+          "mean": 0.0467
+        },
+        {
+          "elevation": "-20°..-30°",
+          "mean": 0.0479
+        },
+        {
+          "elevation": "-30°..-40°",
+          "mean": 0.0504
+        },
+        {
+          "elevation": "-40°..-50°",
+          "mean": 0.0631
+        },
+        {
+          "elevation": "-50°..-60°",
+          "mean": 0.0617
+        },
+        {
+          "elevation": "-60°..-70°",
+          "mean": 0.0581
+        },
+        {
+          "elevation": "-70°..-80°",
+          "mean": 0.0609
+        },
+        {
+          "elevation": "-80°..-90°",
+          "mean": 0.0692
+        }
+      ],
+      "previews": [
+        "qa-out/media/hdri-preview-ev0.jpg",
+        "qa-out/media/hdri-preview-ev+4.jpg"
+      ]
+    },
+    {
+      "filename": "tools/3d/ScreenRecording_09-16-2026 22-57-08_1.mp4",
+      "sizeMB": 41.82,
+      "type": "video",
+      "container": "mov,mp4,m4a,3gp,3g2,mj2",
+      "codec": "hevc (Main), tag hvc1",
+      "pixelFormat": "yuvj420p, range pc, bt709",
+      "dimensions": [
+        1170,
+        2532
+      ],
+      "duration": 22.96,
+      "fps": {
+        "nominal": "60/1",
+        "average": 57.65,
+        "variable": true,
+        "frameIntervalMs": {
+          "min": 15,
+          "median": 16.7,
+          "max": 148.3
+        }
+      },
+      "frames": 1322,
+      "bFrames": 2,
+      "bitrateMbps": 15.28,
+      "keyframes": [
+        0,
+        1.047,
+        2.047,
+        3.045,
+        4.045,
+        5.043,
+        6.043,
+        7.042,
+        8.042,
+        9.057,
+        10.057,
+        11.057,
+        12.055,
+        13.055,
+        14.053,
+        15.053,
+        16.052,
+        17.052,
+        18.052,
+        19.15,
+        20.15,
+        21.148,
+        22.847
+      ],
+      "audio": "aac 2ch 44100 Hz, 2 kbps effectifs",
+      "contentRows": [
+        141,
+        2212
+      ]
+    }
+  ]
+}

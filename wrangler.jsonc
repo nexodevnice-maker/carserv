@@ -1,0 +1,15 @@
+// Déploiement Cloudflare : le projet « carservice » est un Worker (https://carservice.nexodevnice.workers.dev), pas un
+// projet Pages comme MECA RIVIERA. Sans ce fichier, `npx wrangler deploy` ne sait pas quoi publier et le Worker
+// d'exemple (« Hello world ») reste en ligne.
+// Site statique : aucun script Worker, seulement les fichiers de `dist` (Workers Static Assets).
+{
+  "name": "carservice",
+  "compatibility_date": "2026-09-01",
+  // Le build d'Astro avant chaque déploiement, même si la commande de build du projet Cloudflare est vide.
+  "build": { "command": "npm run build" },
+  "assets": {
+    "directory": "./dist",
+    // Adresse inconnue : dist/404.html avec le statut 404 (jamais l'accueil en 200).
+    "not_found_handling": "404-page"
+  }
+}

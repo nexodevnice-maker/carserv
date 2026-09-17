@@ -1,0 +1,169 @@
+---
+import { shown } from '../domain/facts';
+import { property } from '../domain/property';
+import { rentalFleet, rentalTerms } from '../domain/rental';
+import { cleaningOffers, cleaningServices } from '../domain/services';
+import { chapters } from '../experience/chapters';
+import generated from '../experience/media.generated.json';
+import Base from '../layouts/Base.astro';
+import Chapter from '../ui/Chapter.astro';
+import ExperienceTrack from '../ui/ExperienceTrack.astro';
+import SiteHeader from '../ui/SiteHeader.astro';
+
+/**
+ * SQUELETTE STRUCTUREL — aucune direction artistique ici.
+ * Le document complet, dans l'ordre de la narration, lisible sans script ni animation, indexable. Les scènes du
+ * vertical slice viendront composer la vue épinglée et la typographie spatiale au-dessus de ce document, sans le
+ * remplacer.
+ */
+const chapter = (id: string) => chapters.find((c) => c.id === id)!;
+const euro = (amount: number) => `${amount} €`;
+const vehicle = rentalFleet[0]!;
+const offer = cleaningOffers[0]!;
+const instagram = shown(property.channels.instagram);
+const before = generated.posters.before;
+const after = generated.posters.after;
+
+const title = 'CAR SERVICE 06 — Nettoyage auto premium, déplacement dans tout le 06 · Location Toyota C-HR';
+const description =
+  'Nettoyage intérieur et extérieur, finition premium, produits professionnels : CAR SERVICE 06 se déplace dans tout le 06. Location d’un Toyota C-HR hybride dès 70 € par jour.';
+---
+
+<Base
+  title={title}
+  description={description}
+  image={{ src: after.desktop.src, width: after.desktop.width, height: after.desktop.height, alt: 'Capot d’un SUV gris foncé après nettoyage, reflétant les arbres.' }}
+>
+  <SiteHeader />
+  <main id="contenu">
+    <ExperienceTrack label="CAR SERVICE 06 : du véhicule sale à la location">
+      <picture slot="stage" class="stage-poster">
+        <source media="(max-width: 599px)" type="image/avif" srcset={before.mobile.avif} />
+        <source media="(max-width: 599px)" type="image/webp" srcset={before.mobile.src} />
+        <source type="image/avif" srcset={before.desktop.avif} />
+        <img src={before.desktop.src} width={before.desktop.width} height={before.desktop.height} alt="" fetchpriority="high" decoding="async" />
+      </picture>
+
+      <Chapter id="arrivee" universe={chapter('arrivee').universe} span={chapter('arrivee').span} labelledby="arrivee-titre">
+        <h1>{property.name.value}</h1>
+        <p>{property.descriptors.cleaning.value}</p>
+        <h2 id="arrivee-titre">{chapter('arrivee').heading}</h2>
+        <p class="sr-only">Vidéo : un SUV gris foncé couvert de poussière — portière, capot, optique avant.</p>
+        <p>{property.taglines[0]!.value}</p>
+      </Chapter>
+
+      <Chapter id="intervention" universe={chapter('intervention').universe} span={chapter('intervention').span} labelledby="intervention-titre">
+        <h2 id="intervention-titre">{chapter('intervention').heading}</h2>
+        <p>{cleaningServices.find((s) => s.id === 'exterieur')!.title.value} : {cleaningServices.find((s) => s.id === 'exterieur')!.details.value.join(', ').toLowerCase()}.</p>
+      </Chapter>
+
+      <Chapter id="transformation" universe={chapter('transformation').universe} span={chapter('transformation').span} labelledby="transformation-titre">
+        <h2 id="transformation-titre">{chapter('transformation').heading}</h2>
+        <figure>
+          <picture>
+            <source media="(max-width: 599px)" type="image/avif" srcset={after.mobile.avif} />
+            <source media="(max-width: 599px)" type="image/webp" srcset={after.mobile.src} />
+            <source type="image/avif" srcset={after.desktop.avif} />
+            <img src={after.desktop.src} width={after.desktop.width} height={after.desktop.height} alt="Le même SUV après nettoyage : capot brillant qui reflète les arbres." loading="lazy" decoding="async" />
+          </picture>
+          <figcaption>{cleaningServices.find((s) => s.id === 'finition')!.title.value} — {cleaningServices.find((s) => s.id === 'finition')!.details.value[0]!.toLowerCase()}.</figcaption>
+        </figure>
+      </Chapter>
+
+      <Chapter id="prestations" universe={chapter('prestations').universe} span={chapter('prestations').span} labelledby="prestations-titre">
+        <h2 id="prestations-titre">{chapter('prestations').heading}</h2>
+        {
+          cleaningServices.map((service) => (
+            <div data-service={service.id}>
+              <h3>{service.title.value}</h3>
+              <p>{service.details.value.join(' · ')}</p>
+            </div>
+          ))
+        }
+        <p data-offer={offer.id} data-status={offer.price.status}>
+          {offer.label.value} : <strong>{euro(offer.price.value.amount)}</strong>
+        </p>
+        <p>{property.coverage.value}.</p>
+        <p>{property.taglines[1]!.value}</p>
+      </Chapter>
+
+      <Chapter id="bascule" universe={chapter('bascule').universe} span={chapter('bascule').span} labelledby="bascule-titre">
+        <h2 id="bascule-titre">{chapter('bascule').heading}</h2>
+      </Chapter>
+
+      <Chapter id="location" universe={chapter('location').universe} span={chapter('location').span} labelledby="location-titre">
+        <h2 id="location-titre">{chapter('location').heading}</h2>
+        <dl data-vehicle={vehicle.id}>
+          {
+            vehicle.rates.map((rate) => (
+              <div>
+                <dt>{rate.days === 1 ? '1 jour' : `${rate.days} jours`}</dt>
+                <dd>{euro(rate.price.value.amount)}</dd>
+              </div>
+            ))
+          }
+        </dl>
+        <ul>
+          {[rentalTerms.insurance, rentalTerms.mileage, vehicle.energy, rentalTerms.comfort, rentalTerms.availability].map((term) => <li>{term.value}</li>)}
+        </ul>
+      </Chapter>
+
+      <Chapter id="contact" universe={chapter('contact').universe} span={chapter('contact').span} labelledby="contact-titre">
+        <h2 id="contact-titre">{chapter('contact').heading}</h2>
+        {
+          instagram && (
+            <p>
+              <a href={`https://www.instagram.com/${instagram}/`} rel="noopener" target="_blank">
+                Écrire sur Instagram : @{instagram}
+              </a>
+            </p>
+          )
+        }
+      </Chapter>
+    </ExperienceTrack>
+  </main>
+  <footer class="site-footer">
+    <p>© {property.name.value}</p>
+    <p>Maquette de démonstration : informations commerciales à confirmer avant publication.</p>
+    <p>Toyota et C-HR sont des marques de leurs propriétaires ; aucune affiliation.</p>
+  </footer>
+</Base>
+
+<script>
+  import { boot } from '../experience/boot';
+  boot();
+</script>
+
+<style>
+  .stage-poster,
+  .stage-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .stage-poster img {
+    opacity: 0.55;
+  }
+
+  main :global(.chapter) {
+    display: grid;
+    align-content: start;
+    gap: 1rem;
+    padding: calc(var(--header-h) + 2rem) var(--gutter) 4rem;
+    max-width: 44rem;
+  }
+
+  main :global(.chapter figure img) {
+    width: min(100%, 22rem);
+    height: auto;
+  }
+
+  .site-footer {
+    display: grid;
+    gap: 0.25rem;
+    padding: 3rem var(--gutter);
+    color: var(--text-3);
+    font-size: var(--step--1);
+  }
+</style>

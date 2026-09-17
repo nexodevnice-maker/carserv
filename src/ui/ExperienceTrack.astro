@@ -1,0 +1,42 @@
+---
+/**
+ * Piste de l'expérience : une vue épinglée (100svh) et, par-dessus dans le flux, les chapitres.
+ * La vue (canvas, vidéo, affiches) est décorative pour les technologies d'assistance : chaque chapitre porte le texte
+ * et la description de ce que montrent ses médias. Sans script, les chapitres restent lisibles dans l'ordre.
+ */
+interface Props {
+  label?: string;
+}
+const { label } = Astro.props;
+---
+
+<div class="track" data-track aria-label={label}>
+  <div class="track__stage" data-stage aria-hidden="true">
+    <slot name="stage" />
+  </div>
+  <div class="track__chapters">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .track {
+    position: relative;
+  }
+
+  .track__stage {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-stage);
+    height: 100svh;
+    overflow: hidden;
+    contain: strict;
+  }
+
+  /* Les chapitres recouvrent la vue épinglée : la piste mesure exactement la somme de leurs hauteurs. */
+  .track__chapters {
+    position: relative;
+    z-index: var(--z-content);
+    margin-top: -100svh;
+  }
+</style>

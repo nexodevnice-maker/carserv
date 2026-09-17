@@ -1,0 +1,111 @@
+---
+import { PROBE_CHAPTERS } from '../../lab/probe-definition';
+import Base from '../../layouts/Base.astro';
+import Chapter from '../../ui/Chapter.astro';
+import ExperienceTrack from '../../ui/ExperienceTrack.astro';
+
+// LABORATOIRE DU MOTEUR — instrument de validation (npm run qa:engine), pas une page du site.
+// Hors index (noindex), hors sitemap, exclu de robots.txt. À retirer du build publié avant la mise en ligne.
+---
+
+<Base title="Laboratoire du moteur — CAR SERVICE 06" description="Piste de contrôle du moteur d’expérience." noindex qa>
+  <main id="contenu">
+    <ExperienceTrack label="Piste de contrôle">
+      <canvas slot="stage" class="probe-canvas" data-probe-canvas></canvas>
+      <video slot="stage" class="probe-video" data-probe-video muted playsinline preload="none"></video>
+      <canvas slot="stage" class="probe-sequence" data-probe-sequence></canvas>
+      {
+        PROBE_CHAPTERS.map((c, k) => (
+          <Chapter id={c.id} universe="lab" span={c.span} labelledby={`${c.id}-titre`}>
+            <h2 id={`${c.id}-titre`}>
+              {String(k + 1).padStart(2, '0')} — {c.label}
+            </h2>
+          </Chapter>
+        ))
+      }
+    </ExperienceTrack>
+    <p class="probe-after">Fin de piste : contenu libre après la vue épinglée.</p>
+  </main>
+  <pre class="probe-hud" data-probe-hud aria-live="off"></pre>
+</Base>
+
+<script>
+  import { bootLab } from '../../lab/lab-boot';
+  bootLab();
+</script>
+
+<style>
+  .probe-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--night-1);
+  }
+
+  .probe-video,
+  .probe-sequence {
+    position: absolute;
+    top: 50%;
+    height: 78svh;
+    width: auto;
+    aspect-ratio: 900 / 1424;
+    object-fit: cover;
+    opacity: 0;
+    transform: translateY(-50%);
+  }
+
+  .probe-video {
+    right: var(--gutter);
+  }
+
+  .probe-sequence {
+    left: var(--gutter);
+  }
+
+  :global([data-track][data-active-chapter='p-scrub']) .probe-video,
+  :global([data-track][data-active-chapter='p-sequence']) .probe-sequence {
+    opacity: 1;
+  }
+
+  main :global(.chapter) {
+    padding: 5rem var(--gutter);
+    border-top: 1px dashed var(--line);
+  }
+
+  main :global(.chapter h2) {
+    font-size: var(--step-1);
+    font-weight: 500;
+  }
+
+  .probe-after {
+    padding: 30svh var(--gutter);
+  }
+
+  .probe-hud {
+    position: fixed;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    z-index: var(--z-header);
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    max-width: calc(100vw - 1rem);
+    overflow: hidden;
+    background: rgb(0 0 0 / 0.72);
+    color: #b9f5c8;
+    font: 11px/1.4 ui-monospace, Consolas, monospace;
+    white-space: pre-wrap;
+    pointer-events: none;
+  }
+
+  @media (max-width: 599px) {
+    .probe-video,
+    .probe-sequence {
+      height: 62svh;
+    }
+
+    .probe-hud {
+      font-size: 9px;
+    }
+  }
+</style>

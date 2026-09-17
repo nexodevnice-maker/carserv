@@ -1,0 +1,31 @@
+{
+  "name": "car-service-06",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro sync && tsc --noEmit",
+    "media:setup": "npm install --prefix scripts/media-tools",
+    "media:inspect": "node scripts/media-inspect.mjs",
+    "media:video": "node scripts/media-video.mjs",
+    "media:env": "node scripts/media-env.mjs",
+    "content:check": "node scripts/content-check.mjs",
+    "qa:engine": "node scripts/qa-engine.mjs",
+    "deploy:prepare": "node scripts/deploy-prepare.mjs"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^7.3.3",
+    "three": "^0.186.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "axe-core": "^4.13.0",
+    "playwright-core": "^1.63.0",
+    "sharp": "^0.35.4",
+    "typescript": "^7.0.2"
+  }
+}

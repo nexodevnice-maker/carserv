@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.astro/
+.vite/
+*.log
+
+# Sources brutes (lourdes, jamais modifiées) : vidéo 44 Mo, HDRI 28 Mo, flyers.
+# Les dérivés optimisés sont générés par scripts/media-*.mjs et versionnés dans public/.
+/tools/
+
+# Sorties de QA locales
+/qa-out/
+
+# Outils locaux (sessions Claude, cache de wrangler)
+/.claude/
+.wrangler/
+
+.DS_Store
+Thumbs.db

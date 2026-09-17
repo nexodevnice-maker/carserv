@@ -1,0 +1,20 @@
+{
+  "sourceDirectories": [
+    "/carservice/tools/flyers",
+    "/carservice/tools/3d"
+  ],
+  "assets": [],
+  "requiredInspection": [
+    "filename",
+    "type",
+    "dimensions",
+    "duration",
+    "fps",
+    "codec",
+    "size",
+    "licenseOrSourceIfKnown",
+    "intendedRole",
+    "mobileSuitability",
+    "qualityNotes"
+  ]
+}

@@ -1,0 +1,33 @@
+---
+import type { Responsive } from '../engine/responsive/formats';
+
+/**
+ * Section d'un chapitre : ancre, univers, longueur de scroll par format (données → `--span-*`, formats.css).
+ * `min-height` : un texte plus long que le rythme prévu allonge le chapitre au lieu de déborder — le moteur mesure la
+ * hauteur réelle.
+ */
+interface Props {
+  id: string;
+  universe: string;
+  span: Responsive<number>;
+  labelledby?: string;
+}
+
+const { id, universe, span, labelledby } = Astro.props;
+const spans = typeof span === 'number' ? { desktop: span } : span;
+const style = Object.entries(spans)
+  .filter(([, value]) => value !== undefined)
+  .map(([format, value]) => `--span-${format}: ${value}`)
+  .join('; ');
+---
+
+<section id={id} class="chapter" data-chapter={id} data-universe={universe} aria-labelledby={labelledby} style={style}>
+  <slot />
+</section>
+
+<style>
+  .chapter {
+    position: relative;
+    min-height: calc(var(--span) * 1svh);
+  }
+</style>
