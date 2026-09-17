@@ -66,7 +66,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, rgb(4 6 10 / 0.8) 0%, rgb(4 6 10 / 0.42) 30%, rgb(4 6 10 / 0) 54%);
+  background: linear-gradient(90deg, rgb(0 0 0 / 0.8) 0%, rgb(0 0 0 / 0.42) 30%, rgb(0 0 0 / 0) 54%);
 }
 
 .stage__progress {
@@ -74,7 +74,7 @@
   inset: 0 0 auto;
   z-index: 2;
   height: 2px;
-  background: rgb(238 241 245 / 0.06);
+  background: rgb(255 255 255 / 0.06);
 }
 
 .stage__progress span {
@@ -119,11 +119,11 @@
 }
 
 .gauge__label--before {
-  color: rgb(238 241 245 / calc(0.9 - var(--clean, 0) * 0.55));
+  color: rgb(255 255 255 / calc(0.9 - var(--clean, 0) * 0.55));
 }
 
 .gauge__label--after {
-  color: rgb(230 181 71 / calc(0.35 + var(--clean, 0) * 0.65));
+  color: rgb(253 199 39 / calc(0.35 + var(--clean, 0) * 0.65));
 }
 
 .gauge__track {
@@ -250,7 +250,7 @@
 .hint span {
   width: 1px;
   height: 2.6rem;
-  background: linear-gradient(var(--gold), rgb(230 181 71 / 0));
+  background: linear-gradient(var(--gold), rgb(253 199 39 / 0));
 }
 
 .index {
@@ -434,7 +434,7 @@
   margin-top: 2rem;
   padding: 0.7rem 1.4rem;
   border: 1px solid var(--gold);
-  background: rgb(4 6 10 / 0.72);
+  background: rgb(0 0 0 / 0.72);
   color: var(--text);
   font-family: var(--font-display);
   font-size: var(--step-1);
@@ -484,7 +484,7 @@
 
 .map__land,
 .map__island {
-  fill: rgb(230 181 71 / calc(max(0, var(--draw) - 0.8) * 0.4));
+  fill: rgb(253 199 39 / calc(max(0, var(--draw) - 0.8) * 0.4));
   stroke: var(--gold);
   stroke-width: 1.4;
   stroke-dasharray: 1;
@@ -494,14 +494,14 @@
 }
 
 .map__num {
-  fill: rgb(238 241 245 / calc(max(0, var(--draw) - 0.6) * 2.2));
+  fill: rgb(255 255 255 / calc(max(0, var(--draw) - 0.6) * 2.2));
   font-family: var(--font-display);
   font-size: 220px;
   font-weight: 700;
 }
 
 .map__sea {
-  fill: rgb(238 241 245 / calc(max(0, var(--draw) - 0.7) * 1.6));
+  fill: rgb(255 255 255 / calc(max(0, var(--draw) - 0.7) * 1.6));
   font-family: var(--font-display);
   font-size: 34px;
   letter-spacing: 0.3em;
@@ -623,7 +623,7 @@ html.is-guided {
   }
 
   .stage__veil {
-    background: linear-gradient(0deg, rgb(4 6 10 / 0.94) 0%, rgb(4 6 10 / 0.7) 24%, rgb(4 6 10 / 0) 46%);
+    background: linear-gradient(0deg, rgb(0 0 0 / 0.94) 0%, rgb(0 0 0 / 0.7) 24%, rgb(0 0 0 / 0) 46%);
   }
 
   .js .gauge {
@@ -714,4 +714,200 @@ html.is-guided {
   .js .map {
     width: min(34vw, 14rem);
   }
+}
+
+/* — Marque (relevée sur les flyers) ————————————————————————————————————————————— */
+/* Badge : la pastille à filet des flyers (« INTÉRIEUR + EXTÉRIEUR », « DÉPLACEMENT DANS TOUT LE 06 »). */
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.42rem 0.9rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 0.5rem;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge .brand-icon {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--accent);
+}
+
+.badge strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Le prix du flyer : plein d'accent, noir dedans, légèrement incliné comme le coup de pinceau. */
+.badge--price {
+  padding: 0.5rem 1.1rem;
+  border: 0;
+  background: var(--accent);
+  color: #000;
+  font-size: var(--step-1);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 1.8rem var(--glow);
+  transform: rotate(-1.5deg);
+}
+
+/* Prestations et conditions : pastille d'icône, titre, détails — la rangée du bas des flyers. */
+.features {
+  display: grid;
+  gap: 1.1rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.features--pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.2rem 1rem;
+}
+
+.feature {
+  display: grid;
+  grid-template-columns: 2.8rem 1fr;
+  align-items: start;
+  gap: 0.85rem;
+}
+
+.feature__icon .brand-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.feature__icon {
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  padding: 0.62rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  color: var(--accent);
+}
+
+.feature__title {
+  margin: 0.1rem 0 0.25rem;
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.feature__detail {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+/* Tarifs de location : le cadre à liseré rouge du flyer LOC. */
+.rates {
+  display: grid;
+  margin-bottom: 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1.4rem;
+  border: 1.5px solid var(--red);
+  border-radius: 0.7rem;
+  box-shadow:
+    0 0 1.6rem rgb(251 18 32 / 0.35),
+    inset 0 0 1.4rem rgb(251 18 32 / 0.18);
+}
+
+.rates__cell {
+  padding: 0.7rem 0.6rem;
+  text-align: center;
+}
+
+.rates__cell + .rates__cell {
+  border-left: 1px solid rgb(251 18 32 / 0.55);
+}
+
+.rates__cell--on {
+  background: rgb(251 18 32 / 0.14);
+}
+
+.rates__price {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 700;
+  line-height: 0.95;
+}
+
+.rates__price em {
+  color: var(--red);
+  font-style: normal;
+}
+
+.rates__days {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--red);
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* La signature manuscrite du flyer, reprise en italique. */
+.script {
+  margin-top: 1.1rem;
+  color: var(--accent);
+  font-family: var(--font-text);
+  font-size: var(--step-0);
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+
+/* Place pour les onglets sous l'en-tête. */
+.js .panel--hero {
+  padding-top: var(--tabs-h);
+}
+
+/* Repère de localisation (France → Alpes-Maritimes), pendant la plongée. */
+.locator {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--text-2);
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.locator i {
+  display: block;
+  width: 2.6rem;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), rgb(253 199 39 / 0));
+}
+
+.locator span:last-child {
+  color: var(--accent);
 }

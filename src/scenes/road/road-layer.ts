@@ -4,6 +4,7 @@ import {
   CanvasTexture,
   FogExp2,
   Group,
+  LinearMipmapLinearFilter,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
@@ -13,8 +14,9 @@ import {
   SRGBColorSpace,
   Sprite,
   SpriteMaterial,
+  Texture,
+  Vector2,
   Vector3,
-  type Texture,
 } from 'three';
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
@@ -34,6 +36,9 @@ import { FOG_DENSITY } from '../sky/sky-layer';
  * Repère local : la route part de x = 0 vers +x ; `placement` la pose dans le monde (origine, cap). Vue du ciel, un
  * tracé rouge se dessine le long de la voie (`roadTrail` : longueur tracée et intensité) — la route de la location
  * traverse le 06 vers la Voie lactée.
+ * La matière de la chaussée vient d'un relevé photographique libre (Poly Haven « Asphalt 06 », CC0) : albédo, rugosité
+ * et relief. Les marquages (axe, rives, durées) et les flaques restent dessinés au pipeline : ce sont des données du
+ * récit, pas de la matière.
  */
 export const ROAD = {
   start: 0,
@@ -56,7 +61,7 @@ function seeded(seed: number) {
   return () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
 }
 
-/** Asphalte (couleur + marquages) et rugosité (flaques) sur une tuile, générés une fois. */
+/** Marquages peints (transparent ailleurs) et flaques (rugosité) sur une tuile, générés une fois. */
 function roadTextures(): { map: CanvasTexture; roughness: CanvasTexture } {
   const w = 1024;
   const h = 512;
@@ -68,15 +73,8 @@ function roadTextures(): { map: CanvasTexture; roughness: CanvasTexture } {
   color.width = w;
   color.height = h;
   const c = color.getContext('2d') as CanvasRenderingContext2D;
-  c.fillStyle = '#17181b';
-  c.fillRect(0, 0, w, h);
-  for (let k = 0; k < 26000; k++) {
-    const v = 14 + Math.floor(random() * 22);
-    c.fillStyle = `rgb(${v},${v},${v + 2})`;
-    c.fillRect(random() * w, random() * h, 1 + random() * 2, 1 + random() * 2);
-  }
-  // Marquages : axe en tirets, lignes de rive.
-  c.fillStyle = 'rgba(214,214,206,0.82)';
+  // Marquages : axe en tirets, lignes de rive. Le reste est transparent — l'asphalte vient de la photo.
+  c.fillStyle = 'rgba(232,232,224,0.92)';
   const dash = (x0: number, len: number, z: number, thick: number) => c.fillRect((x0 / TILE) * w, zToY(z) - thick / 2, (len / TILE) * w, thick);
   for (let x = 0; x < TILE; x += 9) dash(x, 4, ROAD.center, 7);
   dash(0, TILE, ROAD.center - ROAD.halfWidth + 0.3, 8);
@@ -241,8 +239,12 @@ const roadVertex = /* glsl */ `
 const roadFragment = /* glsl */ `
   ${SKY_GLSL}
   ${GROUND_GLSL}
-  uniform sampler2D uMap;
+  uniform sampler2D uLines;
   uniform sampler2D uRough;
+  uniform sampler2D uAlbedo;
+  uniform sampler2D uArm;
+  uniform sampler2D uNormalMap;
+  uniform vec2 uTexScale;
   uniform float uRoad;
   uniform float uLamp;
   uniform vec3 uTailA;
@@ -264,18 +266,30 @@ const roadFragment = /* glsl */ `
     vec3 ray = vWorld - cameraPosition;
     float t = length(ray);
     vec3 V = ray / t;
-    vec3 albedo = texture2D(uMap, vTile).rgb;
-    float wet = 1.0 - smoothstep(0.2, 0.5, texture2D(uRough, vTile).r);
+    vec2 tex = vUv * uTexScale;
+    // Matière relevée (Poly Haven, CC0) : albédo, occlusion/rugosité (canal vert), relief.
+    vec3 asphalt = texture2D(uAlbedo, tex).rgb;
+    vec3 arm = texture2D(uArm, tex).rgb;
+    vec3 lines = texture2D(uLines, vTile).rgb;
+    float painted = texture2D(uLines, vTile).a;
+    float puddle = 1.0 - smoothstep(0.2, 0.5, texture2D(uRough, vTile).r);
     float near = exp(-t * 0.015);
+    // Rugosité : celle de la photo, annulée dans les flaques (miroir).
+    // Les flaques dessinées décident du mouillé ; la rugosité de la photo ne fait que le nuancer.
+    float wet = clamp(puddle + (1.0 - smoothstep(0.55, 0.92, arm.g)) * 0.3, 0.0, 1.0);
+    // Nuit : l'asphalte ne renvoie presque rien, la peinture un peu plus.
+    vec3 albedo = mix(asphalt * arm.r * 0.16, lines * 0.5, painted * 0.85);
     vec2 ripple = vec2(texture2D(uNoise, vWorld.xz * 0.31 + 0.13).r, texture2D(uNoise, vWorld.xz * 0.12 + 0.71).r) - 0.5;
     float rough = mix(0.5, 0.04, wet) * mix(0.3, 1.0, near);
-    vec3 N = normalize(vec3(ripple.x * rough, 1.0, ripple.y * rough));
+    // Relief de la photo (repère tangent : x le long de la route, y en travers), aplati par l'eau et par la distance.
+    vec2 bump = (texture2D(uNormalMap, tex).xy - 0.5) * 2.0 * (1.0 - puddle) * near * 0.22;
+    vec3 N = normalize(vec3(ripple.x * rough + bump.x, 1.0, ripple.y * rough + bump.y));
     vec3 R = reflect(V, N);
     R.y = abs(R.y);
-    float fresnel = mix(0.03, 0.2, wet) + 0.97 * pow(1.0 - clamp(dot(-V, N), 0.0, 1.0), 5.0);
-    vec3 reflection = skyLod(R, mix(3.5, 0.4, wet)) * uLight * min(fresnel, 0.8) * mix(0.25, 0.75, wet);
+    float fresnel = mix(0.02, 0.18, wet) + 0.9 * pow(1.0 - clamp(dot(-V, N), 0.0, 1.0), 5.0);
+    vec3 reflection = skyLod(R, mix(3.5, 0.4, wet)) * uLight * min(fresnel, 0.55) * mix(0.22, 0.9, wet);
     // Asphalte et peinture sous la nuit : la peinture blanche reste lisible, l'asphalte presque noir.
-    vec3 col = albedo * albedo * 0.55 * uRoad + reflection * uRoad;
+    vec3 col = albedo * uRoad + reflection * uRoad;
     // Feux arrière reflétés : traînées rouges vers la caméra, plus nettes dans l'eau.
     float spread = mix(0.3, 0.1, wet);
     col += vec3(1.0, 0.1, 0.06) * uLamp * 1.2 * (streak(R, uTailA, wet, spread) + streak(R, uTailB, wet, spread));
@@ -300,8 +314,13 @@ export function createRoadLayer(options: { placement: { origin: readonly [number
 
   const roadUniforms = {
     ...options.night,
-    uMap: { value: null as Texture | null },
+    uLines: { value: null as Texture | null },
     uRough: { value: null as Texture | null },
+    uAlbedo: { value: null as Texture | null },
+    uArm: { value: null as Texture | null },
+    uNormalMap: { value: null as Texture | null },
+    // Une tuile de photo tous les 3 m (relevé d'environ 3 m de côté).
+    uTexScale: { value: new Vector2(ROAD.length / 3, (ROAD.halfWidth * 2 + 2) / 3) },
     uRepeat: { value: ROAD.length / TILE },
     uRoad: { value: 0 },
     uLamp: { value: 0 },
@@ -371,8 +390,34 @@ export function createRoadLayer(options: { placement: { origin: readonly [number
       await document.fonts?.load('700 150px "Barlow Condensed"').catch(() => undefined);
       const { map, roughness } = roadTextures();
       textures.push(map, roughness);
-      roadUniforms.uMap.value = map;
+      roadUniforms.uLines.value = map;
       roadUniforms.uRough.value = roughness;
+      // Matière photographique : trois relevés libres (CC0), chargés en différé — la route existe déjà sans eux.
+      await Promise.all(
+        (
+          [
+            ['uAlbedo', '/media/road/asphalt-albedo.webp'],
+            ['uArm', '/media/road/asphalt-arm.webp'],
+            ['uNormalMap', '/media/road/asphalt-normal.webp'],
+          ] as const
+        ).map(async ([key, url]) => {
+          try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`${response.status} ${url}`);
+            const texture = new Texture(await createImageBitmap(await response.blob()));
+            texture.wrapS = texture.wrapT = RepeatWrapping;
+            texture.generateMipmaps = true;
+            texture.minFilter = LinearMipmapLinearFilter;
+            texture.anisotropy = 8;
+            texture.needsUpdate = true;
+            textures.push(texture);
+            roadUniforms[key].value = texture;
+            ctx.invalidate();
+          } catch (error) {
+            console.warn('[road] matière', (error as Error).message);
+          }
+        }),
+      );
       for (const { x, label } of ROAD.markings) {
         const texture = markingTexture(label);
         textures.push(texture);

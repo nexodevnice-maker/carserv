@@ -27,7 +27,7 @@ export const rentalFleet: readonly RentalVehicle[] = [
   {
     id: 'toyota-c-hr',
     model: fact('Toyota C-HR', 'CONFIRMED', loc),
-    energy: fact('Hybride', 'CONFIRMED', loc, '« Hybride économe ». Consommation chiffrée : UNKNOWN.'),
+      energy: fact('Hybride', 'CONFIRMED', loc, '« Hybride économe ». Consommation chiffrée : UNKNOWN.'),
     rates: [
       { days: 1, label: '/jour', price: fact({ amount: 70, currency: 'EUR' }, 'CONFIRMED', loc) },
       { days: 7, label: '/7J', price: fact({ amount: 400, currency: 'EUR' }, 'CONFIRMED', loc) },
@@ -39,6 +39,8 @@ export const rentalFleet: readonly RentalVehicle[] = [
 
 /** Conditions affichées sur le flyer, communes à la flotte telle qu'elle est connue. */
 export const rentalTerms = {
+  /** Libellé exact du flyer LOC (« HYBRIDE ÉCONOME ») : aucune consommation chiffrée. */
+  economy: fact('Hybride économe', 'CONFIRMED', loc),
   insurance: fact('Assurance comprise', 'CONFIRMED', loc, 'Nature et franchise : UNKNOWN.'),
   mileage: fact('Kilométrage illimité', 'CONFIRMED', loc),
   comfort: fact('Confort & sécurité', 'CONFIRMED', loc),

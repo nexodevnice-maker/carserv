@@ -32,12 +32,13 @@ export const STAGE: StageConfig = {
     // MECA : jamais sous 1,25 (au-delà, l'image devient floue). Téléphone plafonné à 1,75 : le ciel, la mer et le 06 sont
     // calculés par pixel.
     tablet: [2, 1.75, 1.5, 1.25],
-    mobile: [1.75, 1.5, 1.25],
+    mobile: [2, 1.75, 1.5, 1.25],
   },
   layerMargin: 0.02,
   near: 0.1,
-  // Le monde fait des kilomètres : l'ouverture regarde le 06 à 3 km.
+  // Le monde fait des kilomètres : l'ouverture regarde le 06 à 3 km, la France à 20 km.
   far: 9000,
+  range: { nearScale: 0.0009, nearMax: 12, farScale: 8, farMax: 90000 },
   exposure: 1,
   background: 0x000000,
   // La caméra la plus basse du récit roule à 1,3 m.

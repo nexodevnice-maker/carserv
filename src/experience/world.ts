@@ -1,3 +1,4 @@
+import france from './map-france.json';
 import type { CloudField } from '../scenes/clouds/cloud-layer';
 
 /**
@@ -11,13 +12,22 @@ import type { CloudField } from '../scenes/clouds/cloud-layer';
  */
 const NORTH = -Math.PI / 2;
 
+const anchor = [400, 900] as const;
+/** Boîte de la France dans le monde (mêmes unités que la carte : 1 unité = 1 m ; 1 m ≈ 90 m réels). */
+const box = france.box.map((v, k) => v - anchor[k % 2]);
+
 export const WORLD = {
+  /** La France : centre et taille dans le monde, calculés depuis les contours (map-france.json). */
+  france: {
+    center: [(box[0]! + box[2]!) / 2, (box[1]! + box[3]!) / 2] as const,
+    size: [box[2]! - box[0]!, box[3]! - box[1]!] as const,
+  },
   /** Rotation du ciel, constante sur tout le site : regarder au nord, c'est regarder le cœur de la Voie lactée. */
   skyYaw: 1.32,
   north: NORTH,
   map: {
     /** Point de la carte (viewBox de map-06.json) posé à l'origine du monde : l'emplacement du monolithe. */
-    anchor: [400, 900] as const,
+    anchor,
     scale: 1,
     depth: 40,
     bevel: 5,
@@ -26,7 +36,7 @@ export const WORLD = {
   },
   road: {
     /** Origine de la route (x, z) : la voie de la caméra passe en x = 0. */
-    origin: [1.7, -300] as const,
+    origin: [1.7, -240] as const,
     heading: NORTH,
   },
   cloudFar: 8000,

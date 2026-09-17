@@ -80,7 +80,7 @@ const haloVertex = /* glsl */ `
   }
 `;
 
-export function createEvidenceLayer(options: { stills: { before: string; after: string } }) {
+export function createEvidenceLayer(options: { stills: { before: string; after: string }; align: readonly [number, number, number] }) {
   const root = new Group();
   root.name = 'evidence';
   const geometry = new PlaneGeometry(PANEL.width, PANEL.height);
@@ -93,6 +93,7 @@ export function createEvidenceLayer(options: { stills: { before: string; after: 
   mirrorMesh.position.set(0, -PANEL.centerY, 0);
   mirrorMesh.scale.y = -1;
   mirrorMesh.renderOrder = 1;
+  for (const { uniforms } of [panel, mirror]) uniforms.uAlign.value = [...options.align];
   root.add(mirrorMesh, panelMesh);
 
   const beaconUniforms = { uIntensity: { value: 0 }, uHeight: { value: 2600 }, uWidth: { value: 3 } };

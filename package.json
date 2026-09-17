@@ -14,7 +14,7 @@
     "media:env": "node scripts/media-env.mjs",
     "content:check": "node scripts/content-check.mjs",
     "qa:engine": "node scripts/qa-engine.mjs",
-    "deploy": "npx --yes wrangler@4 deploy",
+    "deploy": "npx --yes wrangler@4.42.0 deploy",
     "deploy:prepare": "node scripts/deploy-prepare.mjs"
   },
   "dependencies": {

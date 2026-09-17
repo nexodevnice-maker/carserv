@@ -8,16 +8,19 @@ import { copy } from '../experience/copy';
 import map from '../experience/map-06.json';
 import generated from '../experience/media.generated.json';
 import Base from '../layouts/Base.astro';
+import BrandIcon from '../ui/BrandIcon.astro';
 import Chapter from '../ui/Chapter.astro';
 import ExperienceTrack from '../ui/ExperienceTrack.astro';
 import MobileBar from '../ui/MobileBar.astro';
 import SiteHeader from '../ui/SiteHeader.astro';
+import Tabs from '../ui/Tabs.astro';
 import '../styles/experience.css';
 
 /**
  * CAR SERVICE 06 — le document complet, dans l'ordre du récit : lisible sans script ni animation, indexable.
- * Avec script, chaque texte devient une légende posée sur la scène (fenêtre de visibilité tirée de chapters.ts) et la
- * vue épinglée porte la scène WebGL (preuve vidéo, passage de l'eau, route de la location).
+ * Mise en forme relevée sur les flyers de l'entreprise (tools/flyers) : noir, jaune pour le nettoyage, rouge pour la
+ * location, badges à filet, pastilles d'icônes, tarifs dans un cadre néon. Avec script, chaque texte devient une
+ * légende posée sur la scène (fenêtre de visibilité tirée de chapters.ts) et la vue épinglée porte la scène WebGL.
  */
 const chapter = (id: string) => chapters.find((c) => c.id === id)!;
 const win = (chapterId: string, panelId: string) => {
@@ -31,8 +34,18 @@ const offer = cleaningOffers[0]!;
 const instagram = shown(property.channels.instagram);
 const instagramUrl = instagram ? `https://www.instagram.com/${instagram}/` : null;
 const rate = (days: number) => vehicle.rates.find((r) => r.days === days)!;
-const terms = [rentalTerms.insurance, rentalTerms.mileage, vehicle.energy, rentalTerms.comfort, rentalTerms.availability];
 const after = generated.passage.after;
+
+/** Prestations du flyer MAIN : pictogramme, titre, détails — dans l'ordre du flyer. */
+const cleaningIcons = { interieur: 'seat', exterieur: 'car', finition: 'sparkle', produits: 'shield' } as const;
+/** Conditions du flyer LOC, dans l'ordre du flyer. */
+const rentalFeatures = [
+  { icon: 'shield', fact: rentalTerms.insurance },
+  { icon: 'gauge', fact: rentalTerms.mileage },
+  { icon: 'fuel', fact: rentalTerms.economy },
+  { icon: 'wheel', fact: rentalTerms.comfort },
+  { icon: 'calendar', fact: rentalTerms.availability },
+] as const;
 
 const title = 'CAR SERVICE 06 — Nettoyage auto premium, déplacement dans tout le 06 · Location Toyota C-HR';
 const description =
@@ -65,12 +78,13 @@ const description =
   </Fragment>
 
   <div class="intro" aria-hidden="true">
-    <p class="intro__mark">CAR SERVICE <span>06</span></p>
+    <p class="intro__mark">CAR <span>SERVICE</span> 06</p>
     <p class="intro__line">{property.descriptors.cleaning.value} · Location</p>
     <span class="intro__bar"><span></span></span>
   </div>
 
   <SiteHeader />
+  <Tabs />
 
   <main id="contenu">
     <ExperienceTrack label="CAR SERVICE 06 : nettoyage, puis location">
@@ -100,18 +114,28 @@ const description =
         <div class="panel panel--hero" style={win('arrivee', 'marque')}>
           <p class="kicker">{property.name.value} <span aria-hidden="true">·</span> {property.descriptors.cleaning.value}</p>
           <h1 id="titre-marque" class="display">{property.taglines[0]!.value}</h1>
-          <p class="lede">{offer.label.value} · {property.coverage.value}</p>
+          <ul class="badges" aria-label="Ce que comprend la prestation">
+            <li class="badge"><BrandIcon name="seat" />{offer.label.value}</li>
+            <li class="badge"><BrandIcon name="van" />{property.coverage.value}</li>
+          </ul>
+          <p class="script">{copy.hero.script}</p>
           <p class="hint" aria-hidden="true"><span></span>{copy.scroll}</p>
         </div>
         <p class="sr-only">{copy.arrivee}</p>
       </Chapter>
 
       <Chapter id="zone" universe="territory" span={chapter('zone').span} labelledby="titre-zone">
+        <div class="panel panel--locator" style={win('zone', 'france')}>
+          <p class="locator"><span>France</span><i aria-hidden="true"></i><span>Alpes-Maritimes</span></p>
+        </div>
         <div class="panel" style={win('zone', 'deplacement')}>
           <p class="index"><span>{copy.zone.index}</span></p>
           <h2 id="titre-zone" class="title">{copy.zone.title}</h2>
           <p class="text"><strong>{property.coverage.value}.</strong> {offer.label.value}, chez vous.</p>
-          <p class="quote">{property.servicePromise.value}</p>
+          <ul class="badges" aria-label="Zone d’intervention">
+            <li class="badge"><BrandIcon name="pin" />Alpes-Maritimes <strong>06</strong></li>
+          </ul>
+          <p class="script">{property.servicePromise.value}</p>
         </div>
         <figure class="map" style={win('zone', 'deplacement')}>
           <svg viewBox={map.viewBox} role="img" aria-label="Carte des Alpes-Maritimes (06)">
@@ -164,32 +188,47 @@ const description =
         <div class="panel panel--list" style={win('prestations', 'interieur-exterieur')}>
           <p class="index"><span>{copy.prestations.index}</span></p>
           <h2 id="titre-prestations" class="title">{copy.prestations.title}</h2>
-          <ul class="services">
+          <ul class="features">
             {
               ['interieur', 'exterieur'].map((id) => (
-                <li>
-                  <h3>{service(id).title.value}</h3>
-                  <p>{service(id).details.value.join(' · ')}</p>
+                <li class="feature">
+                  <span class="feature__icon" aria-hidden="true">
+                    <BrandIcon name={cleaningIcons[id as keyof typeof cleaningIcons]} />
+                  </span>
+                  <div>
+                    <h3 class="feature__title">{service(id).title.value}</h3>
+                    <p class="feature__detail">{service(id).details.value.join(' · ')}</p>
+                  </div>
                 </li>
               ))
             }
           </ul>
         </div>
         <div class="panel panel--list" style={win('prestations', 'finition-produits')}>
-          <ul class="services">
+          <ul class="features">
             {
               ['finition', 'produits'].map((id) => (
-                <li>
-                  <h3>{service(id).title.value}</h3>
-                  <p>{service(id).details.value.join(' · ')}</p>
+                <li class="feature">
+                  <span class="feature__icon" aria-hidden="true">
+                    <BrandIcon name={cleaningIcons[id as keyof typeof cleaningIcons]} />
+                  </span>
+                  <div>
+                    <h3 class="feature__title">{service(id).title.value}</h3>
+                    <p class="feature__detail">{service(id).details.value.join(' · ')}</p>
+                  </div>
                 </li>
               ))
             }
           </ul>
-          <p class="offer" data-status={offer.price.status}>
-            <span class="offer__label">{offer.label.value}</span>
-            <span class="offer__price">{euro(offer.price.value.amount)}</span>
-          </p>
+        </div>
+        <div class="panel" style={win('prestations', 'offre')}>
+          <h3 class="title title--small">{copy.prestations.offer}</h3>
+          <ul class="badges" aria-label="Formule">
+            <li class="badge"><BrandIcon name="car" />{offer.label.value}</li>
+            <li class="badge badge--price" data-status={offer.price.status}>{euro(offer.price.value.amount)}</li>
+            <li class="badge"><BrandIcon name="van" />{property.coverage.value}</li>
+          </ul>
+          <p class="script">{copy.prestations.script}</p>
         </div>
       </Chapter>
 
@@ -217,8 +256,35 @@ const description =
         </div>
         <div class="panel panel--rate" style={win('location', 'quinzaine')}>
           <p class="rate"><span class="rate__days">{rate(15).days} jours</span><span class="rate__price">{euro(rate(15).price.value.amount)}</span></p>
-          <ul class="terms" aria-label={copy.location.terms}>
-            {terms.map((term) => <li>{term.value}</li>)}
+        </div>
+        <div class="panel panel--list" style={win('location', 'conditions')}>
+          <h3 class="title title--small">{copy.location.terms}</h3>
+          <ul class="rates" aria-label="Tarifs de location">
+            {
+              vehicle.rates.map((r) => (
+                <li class="rates__cell">
+                  <span class="rates__price">
+                    {r.price.value.amount}
+                    <em>€</em>
+                  </span>
+                  <span class="rates__days">{r.label}</span>
+                </li>
+              ))
+            }
+          </ul>
+          <ul class="features features--pair">
+            {
+              rentalFeatures.map((f) => (
+                <li class="feature">
+                  <span class="feature__icon" aria-hidden="true">
+                    <BrandIcon name={f.icon} />
+                  </span>
+                  <div>
+                    <h4 class="feature__title">{f.fact.value}</h4>
+                  </div>
+                </li>
+              ))
+            }
           </ul>
         </div>
       </Chapter>
@@ -237,6 +303,7 @@ const description =
               </a>
             )
           }
+          <p class="script">{copy.hero.script}</p>
         </div>
       </Chapter>
     </ExperienceTrack>
@@ -245,7 +312,7 @@ const description =
   <footer class="site-footer">
     <p>© {property.name.value}</p>
     <p>Maquette de démonstration : informations commerciales à confirmer avant publication.</p>
-    <p>Toyota et C-HR sont des marques de leurs propriétaires ; aucune affiliation. Vidéo : story Snapchat Car-service06. Carte : IGN Admin Express.</p>
+    <p>Toyota et C-HR sont des marques de leurs propriétaires ; aucune affiliation. Vidéo : story Snapchat Car-service06. Cartes : IGN Admin Express. Ciel et matière de la chaussée : Poly Haven (CC0).</p>
   </footer>
 
   <MobileBar />

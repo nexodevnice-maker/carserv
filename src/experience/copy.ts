@@ -4,6 +4,7 @@
  */
 export const copy = {
   scroll: 'Faites défiler',
+  hero: { script: 'Un véhicule propre, c’est un plaisir au quotidien !' },
   avant: {
     index: '02',
     title: 'Avant',
@@ -11,7 +12,7 @@ export const copy = {
   },
   passage: { index: '03', title: 'Le passage', after: 'Même véhicule. Même capot.' },
   apres: { index: '04', title: 'Après', reflets: 'Le flanc, les jantes, le marchepied : les reflets reviennent.' },
-  prestations: { index: '05', title: 'Prestations', offer: 'Formule' },
+  prestations: { index: '05', title: 'Prestations', offer: 'La formule', script: 'À votre service dans tout le 06 !' },
   zone: { index: '01', title: 'Dans tout le 06', sea: 'Mer Méditerranée' },
   univers: {
     title: 'Vers la location',

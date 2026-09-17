@@ -1,30 +1,35 @@
 /*
- * Jetons CAR SERVICE 06.
- * Système principal : une nuit froide (bleu-noir, accordée au ciel étalonné) et un blanc froid ; l'or est la seule
- * couleur chaude. Un accent par univers, jamais les deux à pleine intensité ensemble :
- * or (dérivé du logo du flyer nettoyage, #f9b926) pour le nettoyage et le territoire, rouge (dérivé du flyer location,
- * #f20313) pour la location. Typographie : Barlow Condensed (dessinée d'après la signalisation routière — la route de
- * la location, les marquages peints) pour les titres, Barlow pour le texte.
+ * Jetons CAR SERVICE 06 — relevés sur les deux flyers de l'entreprise (tools/flyers).
+ * MAIN (nettoyage) : noir profond, jaune vif #fdc727 (« SERVICE », badges, prix « 50 € », pastilles d'icônes), blanc.
+ * LOC (location) : le même noir, rouge néon #f90110 (« SERVICE », cadre des tarifs, filets), blanc.
+ * Un univers = un accent, jamais les deux à pleine intensité ensemble. Typographie : Barlow Condensed (proche des
+ * titres des flyers : condensée, capitales, très appuyée) pour les titres, Barlow pour le texte.
  */
 :root {
-  /* Sources mesurées (référence) */
-  --source-gold: #f9b926;
-  --source-red: #f20313;
+  /* Sources mesurées sur les flyers (pipette) */
+  --source-yellow: #fdc727;
+  --source-red: #f90110;
 
-  /* Nuit */
-  --night-0: #04060a;
-  --night-1: #0a0e15;
-  --night-2: #121925;
-  --paper: #eef1f5;
-  --text: #eef1f5;
-  --text-2: rgb(238 241 245 / 0.76);
-  --text-3: rgb(238 241 245 / 0.6);
-  --line: rgb(238 241 245 / 0.16);
+  /* Nuit des flyers : noir franc */
+  --night-0: #000000;
+  --night-1: #0a0a0b;
+  --night-2: #16161a;
+  --paper: #ffffff;
+  --text: #ffffff;
+  --text-2: rgb(255 255 255 / 0.76);
+  --text-3: rgb(255 255 255 / 0.56);
+  --line: rgb(255 255 255 / 0.16);
 
   /* Accents */
-  --gold: #e6b547;
-  --red: #e0322c;
-  --accent: var(--gold);
+  --yellow: #fdc727;
+  --yellow-deep: #f2a900;
+  --red: #fb1220;
+  --red-deep: #c20010;
+  /* Compatibilité : l'or des premières versions est désormais le jaune du flyer. */
+  --gold: var(--yellow);
+  --accent: var(--yellow);
+  --accent-deep: var(--yellow-deep);
+  --glow: rgb(253 199 39 / 0.45);
 
   /* Typographie */
   --font-text: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -39,6 +44,7 @@
   /* Espace */
   --gutter: clamp(1.1rem, 4vw, 4.5rem);
   --header-h: 4.25rem;
+  --tabs-h: 3rem;
 
   /* Mouvement */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -53,7 +59,10 @@
   --z-skip: 100;
 }
 
+/* L'univers courant décide de l'accent : jaune pour le nettoyage et le territoire, rouge pour la location. */
 [data-universe='rental'],
 [data-universe='bridge'] {
   --accent: var(--red);
+  --accent-deep: var(--red-deep);
+  --glow: rgb(251 18 32 / 0.5);
 }

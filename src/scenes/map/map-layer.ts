@@ -1,19 +1,25 @@
 import {
+  BufferGeometry,
   CanvasTexture,
   CustomBlending,
   DoubleSide,
+  ExtrudeGeometry,
+  Float32BufferAttribute,
+  Group,
+  LineBasicMaterial,
+  LineSegments,
+  Mesh,
   OneFactor,
   OneMinusSrcAlphaFactor,
-  ExtrudeGeometry,
-  Group,
-  Mesh,
   PlaneGeometry,
+  ShapeGeometry,
   ShaderMaterial,
   Shape,
   Vector2,
   Vector3,
   type Texture,
 } from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, WebGLLayer } from '../../engine/webgl/webgl-stage';
 import { GROUND_GLSL, SKY_GLSL } from '../shared/night-glsl';
@@ -23,7 +29,11 @@ import { GROUND_GLSL, SKY_GLSL } from '../shared/night-glsl';
  * monde, extrudé en un plateau dont la surface EST le sol mouillé (même fonction que la mer, flaques en plus) et dont
  * les falaises sont d'or, reflétées dans la mer de nuit. Vu de près, on marche dessus ; vu du ciel, c'est un territoire.
  * `mapReveal` : une vague de lumière parcourt le 06 de la côte vers les montagnes et allume les falaises.
- * Aucune ville, aucun relief inventé : seulement le contour, le numéro et la mer.
+ *
+ * Autour : la France entière, département par département (scripts/content-france.mjs, contours IGN), à la même échelle
+ * et au même endroit — des terres presque noires bordées d'un trait d'or, le 06 allumé au milieu. Tout cela s'efface
+ * avec l'altitude : vu du ciel c'est un pays, au sol il n'en reste que le plateau, ses falaises et la mer.
+ * Aucune ville, aucun relief inventé : seulement les contours, le numéro et la mer.
  */
 export interface MapData {
   width: number;
@@ -31,8 +41,16 @@ export interface MapData {
   paths: readonly string[];
 }
 
+export interface FranceData {
+  box: readonly number[];
+  home: string;
+  departements: readonly { code: string; nom: string; paths: readonly string[] }[];
+}
+
 export interface MapOptions {
   data: MapData;
+  /** La France autour : mêmes unités de carte, même ancre. */
+  france: FranceData;
   /** Point de la carte (unités de la carte) placé à l'origine du monde. */
   anchor: readonly [number, number];
   /** Mètres par unité de la carte. */
@@ -125,6 +143,34 @@ const fragmentShader = /* glsl */ `
       return;
     }
     gl_FragColor = vec4(col, 1.0);
+  }
+`;
+
+const franceVertex = /* glsl */ `
+  varying vec3 vWorld;
+  void main() {
+    vec4 world = modelMatrix * vec4(position, 1.0);
+    vWorld = world.xyz;
+    gl_Position = projectionMatrix * viewMatrix * world;
+  }
+`;
+
+const franceFragment = /* glsl */ `
+  ${SKY_GLSL}
+  uniform float uLight;
+  uniform float uFade;
+  uniform float uHome;
+  uniform vec3 uGold;
+  varying vec3 vWorld;
+  void main() {
+    if (uFade <= 0.002) discard;
+    vec3 ray = vWorld - cameraPosition;
+    vec3 V = ray / length(ray);
+    // Les terres : presque noires, un reflet du ciel très flou (elles se distinguent de la mer par leur matité).
+    vec3 col = vec3(0.012, 0.013, 0.016) + skyLod(reflect(V, vec3(0.0, 1.0, 0.0)), 4.0) * uLight * 0.07;
+    col = mix(col, uGold * 0.85, uHome);
+    float a = uFade * mix(1.0, 0.8, uHome);
+    gl_FragColor = vec4(col * a, a);
   }
 `;
 
@@ -257,6 +303,55 @@ export function createMapLayer(options: MapOptions, night: SharedNight) {
   for (const mesh of [top, cliffs, reflection]) mesh.frustumCulled = false;
   root.add(reflection, cliffs, top);
 
+  // — La France autour du 06 : plaques (hors 06) et traits de frontière (tous les départements).
+  const franceUniforms = { ...night, uFade: { value: 0 }, uHome: { value: 0 }, uGold: own.uGold };
+  const franceMaterial = (home: boolean) =>
+    new ShaderMaterial({
+      uniforms: { ...franceUniforms, uHome: { value: home ? 1 : 0 } },
+      vertexShader: franceVertex,
+      fragmentShader: franceFragment,
+      transparent: true,
+      depthWrite: false,
+    });
+  const france = new Group();
+  const shapesOf = (paths: readonly string[]) => shapesFrom({ width: data.width, height: data.height, paths }, anchor, scale);
+  // Chaque département est un volume : 25 m de relief (le 06 en garde 40 : il domine ses voisins).
+  const plate = (paths: readonly string[], height: number, y: number) => {
+    const shapes = shapesOf(paths);
+    const g = shapes.length
+      ? new ExtrudeGeometry(shapes, { depth: height, bevelEnabled: true, bevelThickness: 2, bevelSize: 2, bevelSegments: 1, curveSegments: 1 })
+      : new ShapeGeometry(shapes, 1);
+    g.rotateX(-Math.PI / 2);
+    g.translate(0, y, 0);
+    return g;
+  };
+  const others = options.france.departements.filter((d) => d.code !== options.france.home);
+  const lands = mergeGeometries(others.map((d) => plate(d.paths, 25, -25.6)));
+  const homeLand = plate(options.france.departements.find((d) => d.code === options.france.home)?.paths ?? [], 40, -40.3);
+  const landsMesh = new Mesh(lands ?? homeLand, franceMaterial(false));
+  const homeMesh = new Mesh(homeLand, franceMaterial(true));
+  // Traits de frontière : un pixel à l'écran, quelle que soit l'altitude.
+  const borderPoints: number[] = [];
+  for (const d of options.france.departements)
+    for (const shape of shapesOf(d.paths)) {
+      const points = shape.getPoints(1);
+      for (let i = 0; i < points.length; i++) {
+        const a = points[i]!;
+        const b = points[(i + 1) % points.length]!;
+        borderPoints.push(a.x, 0.2, -a.y, b.x, 0.2, -b.y);
+      }
+    }
+  const borderGeometry = new BufferGeometry();
+  borderGeometry.setAttribute('position', new Float32BufferAttribute(borderPoints, 3));
+  const borderMaterial = new LineBasicMaterial({ color: 0xfdc727, transparent: true, opacity: 0, depthWrite: false });
+  const borders = new LineSegments(borderGeometry, borderMaterial);
+  for (const mesh of [landsMesh, homeMesh, borders]) {
+    mesh.frustumCulled = false;
+    mesh.renderOrder = -9;
+  }
+  france.add(landsMesh, homeMesh, borders);
+  root.add(france);
+
   const at = (point: readonly [number, number]) => [(point[0] - anchor[0]) * scale, (point[1] - anchor[1]) * scale] as const;
   const labels: { material: ShaderMaterial; from: number }[] = [];
   const textures: Texture[] = [];
@@ -279,7 +374,7 @@ export function createMapLayer(options: MapOptions, night: SharedNight) {
     labels.push({ material: labelMaterial, from });
   };
 
-  const last = { reveal: -1 };
+  const last = { reveal: -1, fade: -1 };
   const layer: WebGLLayer = {
     id: 'map',
     root,
@@ -291,9 +386,17 @@ export function createMapLayer(options: MapOptions, night: SharedNight) {
     },
     update(state: Readonly<ExperienceState>): LayerUpdate {
       const reveal = state.channels.mapReveal ?? 0;
-      if (reveal === last.reveal) return false;
+      // Vue du ciel : le pays ; au sol : rien (le plateau et la mer suffisent).
+      const altitude = state.camera?.position[1] ?? 0;
+      const fade = Math.min(1, Math.max(0, (altitude - 400) / 2000));
+      france.visible = fade > 0.002;
+      if (reveal === last.reveal && fade === last.fade) return false;
       last.reveal = reveal;
+      last.fade = fade;
       own.uReveal.value = reveal;
+      franceUniforms.uFade.value = fade;
+      for (const mesh of [landsMesh, homeMesh]) (mesh.material as ShaderMaterial).uniforms.uFade.value = fade;
+      borderMaterial.opacity = fade * 0.75;
       for (const { material: m, from } of labels) m.uniforms.uOpacity.value = Math.max(0, Math.min(1, (reveal - from) / (1 - from)));
       return true;
     },

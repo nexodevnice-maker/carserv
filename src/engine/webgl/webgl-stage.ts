@@ -61,6 +61,11 @@ export interface StageConfig {
   layerMargin: number;
   near: number;
   far: number;
+  /**
+   * Plage de profondeur suivant l'altitude de la caméra (m) : le récit va du pare-chocs (5 m) au pays entier (20 km).
+   * Un seul couple near/far ne peut pas servir les deux ; ici il suit le plan.
+   */
+  range?: { nearScale: number; nearMax: number; farScale: number; farMax: number };
   toneMapping?: ToneMapping;
   exposure?: number;
   transparent?: boolean;
@@ -128,6 +133,17 @@ export async function createWebGLStage(options: {
   const scene = new Scene();
   if (config.background !== undefined) scene.background = new Color(config.background);
   const camera = new PerspectiveCamera(35, 1, config.near, config.far);
+  /** Adapte near/far à l'altitude (rien à faire si la plage n'est pas configurée). */
+  const applyRange = (altitude: number) => {
+    const range = config.range;
+    if (!range) return false;
+    const near = Math.min(Math.max(altitude * range.nearScale, config.near), range.nearMax);
+    const far = Math.min(Math.max(altitude * range.farScale, config.far), range.farMax);
+    if (Math.abs(near - camera.near) < near * 0.02 && Math.abs(far - camera.far) < far * 0.02) return false;
+    camera.near = near;
+    camera.far = far;
+    return true;
+  };
   let width = 1;
   let height = 1;
   let dirty = true;
@@ -225,6 +241,7 @@ export async function createWebGLStage(options: {
     )
       return false;
     Object.assign(last, { px, py, pz, tx, ty, tz, fov, sx: pose.shiftX, sy: pose.shiftY, roll, pitch, lx: pointer.x, ly: pointer.y });
+    applyRange(Math.max(py, 1));
     camera.position.set(px, py, pz);
     camera.up.set(0, 1, 0);
     camera.lookAt(tx, ty, tz);

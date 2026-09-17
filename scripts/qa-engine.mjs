@@ -428,7 +428,8 @@ for (const profile of ['desktop', 'mobile']) {
   // Après l'entrée (elle tient la page en haut) ; lien de l'en-tête (masqué sur téléphone : déclenché directement).
   await page.waitForFunction(() => !document.documentElement.classList.contains('is-intro'), null, { timeout: 30000 }).catch(() => {});
   await page.evaluate(() => document.querySelector('a[href="#location"]').click());
-  await page.waitForFunction(() => document.querySelector('[data-track]')?.dataset.activeChapter === 'location', null, { timeout: 8000 }).catch(() => {});
+  // Le vol dure jusqu'à 4,2 s de temps moteur — bien plus en navigateur sans écran (images lentes).
+  await page.waitForFunction(() => document.querySelector('[data-track]')?.dataset.activeChapter === 'location', null, { timeout: 45000 }).catch(() => {});
   check(G, 'lien de chapitre → chapitre atteint', (await activeChapter()) === 'location', await activeChapter());
   await page.addScriptTag({ path: 'node_modules/axe-core/axe.min.js' });
   const violations = await page.evaluate(async () => {

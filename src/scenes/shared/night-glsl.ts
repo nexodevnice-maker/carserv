@@ -10,12 +10,10 @@ export const SKY_GLSL = /* glsl */ `
   uniform float uPixelAngle;
   uniform vec3 uZenith;
   const float PI = 3.14159265;
-  // Étalonnage : la prise de vue a une lueur orangée (pollution lumineuse) qui salissait l'or de la marque. La nuit
-  // est désaturée et refroidie ; les étoiles restent blanches. L'or reste la seule couleur chaude du site.
+  // L'univers est rendu tel qu'il a été photographié (HDRI fourni) : aucune désaturation, aucun refroidissement — la
+  // nuit garde ses étoiles chaudes. Les couleurs de la marque (jaune, rouge) viennent des objets, pas du ciel.
   vec3 grade(vec3 c) {
-    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-    c = mix(vec3(l), c, 0.22) * vec3(0.86, 0.97, 1.16);
-    return c * (0.84 + 0.16 * smoothstep(0.02, 0.35, l));
+    return c;
   }
   // Lecture de l'équirectangulaire à un niveau de détail calculé (taille angulaire d'un pixel rapportée à celle d'un
   // texel, élargie vers les pôles), sans dérivées : ni éventail au zénith, ni couture à la jonction de l'image, et
@@ -43,7 +41,8 @@ export const SKY_GLSL = /* glsl */ `
   // Brume d'horizon : le ciel très flou juste au-dessus de l'horizon, dans la même direction. Le lointain s'y fond au
   // lieu de tomber dans le noir (perspective aérienne de nuit).
   vec3 haze(vec3 d) {
-    return skyLod(normalize(vec3(d.x, 0.05, d.z)), 6.5) * 0.75;
+    // De nuit, la brume près du sol ne renvoie qu'une fraction de la lueur du ciel : sans ça, le lointain devient laiteux.
+    return skyLod(normalize(vec3(d.x, 0.05, d.z)), 6.5) * 0.3;
   }
 `;
 

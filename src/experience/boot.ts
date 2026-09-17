@@ -9,9 +9,10 @@ import { loadVideoBlob, type VideoBlob } from '../engine/media/video-source';
 import { createGuide } from '../engine/scroll/guide';
 import type { WebGLStage } from '../engine/webgl/webgl-stage';
 import type { EvidenceLayer } from '../scenes/evidence/evidence-layer';
-import { definition } from './chapters';
+import { chapters, definition } from './chapters';
 import { ENGINE, MEDIA_POLICY, SEQUENCE_BUDGET, STAGE } from './config';
 import { copy } from './copy';
+import france from './map-france.json';
 import map from './map-06.json';
 import generated from './media.generated.json';
 import { media } from './media';
@@ -152,9 +153,11 @@ export function boot() {
 
   // Jauge Avant / Après : deux variables CSS sur la vue épinglée, réécrites seulement si elles changent.
   const dom = createDomWriter();
+  const universes = new Map(chapters.map((c) => [c.id, c.universe]));
   experience.use('dom', (s) => {
     dom.setVar(stageEl, '--clean', (s.channels.clean ?? 0).toFixed(4));
     dom.setVar(stageEl, '--gauge', (s.channels.gauge ?? 0).toFixed(3));
+    dom.setData(html, 'universe', universes.get(s.chapter.id) ?? 'cleaning');
   });
 
   experience.use('media', (s) => {
@@ -193,6 +196,7 @@ export function boot() {
         const portrait = state.format !== 'desktop';
         const stills = generated.passage;
         evidence = createEvidenceLayer({
+          align: [generated.passage.align.dx, generated.passage.align.dy, generated.passage.align.scale],
           stills: {
             before: portrait ? stills.before.mobile.src : stills.before.desktop.src,
             after: portrait ? stills.after.mobile.src : stills.after.desktop.src,
@@ -211,6 +215,7 @@ export function boot() {
         const territory = createMapLayer(
           {
             data: map,
+            france,
             anchor: WORLD.map.anchor,
             scale: WORLD.map.scale,
             depth: WORLD.map.depth,

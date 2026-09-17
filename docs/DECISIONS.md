@@ -270,3 +270,44 @@ dynamique ni environnement à télécharger.
 Vérifié : typecheck, build ; captures des 19 repos et de leurs milieux (bureau, téléphone) ; 10 vols filmés ; 60/60
 (`qa-engine`, attentes allongées pour la glissade en navigateur sans écran) sur le serveur de dev et sur
 https://carservice.nexodevnice.workers.dev ; parcours publié bureau et téléphone, 19 pas, WebGL prêt, sans erreur.
+
+## 2026-09-17 — Direction artistique des flyers, France en 3D, relevé recalé (demandes du porteur, mobile d'abord : « remets l'univers d'origine, je n'aime pas la DA », « sers-toi des flyers », « la carte de France en 3D, on atterrit dans les Alpes-Maritimes au même endroit », « de vrais onglets location / nettoyage », « indique vraiment tout ce que l'entreprise fait », « la vidéo propre doit apparaître exactement à cet endroit », « trouve et n'invente pas les assets »)
+
+Direction artistique — relevée à la pipette sur les deux flyers (tools/flyers), plus aucune invention :
+- noir franc (#000), blanc, **jaune #fdc727** pour le nettoyage et le territoire, **rouge #fb1220** pour la location ;
+  un univers = un accent (`html[data-universe]`, écrit par le moteur) ;
+- composants du flyer portés en CSS : badges à filet (« Intérieur + extérieur », « Déplacement dans tout le 06 »), prix
+  en pastille pleine légèrement inclinée (50 €), pastilles d'icônes au trait (src/ui/BrandIcon.astro : siège, voiture,
+  éclat, bouclier, camionnette, compteur, pompe, volant, calendrier, épingle), cadre de tarifs à liseré néon rouge
+  (70 € / 400 € / 700 €), signature manuscrite en italique ;
+- **onglets NETTOYAGE / LOCATION** (src/ui/Tabs.astro) : de vrais liens vers les chapitres, l'onglet actif suivant
+  l'univers à l'écran — les deux métiers sont enfin distincts ;
+- **prestations complètes** : les quatre prestations du flyer MAIN avec leurs détails, la formule et le déplacement ;
+  les cinq conditions du flyer LOC (assurance comprise, kilométrage illimité, hybride économe, confort & sécurité,
+  disponible 7J/7) avec les trois tarifs.
+
+L'univers d'origine est revenu : le HDRI est rendu tel qu'il a été photographié (l'étalonnage froid de la veille est
+supprimé), définition du téléphone remontée à 2.
+
+La France en 3D (scripts/content-france.mjs → src/experience/map-france.json, 53 Ko) : les 96 départements
+métropolitains (contours IGN via france-geojson), projetés en Mercator et **calés sur la boîte du 06 de map-06.json** —
+donc à la même échelle et au même endroit que le plateau du récit. Chaque département est un volume de 25 m bordé d'un
+trait d'or ; le 06 en garde 40 et s'allume. Tout s'efface avec l'altitude : vu de 12 km c'est un pays, au sol il n'en
+reste que le plateau, ses falaises et la mer. La plage de profondeur de la caméra suit l'altitude (webgl-stage `range`) :
+le même monde du pare-chocs (5 m) au pays entier (20 km).
+
+Relevé et nettoyage recalés (demande du directeur artistique) : le capot propre est filmé trois secondes après le capot
+poussiéreux, la main a bougé. scripts/lib/align.mjs mesure sur les CONTOURS le déplacement et l'échelle qui superposent
+l'après sur l'avant (ici +11 % en largeur, −8,5 % en hauteur, échelle 1,015 ; écart moyen 1,179 → 1,095) ; le shader du
+monolithe applique ce recalage à l'image « après ». La ligne d'eau ne déplace plus le véhicule : elle ne change que sa
+matière. Au téléphone, les plans de la preuve sont rapprochés (11–13 m) : la vidéo remplit l'écran, on n'est plus devant
+un panneau posé dans le noir.
+
+Assets trouvés, pas créés : matière de la chaussée relevée par photogrammétrie libre — Poly Haven « Asphalt 06 » (CC0,
+albédo + occlusion/rugosité + relief, 1024 px, 311 Ko au total, public/media/road/). Les marquages (axe, rives, durées)
+et les flaques restent dessinés au pipeline : ce sont des données du récit. Plus aucune lumière dynamique ni
+environnement pré-calculé à télécharger.
+
+Vérifié : typecheck, build, 60/60 (`qa-engine`, attentes allongées pour les vols en navigateur sans écran ; rôles ARIA
+du cadre de tarifs corrigés), 41 captures du parcours téléphone (repos et milieux de vol), parcours publié bureau et
+téléphone (21 pas) sans erreur console, https://carservice.nexodevnice.workers.dev.

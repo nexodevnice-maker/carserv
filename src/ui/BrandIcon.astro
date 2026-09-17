@@ -1,0 +1,32 @@
+---
+/**
+ * Pictogrammes des flyers : un trait, dans une pastille ronde (MAIN) ou nu (LOC). Redessinés au trait, jamais copiés —
+ * un jeu minimal qui porte les prestations et les conditions de location.
+ */
+interface Props {
+  name: 'seat' | 'car' | 'sparkle' | 'shield' | 'van' | 'gauge' | 'fuel' | 'wheel' | 'calendar' | 'pin';
+  label?: string;
+}
+const { name, label } = Astro.props;
+const paths: Record<Props['name'], string> = {
+  // Siège : dossier, assise, pied.
+  seat: 'M8.5 4.5h4a2 2 0 0 1 2 2v7.5h-8V6.5a2 2 0 0 1 2-2Z M5.5 14h13l-1 4.5h-11Z M9 18.5v2 M15 18.5v2',
+  // Silhouette de voiture (comme le logo du flyer).
+  car: 'M3 14.5c0-1 .6-2 1.6-2.3l1.7-.5 2.2-3.3A3 3 0 0 1 11 7h3.5a3 3 0 0 1 2.4 1.2l2 2.8 1.6.6c.9.3 1.5 1.2 1.5 2.1v1.8h-3 M6 16.3H3.2 M7.5 11.9h9.6',
+  sparkle: 'M12 3.5 13.7 9l5.5 1.7-5.5 1.7L12 18l-1.7-5.6L4.8 10.7 10.3 9Z M18.5 16.2l.7 2.2 2.2.7-2.2.7-.7 2.2-.7-2.2-2.2-.7 2.2-.7Z',
+  shield: 'M12 3.4 19 6v5.6c0 4.3-2.8 7.6-7 9.1-4.2-1.5-7-4.8-7-9.1V6Z M8.8 12.2l2.3 2.4 4.1-4.6',
+  // Camionnette du badge « déplacement ».
+  van: 'M2.5 16.5V8.2h10.8v8.3 M13.3 10.4h3.7l3.5 3.4v2.7h-2 M4.5 16.5h-2 M9.4 16.5h4.6 M6.8 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z M17.4 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',
+  gauge: 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18Z M12 12l4.2-3.6 M12 12v.01 M6.5 12H4.6 M19.4 12h-1.9 M12 6.5V4.6',
+  fuel: 'M6.5 21V5.5A2 2 0 0 1 8.5 3.5h3.8a2 2 0 0 1 2 2V21 M6.5 11.8h7.8 M14.3 8.2h2.6a2 2 0 0 1 2 2v6.4a1.6 1.6 0 0 0 3.2 0v-4.2l-2.4-3.9 M4.6 21h11.6',
+  wheel: 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18Z M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M12 12v6.5 M9.6 10.5 4.1 8.6 M14.4 10.5l5.5-1.9',
+  calendar: 'M4.5 6.5h15V20a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1Z M8 3.5v4 M16 3.5v4 M4.5 11h15 M8.5 14.5h1.5 M14 14.5h1.5 M8.5 17.6h1.5 M14 17.6h1.5',
+  pin: 'M12 21.5c4-4.6 6-7.7 6-10.3A6 6 0 0 0 6 11.2c0 2.6 2 5.7 6 10.3Z M12 13.4a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8Z',
+};
+---
+
+<svg class="brand-icon" viewBox="0 0 24 24" aria-hidden={label ? undefined : 'true'} role={label ? 'img' : undefined} aria-label={label}>
+  {paths[name].split(' M').map((d, k) => <path d={k === 0 ? d : `M${d}`} fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" />)}
+</svg>
+
+

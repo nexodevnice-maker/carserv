@@ -25,6 +25,8 @@ export interface EvidenceUniforms {
   uPhase: { value: number };
   uScan: { value: number };
   uTexel: { value: [number, number] };
+  /** Recalage de l'image « après » sur l'image « avant » : (dx, dy, échelle), mesuré au pipeline. */
+  uAlign: { value: [number, number, number] };
 }
 
 const vertexShader = /* glsl */ `
@@ -46,6 +48,7 @@ const fragmentShader = /* glsl */ `
   uniform float uPhase;
   uniform float uScan;
   uniform vec2 uTexel;
+  uniform vec3 uAlign;
   varying vec2 vUv;
 
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -59,6 +62,15 @@ const fragmentShader = /* glsl */ `
   vec3 sampleTex(sampler2D tex, vec2 uv, float flip) {
     uv = clamp(uv, 0.001, 0.999);
     return texture2D(tex, vec2(uv.x, mix(uv.y, 1.0 - uv.y, flip))).rgb;
+  }
+
+  // Le véhicule propre est filmé trois secondes plus tard : la main a bougé, la focale a respiré. Le recalage mesuré
+  // au pipeline (scripts/lib/align.mjs) remet l'après EXACTEMENT là où était l'avant — la ligne d'eau ne déplace plus
+  // le véhicule, elle ne change que sa matière.
+  vec3 sampleAligned(sampler2D tex, vec2 uv, float flip, vec3 align) {
+    vec2 p = vec2(uv.x, mix(uv.y, 1.0 - uv.y, flip));
+    p = (p - 0.5 - align.xy) / align.z + 0.5;
+    return texture2D(tex, clamp(p, 0.001, 0.999)).rgb;
   }
 
   void main() {
@@ -81,7 +93,7 @@ const fragmentShader = /* glsl */ `
     vec2 offset = refr * edge * 0.035;
 
     vec3 a = sampleTex(uA, uv + offset, uFlipA);
-    vec3 b = sampleTex(uB, uv + offset, uFlipB);
+    vec3 b = sampleAligned(uB, uv + offset, uFlipB, uAlign);
 
     // Relevé : la ligne descend du haut (uScan 0) au bas (1) ; au-dessus d'elle, tout est relevé.
     float scanning = step(0.0001, uScan);
@@ -164,6 +176,7 @@ export function createEvidenceMaterial(reflect: boolean) {
     uPhase: { value: 0 },
     uScan: { value: 0 },
     uTexel: { value: [1 / 900, 1 / 1424] },
+    uAlign: { value: [0, 0, 1] },
   };
   const material = new ShaderMaterial({
     uniforms,

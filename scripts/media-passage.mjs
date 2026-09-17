@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
+import { alignImages } from './lib/align.mjs';
 import { mediaTools } from './lib/media-tools.mjs';
 
 const { ffmpeg } = mediaTools();
@@ -32,6 +33,12 @@ for (const rendition of generated.renditions) {
     console.log(`${target}  image ${frame}  ${Math.round(statSync(target).size / 1024)} Ko`);
   }
 }
+// Recalage : le capot propre doit apparaître EXACTEMENT là où était le capot poussiéreux (la main a bougé entre les
+// deux images). Mesuré sur les contours de la déclinaison bureau, en unités normalisées : la scène l'applique aux deux.
+const align = await alignImages(join(TMP, 'before-desktop.png'), join(TMP, 'after-desktop.png'));
+passage.align = align;
+console.log('recalage après → avant :', JSON.stringify(align));
+
 generated.passage = passage;
 writeFileSync(generatedPath, `${JSON.stringify(generated, null, 2)}\n`);
 rmSync(TMP, { recursive: true, force: true });

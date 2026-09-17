@@ -49,7 +49,10 @@ export const chapters: readonly Chapter[] = [
     universe: 'territory',
     span: { desktop: 280, mobile: 260 },
     rests: [0.45, 0.88],
-    panels: [{ id: 'deplacement', in: 0.66, out: 0.985 }],
+    panels: [
+      { id: 'france', in: 0.28, out: 0.58 },
+      { id: 'deplacement', in: 0.66, out: 0.985 },
+    ],
     intent: 'La plongée par une trouée des nuages : le 06 entier, d’or, s’allume de la côte aux montagnes. Le service se déplace partout ; la carte le dit sans inventer de ville.',
   },
   {
@@ -85,11 +88,12 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'prestations',
     universe: 'cleaning',
-    span: { desktop: 190, mobile: 200 },
-    rests: [0.3, 0.75],
+    span: { desktop: 260, mobile: 280 },
+    rests: [0.25, 0.55, 0.85],
     panels: [
-      { id: 'interieur-exterieur', in: 0.04, out: 0.52 },
-      { id: 'finition-produits', in: 0.56, out: 0.985 },
+      { id: 'interieur-exterieur', in: 0.02, out: 0.4 },
+      { id: 'finition-produits', in: 0.44, out: 0.7 },
+      { id: 'offre', in: 0.74, out: 0.985 },
     ],
     intent: 'Les prestations comme conséquences de ce qui vient d’être vu ; l’offre comme un fait.',
   },
@@ -112,12 +116,13 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'location',
     universe: 'rental',
-    span: { desktop: 300, mobile: 280 },
-    rests: [0.2, 0.55, 0.9],
+    span: { desktop: 360, mobile: 380 },
+    rests: [0.15, 0.42, 0.68, 0.92],
     panels: [
-      { id: 'jour', in: 0.05, out: 0.37 },
-      { id: 'semaine', in: 0.42, out: 0.72 },
-      { id: 'quinzaine', in: 0.77, out: 0.995 },
+      { id: 'jour', in: 0.03, out: 0.3 },
+      { id: 'semaine', in: 0.33, out: 0.55 },
+      { id: 'quinzaine', in: 0.58, out: 0.78 },
+      { id: 'conditions', in: 0.82, out: 0.995 },
     ],
     intent: 'La durée comme une route, à vive allure : 1 jour, 7, 15 — le véhicule devant, réduit à ses feux, la galaxie au bout.',
   },
@@ -180,7 +185,7 @@ export const definition: ExperienceDefinition = {
       { chapter: 'avant', at: 0.55, value: 0 },
       { chapter: 'avant', at: 0.78, value: 1, pace: smooth },
       { chapter: 'transformation', at: 0.97, value: 1 },
-      { chapter: 'prestations', at: 0.15, value: 0, pace: smooth },
+      { chapter: 'prestations', at: 0.12, value: 0, pace: smooth },
     ],
     evidenceLight: [
       { chapter: 'avant', at: 0.15, value: 0 },
@@ -191,8 +196,8 @@ export const definition: ExperienceDefinition = {
     ],
     // La balise : visible du ciel, éteinte à l'arrivée au pied du monolithe.
     beacon: [
-      { chapter: 'zone', at: 0.2, value: 0 },
-      { chapter: 'zone', at: 0.45, value: 0.7, pace: smooth },
+      { chapter: 'zone', at: 0.15, value: 0 },
+      { chapter: 'zone', at: 0.45, value: 1, pace: smooth },
       { chapter: 'zone', at: 0.88, value: 1, pace: smooth },
       { chapter: 'avant', at: 0.42, value: 1 },
       { chapter: 'avant', at: 0.72, value: 0, pace: smooth },
@@ -204,7 +209,7 @@ export const definition: ExperienceDefinition = {
       { chapter: 'avant', at: 0.88, value: 0.62, pace: smooth },
       { chapter: 'intervention', at: 0.15, value: 0.45, pace: smooth },
       { chapter: 'transformation', at: 0.95, value: 0.45 },
-      { chapter: 'prestations', at: 0.75, value: 0.7, pace: smooth },
+      { chapter: 'prestations', at: 0.85, value: 0.7, pace: smooth },
       { chapter: 'univers', at: 0.42, value: 1, pace: smooth },
       { chapter: 'bascule', at: 0.5, value: 1 },
       { chapter: 'bascule', at: 0.9, value: 0.88, pace: smooth },
@@ -220,10 +225,11 @@ export const definition: ExperienceDefinition = {
     // Noir au loin selon l'altitude : transparent dans le ciel, dense au sol (la nuit se referme autour de la preuve).
     fog: [
       { chapter: 'arrivee', at: 0, value: 0.00005 },
-      { chapter: 'zone', at: 0.88, value: 0.00007 },
+      { chapter: 'zone', at: 0.45, value: 0.000006, pace: smooth },
+      { chapter: 'zone', at: 0.88, value: 0.00007, pace: smooth },
       { chapter: 'avant', at: 0.42, value: 0.0011, pace: smooth },
       { chapter: 'avant', at: 0.88, value: 0.0045, pace: smooth },
-      { chapter: 'prestations', at: 0.75, value: 0.0035, pace: smooth },
+      { chapter: 'prestations', at: 0.85, value: 0.0035, pace: smooth },
       { chapter: 'univers', at: 0.42, value: 0.00005, pace: { window: [0, 0.6], ease: 'inOut' } },
       { chapter: 'bascule', at: 0.5, value: 0.0002 },
       { chapter: 'bascule', at: 0.9, value: 0.0075, pace: { window: [0.35, 1], ease: 'in' } },
@@ -232,13 +238,14 @@ export const definition: ExperienceDefinition = {
     ],
     clouds: [
       { chapter: 'arrivee', at: 0, value: 1 },
+      { chapter: 'zone', at: 0.45, value: 0.35, pace: smooth },
       { chapter: 'zone', at: 0.88, value: 0.8, pace: smooth },
       { chapter: 'avant', at: 0.42, value: 1, pace: smooth },
     ],
     // La vague de lumière parcourt le 06 pendant la descente par la trouée.
     mapReveal: [
       { chapter: 'zone', at: 0.05, value: 0 },
-      { chapter: 'zone', at: 0.45, value: 0.3, pace: smooth },
+      { chapter: 'zone', at: 0.45, value: 0.42, pace: smooth },
       { chapter: 'zone', at: 0.88, value: 1, pace: smooth },
     ],
     // — La route : le tracé rouge se dessine vu du ciel, la chaussée et les feux s'allument à l'arrivée.
@@ -261,7 +268,7 @@ export const definition: ExperienceDefinition = {
     ],
     tailDistance: [
       { chapter: 'location', at: 0, value: 24 },
-      { chapter: 'location', at: 0.9, value: 20, pace: smooth },
+      { chapter: 'location', at: 0.92, value: 22, pace: smooth },
       { chapter: 'contact', at: 0.1, value: 20 },
       { chapter: 'contact', at: 0.6, value: 64, pace: smooth },
     ],
