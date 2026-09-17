@@ -1,25 +1,43 @@
+import type { CloudField } from '../scenes/clouds/cloud-layer';
+
 /**
- * Composition du monde de CAR SERVICE 06, en mètres, dans le repère des plans (shots.ts) : un seul univers que la
- * caméra traverse d'un bout à l'autre.
- * - le panneau de preuve en x = 0, z = 0 ; la route de la location vers +x (road-layer) ;
- * - le 06 en volume derrière le panneau, au nord (z = −60) : on le survole en quittant les prestations ;
- * - des bancs de nuages sur les trajets de la caméra : sous le regard à l'ouverture, au-dessus du panneau (montée vers
- *   la carte), au-dessus de la carte (montée dans la Voie lactée, puis piqué vers la route), à l'horizon de la route.
+ * Composition du monde de CAR SERVICE 06, en mètres : un seul univers, à l'échelle, que la caméra traverse d'un bout à
+ * l'autre du récit. Tout le voyage est tourné vers le nord, vers le cœur de la Voie lactée.
+ * - le 06 : le contour IGN à l'échelle 1 m par unité de carte (≈ 1 km × 1,1 km), plateau affleurant à y = 0,
+ *   falaises d'or de 40 m sur la mer de nuit ;
+ * - le monolithe de preuve à l'origine, face au sud (la côte est à 120 m derrière la caméra), sur un point sans nom ;
+ * - la route de la location part vers le nord derrière le monolithe : son point de fuite tombe sous la galaxie ;
+ * - une mer de nuages à 1 500 m (percée d'une trouée pour la plongée vers le 06) et des bancs bas vers 400 m.
  */
+const NORTH = -Math.PI / 2;
+
 export const WORLD = {
+  /** Rotation du ciel, constante sur tout le site : regarder au nord, c'est regarder le cœur de la Voie lactée. */
+  skyYaw: 1.32,
+  north: NORTH,
   map: {
-    center: [0, -60] as const,
-    /** 1 000 unités de la carte (largeur du département) → 34 m. */
-    scale: 0.034,
-    depth: 0.9,
-    /** Positions dans le repère de la carte (viewBox de map-06.json). */
+    /** Point de la carte (viewBox de map-06.json) posé à l'origine du monde : l'emplacement du monolithe. */
+    anchor: [400, 900] as const,
+    scale: 1,
+    depth: 40,
+    bevel: 5,
     numberAt: [640, 470] as const,
     seaAt: [520, 1205] as const,
   },
-  clouds: [
-    { center: [0, 17, 26], size: [80, 7, 56], count: 22 },
-    { center: [4, 19, -8], size: [90, 8, 64], count: 26 },
-    { center: [0, 50, -62], size: [90, 8, 70], count: 22 },
-    { center: [140, 30, -6], size: [100, 14, 80], count: 12 },
-  ] satisfies { center: [number, number, number]; size: [number, number, number]; count: number }[],
+  road: {
+    /** Origine de la route (x, z) : la voie de la caméra passe en x = 0. */
+    origin: [1.7, -300] as const,
+    heading: NORTH,
+  },
+  cloudFar: 8000,
+  clouds: {
+    desktop: [
+      { center: [0, 1500, 1400], size: [7000, 260, 7000], count: 130, scale: [900, 2000], hole: [50, 700, 560] },
+      { center: [0, 420, 300], size: [2200, 200, 2400], count: 40, scale: [160, 380] },
+    ],
+    mobile: [
+      { center: [0, 1500, 1400], size: [7000, 260, 7000], count: 70, scale: [1200, 2600], hole: [50, 700, 560] },
+      { center: [0, 420, 300], size: [2200, 200, 2400], count: 22, scale: [200, 440] },
+    ],
+  } satisfies Record<'desktop' | 'mobile', CloudField[]>,
 };

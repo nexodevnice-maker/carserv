@@ -1,51 +1,33 @@
-import { BackSide, Group, LinearFilter, Mesh, ShaderMaterial, SphereGeometry, Texture, Vector3 } from 'three';
+import {
+  BackSide,
+  Group,
+  LinearFilter,
+  LinearMipmapLinearFilter,
+  Mesh,
+  RepeatWrapping,
+  ShaderMaterial,
+  SphereGeometry,
+  Texture,
+  Vector2,
+  Vector3,
+} from 'three';
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
+import { GROUND_GLSL, SKY_GLSL } from '../shared/night-glsl';
 import { createNoiseTexture } from '../shared/noise-texture';
 
 /**
- * L'univers : le HDRI fourni (scripts/media-sky.mjs), présent pendant tout le récit — le panneau de preuve, la carte du
- * 06 et la route sont posés dedans. Une seule sphère à l'infini (elle suit la caméra) porte le ciel ET le sol :
+ * L'univers : le HDRI fourni (scripts/media-sky.mjs), présent pendant tout le récit. Une seule sphère à l'infini (elle
+ * suit la caméra) porte le ciel ET le sol :
  * - au-dessus de l'horizon, le ciel ; pendant un mouvement rapide du regard, les étoiles filent (flou de mouvement
  *   réel : plusieurs échantillons le long du déplacement du regard depuis l'image précédente) ;
- * - au-dessous, un sol mouillé calculé analytiquement (intersection du regard avec le plan y = 0) : infini, sans bord
- *   ni plan lointain, il reflète le même ciel (reflet exact de l'équirectangulaire, perturbé par le grain et les
- *   flaques) et rejoint le pied des collines à l'horizon, sans couture, à toutes les altitudes.
- * Canaux : skyLight (intensité de l'univers), skyYaw (rotation), skyDrift (dérive lente des étoiles, seule animation
- * qui ne dépend pas du scroll — rendu continu uniquement pendant l'ouverture et le passage dans l'univers).
+ * - au-dessous, la mer de nuit calculée analytiquement (intersection du regard avec le plan y = groundY) : infinie,
+ *   sans bord ni plan lointain, miroir du même ciel, jusqu'au pied des collines à l'horizon, à toutes les altitudes.
+ *   Le 06 (scenes/map) est posé dessus et utilise le même sol.
+ * Canaux : skyLight (intensité), skyYaw (rotation, constante d'un bout à l'autre : un seul ciel), skySway (léger
+ * balancement des étoiles sur l'ouverture, seule animation hors scroll), fog (densité du noir au loin, selon
+ * l'altitude du plan).
  */
-const SKY_GLSL = /* glsl */ `
-  uniform sampler2D uSky;
-  uniform float uYaw;
-  const float PI = 3.14159265;
-  // L'horizon de la prise de vue est ~1,4° sous le pied des collines : abaissé d'autant, les collines se posent sur
-  // le bord du sol mouillé au lieu de flotter au-dessus d'une bande noire.
-  vec3 skySample(vec3 d) {
-    float u = fract((atan(d.z, d.x) + uYaw) / (2.0 * PI) + 0.5);
-    float v = 0.5 - asin(clamp(d.y + 0.025, -1.0, 1.0)) / PI;
-    vec3 col = texture2D(uSky, vec2(u, v)).rgb;
-    // Zénith : toute une rangée de l'image converge en un point (éventail de repliement, sans mipmaps). Fondu vers la
-    // moyenne de la calotte.
-    float pole = smoothstep(0.9, 0.985, d.y);
-    if (pole > 0.0) {
-      vec3 cap = vec3(0.0);
-      for (int k = 0; k < 8; k++) cap += texture2D(uSky, vec2((float(k) + 0.5) / 8.0, 0.06)).rgb;
-      col = mix(col, cap / 8.0, pole);
-    }
-    return col;
-  }
-`;
-
-const NOISE_GLSL = /* glsl */ `
-  float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-  float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
-  }
-`;
-
 const vertexShader = /* glsl */ `
   varying vec3 vDir;
   void main() {
@@ -57,52 +39,26 @@ const vertexShader = /* glsl */ `
 
 const fragmentShader = /* glsl */ `
   ${SKY_GLSL}
-  ${NOISE_GLSL}
-  uniform sampler2D uNoise;
-  uniform float uLight;
-  uniform float uFog;
+  ${GROUND_GLSL}
+  uniform float uGroundY;
   uniform vec3 uMotion;
   varying vec3 vDir;
-
-  vec3 ground(vec3 d) {
-    float t = max(cameraPosition.y, 0.05) / max(-d.y, 1e-5);
-    vec2 p = cameraPosition.xz + d.xz * t;
-    float near = exp(-t * 0.02);
-    // Flaques larges : là, le sol est un miroir ; ailleurs, un asphalte humide qui brouille le reflet. Deux échelles
-    // du bruit précalculé sur des repères tournés : aucune répétition lisible, aucun bord droit.
-    vec2 q1 = mat2(0.80, -0.60, 0.60, 0.80) * p;
-    vec2 q2 = mat2(0.28, 0.96, -0.96, 0.28) * p;
-    float field = texture2D(uNoise, q1 * 0.0105 + 0.31).r * 0.62 + texture2D(uNoise, q2 * 0.027 + 0.57).r * 0.38;
-    float puddle = smoothstep(0.47, 0.6, field);
-    float grain = mix(0.5, noise(p * 2.4) * 0.6 + noise(p * 9.0) * 0.4, near);
-    float rough = mix(0.28, 0.025, puddle) * near;
-    vec3 N = normalize(vec3((noise(p * 3.3) - 0.5) * rough, 1.0, (noise(p * 3.3 + 17.0) - 0.5) * rough));
-    vec3 R = reflect(d, N);
-    R.y = abs(R.y);
-    // Plancher de réflectance dans les flaques (eau calme vue de haut) : depuis le ciel, la Voie lactée s'y lit encore.
-    float fresnel = mix(0.03, 0.3, puddle) + 0.97 * pow(1.0 - clamp(dot(-d, N), 0.0, 1.0), 5.0);
-    vec3 reflection = skySample(R) * uLight * min(fresnel, 0.85) * mix(0.45, 1.15, puddle);
-    vec3 col = vec3(0.010, 0.010, 0.012) * (0.55 + grain * 0.9) + reflection;
-    // Au loin, et seulement en rasant, le sol rejoint exactement le pied des collines : continuité à l'horizon.
-    float graze = 1.0 - smoothstep(0.0, 0.014, -d.y);
-    vec3 horizon = skySample(normalize(vec3(d.x, 0.0, d.z))) * uLight * graze;
-    return mix(horizon, col, exp(-pow(uFog * t, 2.0)));
-  }
 
   void main() {
     vec3 d = normalize(vDir);
     vec3 col;
     if (d.y < 0.0) {
-      col = ground(d);
+      float t = max(cameraPosition.y - uGroundY, 0.05) / max(-d.y, 1e-5);
+      col = groundShade(cameraPosition.xz + d.xz * t, d, t, 1.0);
     } else if (dot(uMotion, uMotion) < 1e-8) {
       col = skySample(d) * uLight;
     } else {
       col = vec3(0.0);
-      for (int k = 0; k < 10; k++) {
-        float t = float(k) / 9.0;
+      for (int k = 0; k < STREAK_TAPS; k++) {
+        float t = float(k) / float(STREAK_TAPS - 1);
         col += skySample(normalize(d - uMotion * t));
       }
-      col *= uLight / 10.0;
+      col *= uLight / float(STREAK_TAPS);
     }
     gl_FragColor = vec4(col, 1.0);
   }
@@ -110,22 +66,38 @@ const fragmentShader = /* glsl */ `
 
 export const FOG_DENSITY = 0.0095;
 
-export function createSkyLayer(options: { low: string; high?: string }) {
+export interface SkyOptions {
+  low: string;
+  high?: string;
+  /** Altitude du sol hors du 06 (la mer, sous la falaise). */
+  groundY: number;
+  /** Échantillons du filé des étoiles (moins au téléphone). */
+  streakTaps: number;
+}
+
+export function createSkyLayer(options: SkyOptions) {
   const texture = new Texture();
-  // Valeurs de la texture lues telles quelles (déjà étalonnées) : aucune conversion de couleur.
-  texture.generateMipmaps = false;
-  texture.minFilter = LinearFilter;
+  // Valeurs de la texture lues telles quelles (déjà étalonnées) : aucune conversion de couleur. Mipmaps : le niveau de
+  // détail est choisi par le shader (skyLod) ; répétée en largeur (jonction de l'image sans couture).
+  texture.generateMipmaps = true;
+  texture.minFilter = LinearMipmapLinearFilter;
+  texture.magFilter = LinearFilter;
+  texture.wrapS = RepeatWrapping;
   const noise = createNoiseTexture();
-  const uniforms = {
+  /** Uniformes partagés avec les couches posées dans le même monde (le 06). */
+  const shared = {
     uSky: { value: texture },
     uYaw: { value: 0 },
     uLight: { value: 1 },
     uNoise: { value: noise },
     uFog: { value: FOG_DENSITY },
-    uMotion: { value: new Vector3() },
+    uSkySize: { value: new Vector2(2048, 1024) },
+    uPixelAngle: { value: 0.001 },
+    uZenith: { value: new Vector3() },
   };
   const material = new ShaderMaterial({
-    uniforms,
+    uniforms: { ...shared, uGroundY: { value: options.groundY }, uMotion: { value: new Vector3() } },
+    defines: { STREAK_TAPS: options.streakTaps },
     vertexShader,
     fragmentShader,
     side: BackSide,
@@ -140,12 +112,11 @@ export function createSkyLayer(options: { low: string; high?: string }) {
 
   const abort = new AbortController();
   let ready = false;
-  let drift = 0;
   const forward = new Vector3();
   const previous = new Vector3();
   let hasPrevious = false;
   const motion = new Vector3();
-  const last = { light: -1, yaw: NaN, fx: NaN, fy: NaN, fz: NaN, px: NaN, py: NaN, pz: NaN, mx: NaN, my: NaN, mz: NaN };
+  const last = { light: -1, yaw: NaN, fog: NaN, angle: NaN, fx: NaN, fy: NaN, fz: NaN, px: NaN, py: NaN, pz: NaN, mx: NaN, my: NaN, mz: NaN };
 
   const load = async (url: string, ctx: StageContext) => {
     const response = await fetch(url, { signal: abort.signal });
@@ -153,17 +124,34 @@ export function createSkyLayer(options: { low: string; high?: string }) {
     const bitmap = await createImageBitmap(await response.blob());
     (texture.image as ImageBitmap | undefined)?.close?.();
     texture.image = bitmap;
+    shared.uSkySize.value.set(bitmap.width, bitmap.height);
+    // Couleur moyenne de la calotte (rangées entre ~68° et ~81° d'élévation).
+    const probe = document.createElement('canvas');
+    probe.width = 32;
+    probe.height = 1;
+    const pc = probe.getContext('2d', { willReadFrequently: true });
+    if (pc) {
+      pc.drawImage(bitmap, 0, Math.round(bitmap.height * 0.05), bitmap.width, Math.max(1, Math.round(bitmap.height * 0.07)), 0, 0, 32, 1);
+      const px = pc.getImageData(0, 0, 32, 1).data;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      for (let i = 0; i < 32; i++) {
+        r += px[i * 4]!;
+        g += px[i * 4 + 1]!;
+        b += px[i * 4 + 2]!;
+      }
+      shared.uZenith.value.set(r / 8160, g / 8160, b / 8160);
+    }
     texture.needsUpdate = true;
     ready = true;
     ctx.invalidate();
   };
 
-  const layer: WebGLLayer & { texture: Texture; yaw: { value: number }; light: { value: number } } = {
+  const layer: WebGLLayer & { uniforms: typeof shared } = {
     id: 'sky',
     root,
-    texture,
-    yaw: uniforms.uYaw,
-    light: uniforms.uLight,
+    uniforms: shared,
     async init(ctx) {
       await load(options.low, ctx).catch((error: Error) => {
         if (error.name !== 'AbortError') console.warn('[sky]', error.message);
@@ -173,8 +161,10 @@ export function createSkyLayer(options: { low: string; high?: string }) {
           if (error.name !== 'AbortError') console.warn('[sky]', error.message);
         });
     },
-    update(state: Readonly<ExperienceState>): LayerUpdate {
+    update(state: Readonly<ExperienceState>, ctx: StageContext): LayerUpdate {
       const pose = state.camera;
+      // Taille angulaire d'un pixel du rendu (niveau de détail du ciel).
+      const angle = (ctx.camera.fov * Math.PI) / 180 / Math.max(ctx.height * ctx.pixelRatio, 1);
       if (pose) {
         forward.set(pose.target[0] - pose.position[0], pose.target[1] - pose.position[1], pose.target[2] - pose.position[2]).normalize();
         sphere.position.set(...pose.position);
@@ -187,24 +177,27 @@ export function createSkyLayer(options: { low: string; high?: string }) {
       previous.copy(forward);
       hasPrevious = true;
 
-      const drifting = (state.channels.skyDrift ?? 0) > 0.5 && !state.reducedMotion;
-      if (drifting) drift += state.dt * 0.007;
+      // Balancement borné (±0,7°) : l'univers respire sur l'ouverture, et revient exactement à sa place ensuite.
+      const sway = state.reducedMotion ? 0 : (state.channels.skySway ?? 0);
+      const yaw = (state.channels.skyYaw ?? 0) + (sway > 0 ? Math.sin(state.time * 0.00011) * 0.012 * sway : 0);
       const light = ready ? (state.channels.skyLight ?? 1) : 0;
-      const yaw = (state.channels.skyYaw ?? 0) + drift;
+      const fog = state.channels.fog ?? FOG_DENSITY;
       const changed =
-        light !== last.light || yaw !== last.yaw || forward.x !== last.fx || forward.y !== last.fy || forward.z !== last.fz ||
+        light !== last.light || yaw !== last.yaw || fog !== last.fog || angle !== last.angle || forward.x !== last.fx || forward.y !== last.fy || forward.z !== last.fz ||
         sphere.position.x !== last.px || sphere.position.y !== last.py || sphere.position.z !== last.pz ||
         motion.x !== last.mx || motion.y !== last.my || motion.z !== last.mz;
       if (!changed) return false;
       Object.assign(last, {
-        light, yaw, fx: forward.x, fy: forward.y, fz: forward.z, px: sphere.position.x, py: sphere.position.y, pz: sphere.position.z,
+        light, yaw, fog, angle, fx: forward.x, fy: forward.y, fz: forward.z, px: sphere.position.x, py: sphere.position.y, pz: sphere.position.z,
         mx: motion.x, my: motion.y, mz: motion.z,
       });
-      uniforms.uLight.value = light;
-      uniforms.uYaw.value = yaw;
-      uniforms.uMotion.value.copy(motion);
-      // Encore en mouvement (dérive, ou filé qui doit retomber à zéro) : image suivante.
-      return drifting || motion.lengthSq() > 0 ? 'continue' : true;
+      shared.uLight.value = light;
+      shared.uYaw.value = yaw;
+      shared.uFog.value = fog;
+      shared.uPixelAngle.value = angle;
+      (material.uniforms.uMotion.value as Vector3).copy(motion);
+      // Encore en mouvement (balancement, ou filé qui doit retomber à zéro) : image suivante.
+      return sway > 0.001 || motion.lengthSq() > 0 ? 'continue' : true;
     },
     dispose() {
       abort.abort();
@@ -217,4 +210,3 @@ export function createSkyLayer(options: { low: string; high?: string }) {
 }
 
 export type SkyLayer = ReturnType<typeof createSkyLayer>;
-export { SKY_GLSL, NOISE_GLSL };

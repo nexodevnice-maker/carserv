@@ -21,12 +21,9 @@ for (const name of ['desktop', 'mobile']) {
     window.__experience.seek(0);
     window.__experience.settle();
   });
-  // Première image de la vidéo (bureau) ou de la séquence (téléphone), pas l'image fixe d'attente.
-  await page.waitForFunction(() => {
-    const i = window.__experience.info();
-    return (i.video && i.video.readyState >= 2 && !i.video.seeking) || (i.sequence && i.sequence.shown === i.sequence.target);
-  }, null, { timeout: 45000 });
-  await page.waitForTimeout(800);
+  // Premier plan : l'univers (ciel HDRI, mer de nuages) — aucune vidéo à l'écran ; le ciel en pleine définition.
+  await page.waitForFunction(() => !window.__experience.info().moving, null, { timeout: 15000 });
+  await page.waitForTimeout(2500);
   const png = await page.screenshot();
   const base = `${OUT}/poster-${name}`;
   const image = sharp(png);

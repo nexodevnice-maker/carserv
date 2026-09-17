@@ -1,4 +1,14 @@
 import { clamp01, lerp } from '../math/scalar';
+
+const LOOK_DISTANCE = 100;
+const aim = (out: MutableVec3, position: Vec3, azimuth: number, elevation: number) => {
+  const c = Math.cos(elevation);
+  out[0] = position[0] + Math.cos(azimuth) * c * LOOK_DISTANCE;
+  out[1] = position[1] + Math.sin(elevation) * LOOK_DISTANCE;
+  out[2] = position[2] + Math.sin(azimuth) * c * LOOK_DISTANCE;
+  return out;
+};
+const lerpAngle = (a: number, b: number, t: number) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * t;
 import type { MutableVec3, Vec3 } from '../math/vec3';
 import { paced, type Pace } from '../motion/pace';
 import { merged, pick, type Format, type Responsive } from '../responsive/formats';
@@ -18,7 +28,14 @@ import { createPath, type Path } from './path';
  */
 export interface Framing {
   position: Vec3;
-  target: Vec3;
+  /** Point regardé. Ignoré si `look` est donné. */
+  target?: Vec3;
+  /**
+   * Regard par direction : [azimut, élévation] (radians ; azimut = atan2(z, x), −π/2 regarde vers −z). Entre deux plans
+   * qui visent ainsi, la direction est interpolée en angles, indépendamment de la trajectoire : un repère lointain
+   * (une étoile, un horizon) reste verrouillé au même point de l'image pendant que la caméra voyage.
+   */
+  look?: readonly [number, number];
   /** Champ vertical (degrés). */
   fov: number;
   /**
@@ -45,6 +62,12 @@ export interface ShotDefinition extends KeyPlacement {
   targetVia?: Responsive<readonly Vec3[]>;
   /** Avance du regard sur le déplacement (part du segment, 0–0,3). */
   lead?: number;
+  /**
+   * Enveloppe du vol qui mène à ce plan : nulle aux deux repos, maximale au milieu du trajet (sin π·u), quel que soit
+   * le format ou la longueur du chapitre. fov : degrés en plus (vitesse) ; roll : inclinaison (virage) ; pitch : plongée
+   * du regard (radians) ; shake : turbulence (unités de l'objectif de la scène).
+   */
+  flight?: { fov?: number; roll?: number; pitch?: number; shake?: number };
 }
 
 export interface CameraPose {
@@ -54,6 +77,10 @@ export interface CameraPose {
   shiftX: number;
   shiftY: number;
   roll: number;
+  /** Tangage ajouté (radians), après la visée. */
+  pitch: number;
+  /** Intensité de turbulence. */
+  shake: number;
   /** Plan de départ du segment courant. */
   shot: number;
   /** Avancement rythmé dans le segment (0–1). */
@@ -67,6 +94,8 @@ export const createPose = (): CameraPose => ({
   shiftX: 0,
   shiftY: 0,
   roll: 0,
+  pitch: 0,
+  shake: 0,
   shot: 0,
   travel: 0,
 });
@@ -94,8 +123,9 @@ export function createCameraRig(shots: readonly ShotDefinition[]) {
         targetPoints.push(...(shot.targetVia ? pick(shot.targetVia, format) : []));
       }
       const framing = framings[k] as Framing;
+      const target: Vec3 = framing.look ? aim([0, 0, 0], framing.position, framing.look[0], framing.look[1]) : (framing.target ?? framing.position);
       positionNodes.push(positionPoints.push(framing.position) - 1);
-      targetNodes.push(targetPoints.push(framing.target) - 1);
+      targetNodes.push(targetPoints.push(target) - 1);
     });
     positionPath = createPath(positionPoints);
     targetPath = createPath(targetPoints);
@@ -120,11 +150,14 @@ export function createCameraRig(shots: readonly ShotDefinition[]) {
       const to = framings[k + 1];
       if (!nextShot || !to || segment.fraction <= 0) {
         positionPath.at(out.position, positionPath.distanceOf(positionNodes[k] ?? 0));
-        targetPath.at(out.target, targetPath.distanceOf(targetNodes[k] ?? 0));
+        if (from.look) aim(out.target, out.position, from.look[0], from.look[1]);
+        else targetPath.at(out.target, targetPath.distanceOf(targetNodes[k] ?? 0));
         out.fov = from.fov;
         out.shiftX = from.shift?.[0] ?? 0;
         out.shiftY = from.shift?.[1] ?? 0;
         out.roll = from.roll ?? 0;
+        out.pitch = 0;
+        out.shake = 0;
         out.shot = k;
         out.travel = 0;
         return out;
@@ -136,11 +169,18 @@ export function createCameraRig(shots: readonly ShotDefinition[]) {
       const ta = targetPath.distanceOf(targetNodes[k] ?? 0);
       const tb = targetPath.distanceOf(targetNodes[k + 1] ?? 0);
       positionPath.at(out.position, lerp(pa, pb, u));
-      targetPath.at(out.target, lerp(ta, tb, look));
+      if (from.look && to.look) aim(out.target, out.position, lerpAngle(from.look[0], to.look[0], look), lerp(from.look[1], to.look[1], look));
+      else targetPath.at(out.target, lerp(ta, tb, look));
       out.fov = lerp(from.fov, to.fov, u);
       out.shiftX = lerp(from.shift?.[0] ?? 0, to.shift?.[0] ?? 0, u);
       out.shiftY = lerp(from.shift?.[1] ?? 0, to.shift?.[1] ?? 0, u);
       out.roll = lerp(from.roll ?? 0, to.roll ?? 0, u);
+      const envelope = Math.sin(Math.PI * u);
+      const flight = nextShot.flight;
+      out.fov += (flight?.fov ?? 0) * envelope;
+      out.roll += (flight?.roll ?? 0) * envelope;
+      out.pitch = (flight?.pitch ?? 0) * envelope;
+      out.shake = (flight?.shake ?? 0) * envelope;
       out.shot = k;
       out.travel = u;
       return out;

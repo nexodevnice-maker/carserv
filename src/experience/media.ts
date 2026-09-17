@@ -23,7 +23,7 @@ export const media: readonly MediaDescriptor[] = [
     id: 'transformation-scrub',
     kind: 'video',
     role: 'Preuve de la transformation : un même véhicule, poussiéreux puis brillant, piloté par le scroll.',
-    chapters: ['arrivee', 'intervention', 'transformation'],
+    chapters: ['avant', 'intervention', 'transformation'],
     priority: 'proximity',
     renditions: desktop
       ? [{ formats: ['desktop', 'tablet'], src: desktop.src, type: 'video/mp4', width: desktop.width, height: desktop.height, bytes: desktop.bytes }]
@@ -39,7 +39,7 @@ export const media: readonly MediaDescriptor[] = [
     id: 'transformation-sequence',
     kind: 'sequence',
     role: 'Même preuve sur mobile, en séquence d’images.',
-    chapters: ['arrivee', 'intervention', 'transformation'],
+    chapters: ['avant', 'intervention', 'transformation'],
     priority: 'proximity',
     renditions: [
       {
@@ -69,7 +69,7 @@ export const media: readonly MediaDescriptor[] = [
     id: 'passage',
     kind: 'image',
     role: 'Les deux images exactes du passage : capot poussiéreux, capot brillant (chargées par la scène).',
-    chapters: ['arrivee', 'intervention', 'transformation'],
+    chapters: ['avant', 'intervention', 'transformation'],
     priority: 'critical',
     renditions: [
       { formats: ['desktop', 'tablet'], src: passage.before.desktop.src, type: 'image/webp', width: 900, height: 1424 },
@@ -78,16 +78,5 @@ export const media: readonly MediaDescriptor[] = [
     alt: 'Le capot du même SUV, poussiéreux puis nettoyé.',
     source: story,
     license: storyRights,
-  },
-  {
-    id: 'env-night',
-    kind: 'environment',
-    role: 'Ciel de nuit du HDRI fourni, pré-calculé : reflets de la chaussée mouillée de la location.',
-    chapters: ['bascule', 'location', 'contact'],
-    priority: 'proximity',
-    renditions: [{ formats: ['desktop', 'tablet', 'mobile'], src: '/env/night-128.hdr', width: 384, height: 512 }],
-    alt: '',
-    source: 'tools/3d/rogland_clear_night_4k.hdr — Poly Haven « Rogland Clear Night » (provenance probable)',
-    license: 'TO_CONFIRM — CC0 si Poly Haven',
   },
 ];

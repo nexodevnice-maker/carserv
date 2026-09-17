@@ -6,6 +6,10 @@ import { DoubleSide, ShaderMaterial, type Texture } from 'three';
  * - `uPassage` : une ligne d'eau descend en biais sur le panneau — devant elle la poussière, derrière elle le même
  *   capot propre, encore mouillé (plus sombre, plus contrasté), qui sèche en s'éloignant de la ligne ; au bord de
  *   l'eau, une réfraction et un liseré de lumière. Aucune particule : l'eau est une matière qui passe.
+ * - `uScan` : avant l'eau, le relevé (technique de la ligne de scan de MECA RIVIERA, ici en or) : une ligne fine, de
+ *   largeur constante à l'écran, descend sur le panneau ; derrière elle, le véhicule relevé — luminance froide et
+ *   contours d'or détectés sur l'image réelle ; sous la ligne, un halo en vraies couleurs. L'eau passe ensuite sur le
+ *   relevé et rend le véhicule propre, en couleurs.
  * - `uReflect` : la copie inversée posée sous le sol mouillé — sombre, ondulée, qui s'efface en s'éloignant du sol.
  * Tout dépend de la progression (aucune horloge) : l'image se reconstruit depuis p.
  */
@@ -19,6 +23,8 @@ export interface EvidenceUniforms {
   uLight: { value: number };
   uReflect: { value: number };
   uPhase: { value: number };
+  uScan: { value: number };
+  uTexel: { value: [number, number] };
 }
 
 const vertexShader = /* glsl */ `
@@ -38,6 +44,8 @@ const fragmentShader = /* glsl */ `
   uniform float uLight;
   uniform float uReflect;
   uniform float uPhase;
+  uniform float uScan;
+  uniform vec2 uTexel;
   varying vec2 vUv;
 
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -74,7 +82,40 @@ const fragmentShader = /* glsl */ `
 
     vec3 a = sampleTex(uA, uv + offset, uFlipA);
     vec3 b = sampleTex(uB, uv + offset, uFlipB);
+
+    // Relevé : la ligne descend du haut (uScan 0) au bas (1) ; au-dessus d'elle, tout est relevé.
+    float scanning = step(0.0001, uScan);
+    float lineY = mix(1.03, -0.03, clamp(uScan, 0.0, 1.0));
+    float dy = vUv.y - lineY;
+    float px = fwidth(vUv.y);
+    float scanned = scanning * smoothstep(-px, px * 2.0, dy);
+    if (scanned > 0.0) {
+      // Contours (Sobel sur la luminance de l'image réelle).
+      vec3 W = vec3(0.2126, 0.7152, 0.0722);
+      vec2 e = uTexel * 1.5;
+      float tl = dot(sampleTex(uA, uv + vec2(-e.x, e.y), uFlipA), W);
+      float tr = dot(sampleTex(uA, uv + vec2(e.x, e.y), uFlipA), W);
+      float bl = dot(sampleTex(uA, uv + vec2(-e.x, -e.y), uFlipA), W);
+      float br = dot(sampleTex(uA, uv + vec2(e.x, -e.y), uFlipA), W);
+      float l = dot(sampleTex(uA, uv + vec2(-e.x, 0.0), uFlipA), W);
+      float r = dot(sampleTex(uA, uv + vec2(e.x, 0.0), uFlipA), W);
+      float t = dot(sampleTex(uA, uv + vec2(0.0, e.y), uFlipA), W);
+      float bo = dot(sampleTex(uA, uv + vec2(0.0, -e.y), uFlipA), W);
+      float gx = (tr + 2.0 * r + br) - (tl + 2.0 * l + bl);
+      float gy = (tl + 2.0 * t + tr) - (bl + 2.0 * bo + br);
+      float edgeMag = smoothstep(0.2, 0.75, length(vec2(gx, gy)));
+      float lum = dot(a, W);
+      // Trame fine du relevé, fixée au panneau.
+      float grid = max(smoothstep(0.92, 1.0, abs(sin(vUv.x * 140.0))), smoothstep(0.92, 1.0, abs(sin(vUv.y * 222.0))));
+      vec3 relief = vec3(0.03, 0.04, 0.06) + lum * vec3(0.2, 0.25, 0.33) + vec3(0.95, 0.72, 0.3) * (edgeMag * 0.85 + grid * 0.05);
+      a = mix(a, relief, scanned);
+    }
+    // Ligne d'or et halo en vraies couleurs juste sous elle.
+    float lineMask = scanning * (1.0 - step(0.9999, uScan));
+    float scanLine = lineMask * (1.0 - smoothstep(px * 0.8, px * 2.6, abs(dy)));
+    float scanGlow = lineMask * exp(-dy * dy / 0.0016);
     vec3 col = mix(a, b, washed * step(0.0001, uPassage));
+    col += vec3(1.0, 0.78, 0.38) * (scanLine * 1.6 + scanGlow * 0.22);
 
     // Mouillé derrière la ligne : plus sombre et plus contrasté, sèche en s'éloignant.
     float wet = washed * exp(-max(-s, 0.0) * 5.0) * step(0.0001, uPassage) * (1.0 - step(0.9999, uPassage));
@@ -121,6 +162,8 @@ export function createEvidenceMaterial(reflect: boolean) {
     uLight: { value: 1 },
     uReflect: { value: reflect ? 1 : 0 },
     uPhase: { value: 0 },
+    uScan: { value: 0 },
+    uTexel: { value: [1 / 900, 1 / 1424] },
   };
   const material = new ShaderMaterial({
     uniforms,

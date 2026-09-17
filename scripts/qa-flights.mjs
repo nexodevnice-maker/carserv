@@ -9,15 +9,20 @@ import { launch, VIEWPORTS } from './lib/browser.mjs';
 const out = process.argv[2] ?? 'qa-out/flights';
 const url = (process.argv[3] ?? 'http://localhost:4321').replace(/\/$/, '');
 const only = process.env.QA_ONLY?.split(',');
+const pick = process.env.QA_FLIGHTS?.split(',');
 const frames = Number(process.env.QA_FRAMES ?? 8);
 // Vols entre deux repos (chapitre, position locale).
 const FLIGHTS = [
-  ['plongee', ['arrivee', 0], ['arrivee', 0.45]],
-  ['carte', ['prestations', 0.75], ['zone', 0.55]],
-  ['ciel', ['zone', 0.55], ['univers', 0.35]],
-  ['voie-lactee', ['univers', 0.35], ['univers', 0.8]],
-  ['pique', ['univers', 0.8], ['bascule', 0.8]],
-  ['horizon', ['location', 0.9], ['contact', 0.55]],
+  ['plongee', ['arrivee', 0], ['zone', 0.45]],
+  ['territoire', ['zone', 0.45], ['zone', 0.88]],
+  ['balise', ['zone', 0.88], ['avant', 0.42]],
+  ['pose', ['avant', 0.42], ['avant', 0.88]],
+  ['scan', ['intervention', 0.15], ['intervention', 0.9]],
+  ['ascension', ['prestations', 0.75], ['univers', 0.42]],
+  ['cap', ['univers', 0.42], ['univers', 0.85]],
+  ['route', ['univers', 0.85], ['bascule', 0.9]],
+  ['vitesse', ['location', 0.2], ['location', 0.55]],
+  ['horizon', ['location', 0.9], ['contact', 0.6]],
 ];
 mkdirSync(out, { recursive: true });
 const browser = await launch();
@@ -39,6 +44,7 @@ for (const name of ['desktop', 'mobile']) {
   const W = name === 'desktop' ? 480 : 200;
   const H = Math.round((view.height / view.width) * W);
   for (const [id, from, to] of FLIGHTS) {
+    if (pick && !pick.includes(id)) continue;
     const [a, b] = await page.evaluate(([f, t]) => [window.__experience.toGlobal(f[0], f[1]), window.__experience.toGlobal(t[0], t[1])], [from, to]);
     const tiles = [];
     for (let k = 0; k <= frames; k++) {

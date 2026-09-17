@@ -46,14 +46,17 @@ const description =
 >
   <Fragment slot="head">
     <script is:inline>
-      // Avant tout rendu : mise en page de l'expérience (.js) et entrée si l'on arrive en haut de page. Si le module ne
-      // démarre pas (erreur, blocage), le document redevient lisible au bout de 6 s.
+      // Avant tout rendu : mise en page de l'expérience (.js) et entrée. On arrive TOUJOURS sur l'univers : ancre
+      // retirée de l'adresse, position de défilement jamais restaurée. Si le module ne démarre pas (erreur, blocage),
+      // le document redevient lisible au bout de 6 s.
       (function () {
         var h = document.documentElement;
         h.classList.add('js');
         var q = new URLSearchParams(location.search);
-        if (!location.hash && !q.has('poster')) h.classList.add('has-intro', 'is-intro');
+        if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+        if (!q.has('poster')) h.classList.add('has-intro', 'is-intro');
         if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+        window.scrollTo(0, 0);
         setTimeout(function () {
           if (!h.classList.contains('has-experience')) h.classList.remove('js', 'has-intro', 'is-intro');
         }, 6000);
@@ -93,16 +96,37 @@ const description =
         <div class="stage__progress"><span></span></div>
       </Fragment>
 
-      <Chapter id="arrivee" universe="cleaning" span={chapter('arrivee').span} labelledby="titre-marque">
+      <Chapter id="arrivee" universe="territory" span={chapter('arrivee').span} labelledby="titre-marque">
         <div class="panel panel--hero" style={win('arrivee', 'marque')}>
           <p class="kicker">{property.name.value} <span aria-hidden="true">·</span> {property.descriptors.cleaning.value}</p>
           <h1 id="titre-marque" class="display">{property.taglines[0]!.value}</h1>
           <p class="lede">{offer.label.value} · {property.coverage.value}</p>
           <p class="hint" aria-hidden="true"><span></span>{copy.scroll}</p>
         </div>
-        <div class="panel" style={win('arrivee', 'avant')}>
+        <p class="sr-only">{copy.arrivee}</p>
+      </Chapter>
+
+      <Chapter id="zone" universe="territory" span={chapter('zone').span} labelledby="titre-zone">
+        <div class="panel" style={win('zone', 'deplacement')}>
+          <p class="index"><span>{copy.zone.index}</span></p>
+          <h2 id="titre-zone" class="title">{copy.zone.title}</h2>
+          <p class="text"><strong>{property.coverage.value}.</strong> {offer.label.value}, chez vous.</p>
+          <p class="quote">{property.servicePromise.value}</p>
+        </div>
+        <figure class="map" style={win('zone', 'deplacement')}>
+          <svg viewBox={map.viewBox} role="img" aria-label="Carte des Alpes-Maritimes (06)">
+            {map.paths.map((d, k) => <path class={k === 0 ? 'map__land' : 'map__island'} d={d} pathLength="1" />)}
+            <text class="map__num" x="560" y="520">06</text>
+            <text class="map__sea" x="500" y="1215" text-anchor="middle">{copy.zone.sea}</text>
+          </svg>
+          <figcaption class="sr-only">Contour du département des Alpes-Maritimes (source : IGN Admin Express).</figcaption>
+        </figure>
+      </Chapter>
+
+      <Chapter id="avant" universe="cleaning" span={chapter('avant').span} labelledby="titre-avant">
+        <div class="panel" style={win('avant', 'avant')}>
           <p class="index"><span>{copy.avant.index}</span></p>
-          <h2 class="title">{copy.avant.title}</h2>
+          <h2 id="titre-avant" class="title">{copy.avant.title}</h2>
           <p class="text">{copy.avant.text}</p>
           <p class="sr-only">{copy.video}</p>
         </div>
@@ -167,23 +191,6 @@ const description =
             <span class="offer__price">{euro(offer.price.value.amount)}</span>
           </p>
         </div>
-      </Chapter>
-
-      <Chapter id="zone" universe="territory" span={chapter('zone').span} labelledby="titre-zone">
-        <div class="panel" style={win('zone', 'deplacement')}>
-          <p class="index"><span>{copy.zone.index}</span></p>
-          <h2 id="titre-zone" class="title">{copy.zone.title}</h2>
-          <p class="text"><strong>{property.coverage.value}.</strong> {offer.label.value}, chez vous.</p>
-          <p class="quote">{property.servicePromise.value}</p>
-        </div>
-        <figure class="map" style={win('zone', 'deplacement')}>
-          <svg viewBox={map.viewBox} role="img" aria-label="Carte des Alpes-Maritimes (06)">
-            {map.paths.map((d, k) => <path class={k === 0 ? 'map__land' : 'map__island'} d={d} pathLength="1" />)}
-            <text class="map__num" x="560" y="520">06</text>
-            <text class="map__sea" x="500" y="1215" text-anchor="middle">{copy.zone.sea}</text>
-          </svg>
-          <figcaption class="sr-only">Contour du département des Alpes-Maritimes (source : IGN Admin Express).</figcaption>
-        </figure>
       </Chapter>
 
       <Chapter id="univers" universe="bridge" span={chapter('univers').span} labelledby="titre-univers">

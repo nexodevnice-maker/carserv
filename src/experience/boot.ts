@@ -9,8 +9,8 @@ import { loadVideoBlob, type VideoBlob } from '../engine/media/video-source';
 import { createGuide } from '../engine/scroll/guide';
 import type { WebGLStage } from '../engine/webgl/webgl-stage';
 import type { EvidenceLayer } from '../scenes/evidence/evidence-layer';
-import { chapters, definition } from './chapters';
-import { ENGINE, ENVIRONMENT, MEDIA_POLICY, SEQUENCE_BUDGET, STAGE } from './config';
+import { definition } from './chapters';
+import { ENGINE, MEDIA_POLICY, SEQUENCE_BUDGET, STAGE } from './config';
 import { copy } from './copy';
 import map from './map-06.json';
 import generated from './media.generated.json';
@@ -21,7 +21,7 @@ import { WORLD } from './world';
  * Démarrage de CAR SERVICE 06.
  * Entrée (technique MECA RIVIERA) : l'écran d'entrée couvre la préparation de la première scène et se lève à la
  * première image WebGL (au plus tôt 1,2 s, au plus tard 4,5 s ; sans WebGL : sur l'affiche). Pendant l'entrée, la page
- * reste en haut et aucun pas n'est pris.
+ * reste en haut et aucun pas n'est pris. Page restaurée ou rechargée : toujours au début, sur l'univers.
  * Puis : moteur (scroll → progression → état), pas guidés, registre média et liaisons (vidéo en mémoire au bureau,
  * séquence au téléphone), scène WebGL chargée en différé — un seul monde : l'univers (ciel et sol mouillé), les nuages,
  * la preuve, le 06 en volume, la route —, repli statique à tout moment.
@@ -185,16 +185,14 @@ export function boot() {
       import('../scenes/evidence/evidence-layer'),
       import('../scenes/road/road-layer'),
       import('../scenes/sky/sky-layer'),
-      import('../engine/webgl/environment'),
       import('../scenes/map/map-layer'),
       import('../scenes/clouds/cloud-layer'),
     ])
-      .then(async ([{ createWebGLStage }, { createEvidenceLayer }, { createRoadLayer }, { createSkyLayer }, { loadBakedEnvironment }, { createMapLayer }, { createCloudLayer }]) => {
+      .then(async ([{ createWebGLStage }, { createEvidenceLayer }, { createRoadLayer }, { createSkyLayer }, { createMapLayer }, { createCloudLayer }]) => {
         setIntroProgress(0.55);
         const portrait = state.format !== 'desktop';
         const stills = generated.passage;
         evidence = createEvidenceLayer({
-          chapters: chapters.filter((c) => ['arrivee', 'intervention', 'transformation', 'prestations', 'zone'].includes(c.id)).map((c) => c.id),
           stills: {
             before: portrait ? stills.before.mobile.src : stills.before.desktop.src,
             after: portrait ? stills.after.mobile.src : stills.after.desktop.src,
@@ -202,21 +200,32 @@ export function boot() {
         });
         if (video.readyState >= 2 && scrub) evidence.setVideo(video);
         if (lastBitmap) evidence.setBitmap(lastBitmap);
-        const road = createRoadLayer({ chapters: ['bascule', 'location', 'contact'] });
+        const desktop = state.format === 'desktop';
         // L'univers (HDRI fourni), partout : 2048 px d'abord ; 4096 px ensuite sur grand écran.
-        const sky = createSkyLayer({ low: '/env/sky-2048.webp', high: state.format === 'desktop' ? '/env/sky-4096.webp' : undefined });
+        const sky = createSkyLayer({
+          low: '/env/sky-2048.webp',
+          high: desktop ? '/env/sky-4096.webp' : undefined,
+          groundY: -WORLD.map.depth,
+          streakTaps: desktop ? 10 : 6,
+        });
         const territory = createMapLayer(
           {
             data: map,
-            center: WORLD.map.center,
+            anchor: WORLD.map.anchor,
             scale: WORLD.map.scale,
             depth: WORLD.map.depth,
+            bevel: WORLD.map.bevel,
             labels: { number: '06', numberAt: WORLD.map.numberAt, sea: copy.zone.sea, seaAt: WORLD.map.seaAt },
             font: '"Barlow Condensed", "Arial Narrow", sans-serif',
           },
-          sky,
+          sky.uniforms,
         );
-        const clouds = createCloudLayer({ fields: WORLD.clouds });
+        const road = createRoadLayer({ placement: WORLD.road, night: sky.uniforms });
+        const clouds = createCloudLayer({
+          fields: WORLD.clouds[desktop ? 'desktop' : 'mobile'],
+          noise: sky.uniforms.uNoise.value,
+          far: WORLD.cloudFar,
+        });
         const created = await createWebGLStage({
           experience,
           canvas,
@@ -237,21 +246,6 @@ export function boot() {
         if (!created) return;
         stage = created;
         setIntroProgress(0.85);
-        // Ciel de nuit (HDRI fourni) : reflets de la chaussée, chargé à l'approche de la route.
-        registry.bind('env-night', {
-          async load(rendition) {
-            const texture = await loadBakedEnvironment(rendition.src ?? ENVIRONMENT.url[state.format]);
-            if (!texture || !stage) return;
-            stage.ctx.scene.environment = texture;
-            stage.ctx.scene.environmentRotation.y = 1.9;
-            stage.ctx.invalidate();
-          },
-          release() {
-            if (!stage) return;
-            stage.ctx.scene.environment?.dispose();
-            stage.ctx.scene.environment = null;
-          },
-        });
       })
       .catch((error: unknown) => {
         stageStatus = `error:${error instanceof Error ? error.message : String(error)}`;

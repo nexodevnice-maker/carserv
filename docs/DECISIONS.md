@@ -218,3 +218,55 @@ QA ajoutée : scripts/qa-flights.mjs (chaque vol filmé en 9 images à progressi
 Vérifié : typecheck, build, captures des 17 repos et de leurs milieux (bureau, téléphone), 6 vols filmés, 60/60
 (`qa-engine`, contrôle du retard adapté à maxLag 0,35) sur le serveur de dev et sur https://carservice.nexodevnice.workers.dev,
 parcours publié bureau et téléphone sans erreur console.
+
+## 2026-09-17 — Le voyage : ciel → 06 → véhicule → univers → route (demandes du porteur : « on est la caméra », « le scroll ne fait pas assez voyager », « arrange le code couleur », « toujours arriver sur l'univers », « un scan comme MECA RIVIERA pour l'avant/après », « passer de l'univers à la location 100x plus professionnellement », « 10x plus surprenant »)
+
+Monde à l'échelle (src/experience/world.ts) : le 06 (contour IGN) à 1 m par unité de carte (≈ 1 km × 1,1 km), plateau
+affleurant à y = 0 dont la surface est le sol mouillé, falaises d'or de 40 m reflétées dans une mer de nuit ; le
+monolithe de preuve (5,4 × 8,5 m) sur un point sans nom à 120 m de la côte ; la route de la location part vers le nord
+derrière lui ; mer de nuages à 1 500 m (percée d'une trouée), bancs bas vers 400 m. Un seul ciel : rotation constante,
+le nord regarde le cœur de la Voie lactée — plus aucun ciel qui tourne pendant un vol.
+
+Récit (chapters.ts, shots.ts) — 10 chapitres, 19 pas : univers au-dessus de la mer de nuages → plongée par la trouée →
+le 06 s'allume en vague d'or de la côte aux montagnes, balise de lumière au milieu → piqué sur la mer, falaise, balise →
+pose devant le monolithe (avant) → **relevé** puis passage de l'eau → après → prestations → ascension verticale à travers
+les deux couches de nuages → cap sur la galaxie → **descente verrouillée** : le regard ne quitte pas le nord (visée par
+direction, interpolée en angles), la galaxie reste au même point de l'image, la route rouge se dessine vue du ciel et
+monte à la rencontre de la caméra qui se pose dans la voie, point de fuite sous la galaxie → location à 100 m par pas →
+au bout de la route, au bord du 06, face à la galaxie.
+
+Moteur (générique) :
+- camera-rig : `look` [azimut, élévation] (repère lointain verrouillé pendant un vol) ; `flight` par plan (focale,
+  roulis, plongée du regard, turbulence) en enveloppe sin π·u, maximale au milieu du trajet quel que soit le format ;
+- webgl-stage : regard libre à la souris (±4° / ±2,6°, amorti, souris seulement) ; tangage ; garde au sol (`floor`) ;
+- guide : les liens internes n'écrivent plus d'ancre ; la page retire toute ancre et revient en haut au chargement —
+  on arrive toujours sur l'univers ;
+- glissade du bureau allongée (34 s par unité, 1,5–4,2 s) ; ressort au doigt ralenti (3,6 rad/s).
+
+Relevé (evidence-material.ts) — technique de la ligne de scan de MECA RIVIERA, identité CAR SERVICE 06 : ligne d'or de
+largeur constante à l'écran qui descend le monolithe et déborde dans la nuit (nappe additive) ; derrière elle, le
+véhicule relevé (luminance froide, contours d'or détectés par Sobel sur l'image réelle, trame fine) ; halo en vraies
+couleurs sous la ligne ; puis la ligne d'eau rend le véhicule propre en couleurs. Aucune promesse de « diagnostic » dans
+les textes.
+
+Code couleur : nuit froide (#04060a), blanc froid (#eef1f5), l'or seule couleur chaude (nettoyage, territoire), rouge pour
+la location. Le HDRI est étalonné dans le shader (désaturé à 22 %, refroidi) : sa lueur orangée salissait l'or.
+
+Rendu (shared/night-glsl.ts, partagé par ciel, mer, 06, falaises, chaussée) : ciel lu à un niveau de détail calculé sans
+dérivées (mipmaps, niveau selon la taille angulaire du pixel) ; brume d'horizon au lieu du noir ; calotte au-dessus de 70°
+fondue vers sa couleur moyenne semée d'étoiles calculées (l'image source y est étirée). Chaussée : shader maison dans la
+même lumière (le matériau standard reflétait un environnement non étalonné, laiteux) ; reflets des feux en traînées
+anisotropes ; plus aucune lumière dynamique (et plus de téléchargement de l'environnement pré-calculé).
+
+Défauts trouvés et corrigés en filmant les vols (scripts/qa-flights.mjs, 10 vols × 9 images, bureau et téléphone) :
+nuages géants qui voilaient l'écran (fondu selon la couverture), reflet des falaises dessiné par-dessus le 06 (passe
+opaque avant la surface), falaises lointaines traversant la surface (ordre falaises → surface, test sans écriture de
+profondeur), trajectoire qui creusait sous la route (points de passage, garde au sol), éventail et disque au zénith,
+motif « camouflage » des flaques, plan final qui ne montrait pas la route.
+
+Téléphone : définition plafonnée à 1,75 ; filé des étoiles à 6 échantillons ; moitié moins de nuages ; plus aucune lumière
+dynamique ni environnement à télécharger.
+
+Vérifié : typecheck, build ; captures des 19 repos et de leurs milieux (bureau, téléphone) ; 10 vols filmés ; 60/60
+(`qa-engine`, attentes allongées pour la glissade en navigateur sans écran) sur le serveur de dev et sur
+https://carservice.nexodevnice.workers.dev ; parcours publié bureau et téléphone, 19 pas, WebGL prêt, sans erreur.

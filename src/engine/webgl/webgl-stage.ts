@@ -75,8 +75,24 @@ export interface StageConfig {
    * tremblement est déterministe (fonction de la progression, jamais du temps) : il se reconstruit à l'identique au
    * retour.
    */
-  lens?: { fov?: string; roll?: string; shake?: { channel: string; amplitude: number } };
+  lens?: {
+    fov?: string;
+    roll?: string;
+    /** Tangage ajouté (radians) : plonger le regard au milieu d'un vol sans déplacer la visée des plans. */
+    pitch?: string;
+    shake?: { channel: string; amplitude: number };
+    /**
+     * Regard libre au pointeur (souris seulement) : on est la caméra. Décalage maximal (radians) et taux d'amorti (1/s).
+     * Entrée utilisateur, jamais une horloge : au repos du pointeur, la boucle se rendort.
+     */
+    look?: { yaw: number; pitch: number; rate: number };
+  };
   background?: number;
+  /**
+   * Garde au sol (m) : la caméra ne descend jamais sous cette hauteur. Une trajectoire lisse qui passe par des points
+   * au ras du sol puis s'élève peut creuser légèrement entre deux points ; la garde l'aplatit au lieu de traverser le sol.
+   */
+  floor?: number;
 }
 
 export async function createWebGLStage(options: {
@@ -145,18 +161,57 @@ export async function createWebGLStage(options: {
     },
   };
 
+  // Regard au pointeur : cible normalisée (−1…1) et valeur amortie.
+  const pointer = { tx: 0, ty: 0, x: 0, y: 0 };
+  const onPointer = (event: PointerEvent) => {
+    if (event.pointerType !== 'mouse') return;
+    pointer.tx = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.ty = (event.clientY / window.innerHeight) * 2 - 1;
+    scheduler.invalidate();
+  };
+  const onLeave = () => {
+    pointer.tx = 0;
+    pointer.ty = 0;
+    scheduler.invalidate();
+  };
+  const pointerLook = Boolean(config.lens?.look) && matchMedia('(pointer: fine)').matches;
+  if (pointerLook) {
+    window.addEventListener('pointermove', onPointer, { passive: true });
+    document.documentElement.addEventListener('pointerleave', onLeave);
+  }
+  /** Avance l'amorti du regard ; vrai tant qu'il bouge. */
+  const stepLook = (dt: number) => {
+    const look = config.lens?.look;
+    if (!look || !pointerLook || state.reducedMotion) {
+      pointer.x = pointer.y = 0;
+      return false;
+    }
+    const k = 1 - Math.exp(-look.rate * dt);
+    pointer.x += (pointer.tx - pointer.x) * k;
+    pointer.y += (pointer.ty - pointer.y) * k;
+    if (Math.abs(pointer.tx - pointer.x) < 1e-4 && Math.abs(pointer.ty - pointer.y) < 1e-4) {
+      pointer.x = pointer.tx;
+      pointer.y = pointer.ty;
+      return false;
+    }
+    return true;
+  };
+
   // Dernière pose appliquée : la caméra n'est réécrite (et l'image redessinée) que si elle change.
-  const last = { px: NaN, py: NaN, pz: NaN, tx: NaN, ty: NaN, tz: NaN, fov: NaN, sx: NaN, sy: NaN, roll: NaN };
+  const last = { px: NaN, py: NaN, pz: NaN, tx: NaN, ty: NaN, tz: NaN, fov: NaN, sx: NaN, sy: NaN, roll: NaN, pitch: NaN, lx: NaN, ly: NaN };
   const applyCamera = () => {
     const pose = state.camera;
     if (!pose) return false;
-    const [px, py, pz] = pose.position;
+    const [px, rawY, pz] = pose.position;
+    const py = config.floor === undefined ? rawY : Math.max(rawY, config.floor);
     let [tx, ty, tz] = pose.target;
     const lens = config.lens;
     const still = state.reducedMotion;
     const fov = pose.fov + (lens?.fov && !still ? (state.channels[lens.fov] ?? 0) : 0);
+    // Mouvement réduit : les repos seulement (l'enveloppe de vol y est nulle).
     const roll = pose.roll + (lens?.roll && !still ? (state.channels[lens.roll] ?? 0) : 0);
-    const amount = lens?.shake && !still ? (state.channels[lens.shake.channel] ?? 0) * lens.shake.amplitude : 0;
+    const pitch = still ? 0 : pose.pitch + (lens?.pitch ? (state.channels[lens.pitch] ?? 0) : 0);
+    const amount = lens?.shake && !still ? (pose.shake + (state.channels[lens.shake.channel] ?? 0)) * lens.shake.amplitude : 0;
     if (amount > 0) {
       const p = state.progress.shown;
       const distance = Math.hypot(tx - px, ty - py, tz - pz);
@@ -165,13 +220,18 @@ export async function createWebGLStage(options: {
     }
     if (
       px === last.px && py === last.py && pz === last.pz && tx === last.tx && ty === last.ty && tz === last.tz &&
-      fov === last.fov && pose.shiftX === last.sx && pose.shiftY === last.sy && roll === last.roll
+      fov === last.fov && pose.shiftX === last.sx && pose.shiftY === last.sy && roll === last.roll && pitch === last.pitch &&
+      pointer.x === last.lx && pointer.y === last.ly
     )
       return false;
-    Object.assign(last, { px, py, pz, tx, ty, tz, fov, sx: pose.shiftX, sy: pose.shiftY, roll });
+    Object.assign(last, { px, py, pz, tx, ty, tz, fov, sx: pose.shiftX, sy: pose.shiftY, roll, pitch, lx: pointer.x, ly: pointer.y });
     camera.position.set(px, py, pz);
     camera.up.set(0, 1, 0);
     camera.lookAt(tx, ty, tz);
+    const look = lens?.look;
+    if (look && pointer.x) camera.rotateY(-pointer.x * look.yaw);
+    const tilt = pitch - (look ? pointer.y * look.pitch : 0);
+    if (tilt) camera.rotateX(tilt);
     if (roll) camera.rotateZ(roll);
     camera.fov = fovFor(fov);
     applyProjection();
@@ -259,7 +319,7 @@ export async function createWebGLStage(options: {
   const removeTask = experience.use('webgl', (_, info) => {
     if (lost || !active) return false;
     let changed = dirty;
-    let again = false;
+    let again = stepLook(_.dt);
     dirty = false;
     if (applyCamera()) changed = true;
     for (const layer of layers) {
@@ -310,6 +370,8 @@ export async function createWebGLStage(options: {
       disposed = true;
       removeTask();
       onFormat();
+      window.removeEventListener('pointermove', onPointer);
+      document.documentElement.removeEventListener('pointerleave', onLeave);
       resizeObserver.disconnect();
       visibility.disconnect();
       for (const layer of layers) {

@@ -5,7 +5,8 @@ import type { Timeline } from '../timeline/timeline';
  * - Tactile : points d'accroche natifs (`scroll-snap-type: y mandatory`, `scroll-snap-stop: always`) posés sur chaque
  *   repos de l'expérience — un élan ne traverse jamais plusieurs plans ; le défilement reste natif.
  * - Molette, pavé tactile, clavier : un cran (ou un geste, élan compris) mène au point suivant dans le sens du geste.
- * - Liens internes : trajet direct, sans pas intermédiaires.
+ * - Liens internes : trajet direct, sans pas intermédiaires ; l'adresse ne prend pas d'ancre (un rechargement ramène
+ *   toujours au début du récit).
  * - Au-delà du dernier point (pied de page), défilement libre.
  * La caméra rejoint chaque point avec l'amorti ou le ressort du moteur : la lecture se fait à l'arrêt.
  */
@@ -124,7 +125,6 @@ export function createGuide({ track, timeline, rests, locked = () => false, scro
     const first = points.find((y) => y >= top - 1 && y <= top + window.innerHeight * 2.5);
     navigating = true;
     update();
-    if (location.hash !== link.hash) history.pushState(null, '', link.hash);
     window.scrollTo({ top: Math.max(0, first ?? top), behavior: behavior() });
     settle();
   };

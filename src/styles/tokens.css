@@ -1,6 +1,7 @@
 /*
  * Jetons CAR SERVICE 06.
- * Système principal : la nuit et un blanc chaud. Un accent par univers, jamais les deux à pleine intensité ensemble :
+ * Système principal : une nuit froide (bleu-noir, accordée au ciel étalonné) et un blanc froid ; l'or est la seule
+ * couleur chaude. Un accent par univers, jamais les deux à pleine intensité ensemble :
  * or (dérivé du logo du flyer nettoyage, #f9b926) pour le nettoyage et le territoire, rouge (dérivé du flyer location,
  * #f20313) pour la location. Typographie : Barlow Condensed (dessinée d'après la signalisation routière — la route de
  * la location, les marquages peints) pour les titres, Barlow pour le texte.
@@ -11,14 +12,14 @@
   --source-red: #f20313;
 
   /* Nuit */
-  --night-0: #050506;
-  --night-1: #0c0c0e;
-  --night-2: #151518;
-  --paper: #f3f1ec;
-  --text: #f3f1ec;
-  --text-2: rgb(243 241 236 / 0.74);
-  --text-3: rgb(243 241 236 / 0.58);
-  --line: rgb(243 241 236 / 0.16);
+  --night-0: #04060a;
+  --night-1: #0a0e15;
+  --night-2: #121925;
+  --paper: #eef1f5;
+  --text: #eef1f5;
+  --text-2: rgb(238 241 245 / 0.76);
+  --text-3: rgb(238 241 245 / 0.6);
+  --line: rgb(238 241 245 / 0.16);
 
   /* Accents */
   --gold: #e6b547;

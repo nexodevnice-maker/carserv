@@ -169,10 +169,12 @@ console.log(`\nBUREAU 1440×900 — ${BASE}/lab/engine`);
 
   // Molette : amorti, puis repos.
   await page.mouse.move(700, 450);
+  const before = await info(page);
   await page.mouse.wheel(0, 600);
-  await page.waitForTimeout(50);
+  // Le défilement doux du navigateur peut démarrer après quelques images (réseau réel) : attendre que la cible bouge.
+  await page.waitForFunction((t) => window.__experience.info().target !== t, before.target, { timeout: 3000, polling: 16 }).catch(() => {});
   const during = await info(page);
-  await waitRest(page);
+  await waitRest(page, 40000);
   const after = await info(page);
   check(G, 'molette : l’affichage suit avec amorti puis se pose', during.moving && !after.moving && near(after.shown, after.target, 1e-9), `lag ${Math.abs(during.target - during.shown).toFixed(4)}`);
 
@@ -194,13 +196,14 @@ console.log(`\nBUREAU 1440×900 — ${BASE}/lab/engine`);
   check(G, 'défilement brutal : retard borné et convergence', maxLag <= 0.3501 && near(i.shown, 0.6, 2 / length), `pire retard ${maxLag.toFixed(4)}`);
 
   // Clavier : Fin, Début.
+  // Glissade du bureau (jusqu'à 4,2 s de vol) : en navigateur sans écran, les images sont lentes — attente longue.
   await page.keyboard.press('End');
   await page.waitForFunction(() => window.__experience.info().target === 1, null, { timeout: 8000 }).catch(() => {});
-  await waitRest(page).catch(() => {});
+  await waitRest(page, 40000).catch(() => {});
   const atEnd = await info(page);
   await page.keyboard.press('Home');
   await page.waitForFunction(() => window.__experience.info().target === 0, null, { timeout: 8000 }).catch(() => {});
-  await waitRest(page).catch(() => {});
+  await waitRest(page, 40000).catch(() => {});
   const atStart = await info(page);
   check(G, 'clavier : Fin → 1, Début → 0', atEnd.shown === 1 && atStart.shown === 0, `${atEnd.shown} / ${atStart.shown}`);
 
@@ -391,7 +394,7 @@ for (const profile of ['desktop', 'mobile']) {
     overflowX: document.documentElement.scrollWidth > innerWidth,
   }));
   check(G, 'un seul h1, hiérarchie sans saut', structure.h1 === 1 && structure.headings.every((h, k) => k === 0 || Number(h[1]) <= Number(structure.headings[k - 1][1]) + 1), structure.headings.join(' '));
-  check(G, 'chapitres dans l’ordre du registre', structure.chapters.join() === 'arrivee,intervention,transformation,prestations,zone,univers,bascule,location,contact', structure.chapters.join());
+  check(G, 'chapitres dans l’ordre du registre', structure.chapters.join() === 'arrivee,zone,avant,intervention,transformation,prestations,univers,bascule,location,contact', structure.chapters.join());
   check(G, 'titre, description, langue', structure.title.length > 20 && structure.description.length > 50 && structure.lang === 'fr');
   check(G, 'aucun débordement horizontal', !structure.overflowX);
   // Les éléments fixes (en-tête) n'agrandissent pas la page : chaque lien doit être vérifié dans la vue.

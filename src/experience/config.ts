@@ -13,12 +13,13 @@ import type { StageConfig } from '../engine/webgl/webgl-stage';
 export const ENGINE: EngineConfig = {
   follow: {
     // Molette, pavé, clavier : un geste = un vol. La page saute au repos suivant (pas guidés instantanés), la caméra
-    // le rejoint en une glissade quintique de durée réglée : 26 s par unité de progression (un pas ≈ 1,5–2,2 s),
-    // bornée à [1,1 ; 2,2] s. La barre de défilement (petits sauts) est suivie par amorti.
-    desktop: { mode: 'glide', rate: 6, maxLag: 0.35, glide: { perUnit: 26, min: 1.1, max: 2.2, jump: 0.004 } },
-    // MECA : au doigt, ressort critique (pulsation 4,8 rad/s : 90 % du trajet en ~0,8 s, posé à ~1 s).
-    tablet: { mode: 'spring', rate: 4.8, maxLag: 0.12 },
-    mobile: { mode: 'spring', rate: 4.8, maxLag: 0.12 },
+    // le rejoint en une glissade quintique de durée réglée : 34 s par unité de progression (un pas de preuve ≈ 1,9 s,
+    // une traversée de l'univers ≈ 4 s), bornée à [1,5 ; 4,2] s. La barre de défilement est suivie par amorti.
+    desktop: { mode: 'glide', rate: 6, maxLag: 0.35, glide: { perUnit: 34, min: 1.5, max: 4.2, jump: 0.004 } },
+    // Au doigt, ressort critique (MECA : 4,8 rad/s) ralenti à 3,6 rad/s : les vols traversent des kilomètres, un pas
+    // se pose en ~1,4 s.
+    tablet: { mode: 'spring', rate: 3.6, maxLag: 0.14 },
+    mobile: { mode: 'spring', rate: 3.6, maxLag: 0.14 },
   },
   // L'affichage est posé à moins d'un demi-pixel de défilement de sa cible : plus aucun rendu.
   settlePx: 0.5,
@@ -28,19 +29,24 @@ export const STAGE: StageConfig = {
   pixelRatios: {
     // MECA : 1,75 sur ordinateur, un cran de moins si les images ralentissent.
     desktop: [1.75, 1.25, 1, 0.75],
-    // MECA : jusqu'à 2 sur écran dense, jamais sous 1,25 (au-delà, l'image devient floue).
+    // MECA : jamais sous 1,25 (au-delà, l'image devient floue). Téléphone plafonné à 1,75 : le ciel, la mer et le 06 sont
+    // calculés par pixel.
     tablet: [2, 1.75, 1.5, 1.25],
-    mobile: [2, 1.75, 1.5, 1.25],
+    mobile: [1.75, 1.5, 1.25],
   },
   layerMargin: 0.02,
-  near: 0.05,
-  far: 260,
+  near: 0.1,
+  // Le monde fait des kilomètres : l'ouverture regarde le 06 à 3 km.
+  far: 9000,
   exposure: 1,
   background: 0x000000,
+  // La caméra la plus basse du récit roule à 1,3 m.
+  floor: 1.1,
   // Focales écrites pour ces rapports d'écran : plus étroit, la focale s'ouvre (le sujet reste dans le cadre).
   referenceAspect: { desktop: 1.6, tablet: 0.75, mobile: 0.46 },
-  // Objectif piloté (chapters.ts) : coup de focale, roulis, turbulence (0,0035 rad ≈ 0,2° par unité de canal).
-  lens: { fov: 'lensFov', roll: 'lensRoll', shake: { channel: 'shake', amplitude: 0.0035 } },
+  // Objectif : turbulence des vols (0,0035 rad ≈ 0,2° par unité, shots.ts) ; au bureau, le regard suit la souris
+  // (±4° de lacet, ±2,6° de tangage) — on est la caméra.
+  lens: { shake: { channel: 'shake', amplitude: 0.0035 }, look: { yaw: 0.07, pitch: 0.045, rate: 2.4 } },
 };
 
 /** Anticipation des chargements, en chapitres. Le mobile anticipe moins (données, mémoire). */

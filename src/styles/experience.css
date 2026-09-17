@@ -66,7 +66,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, rgb(5 5 6 / 0.8) 0%, rgb(5 5 6 / 0.42) 30%, rgb(5 5 6 / 0) 54%);
+  background: linear-gradient(90deg, rgb(4 6 10 / 0.8) 0%, rgb(4 6 10 / 0.42) 30%, rgb(4 6 10 / 0) 54%);
 }
 
 .stage__progress {
@@ -74,7 +74,7 @@
   inset: 0 0 auto;
   z-index: 2;
   height: 2px;
-  background: rgb(243 241 236 / 0.06);
+  background: rgb(238 241 245 / 0.06);
 }
 
 .stage__progress span {
@@ -119,7 +119,7 @@
 }
 
 .gauge__label--before {
-  color: rgb(243 241 236 / calc(0.9 - var(--clean, 0) * 0.55));
+  color: rgb(238 241 245 / calc(0.9 - var(--clean, 0) * 0.55));
 }
 
 .gauge__label--after {
@@ -434,7 +434,7 @@
   margin-top: 2rem;
   padding: 0.7rem 1.4rem;
   border: 1px solid var(--gold);
-  background: rgb(5 5 6 / 0.72);
+  background: rgb(4 6 10 / 0.72);
   color: var(--text);
   font-family: var(--font-display);
   font-size: var(--step-1);
@@ -494,14 +494,14 @@
 }
 
 .map__num {
-  fill: rgb(243 241 236 / calc(max(0, var(--draw) - 0.6) * 2.2));
+  fill: rgb(238 241 245 / calc(max(0, var(--draw) - 0.6) * 2.2));
   font-family: var(--font-display);
   font-size: 220px;
   font-weight: 700;
 }
 
 .map__sea {
-  fill: rgb(243 241 236 / calc(max(0, var(--draw) - 0.7) * 1.6));
+  fill: rgb(238 241 245 / calc(max(0, var(--draw) - 0.7) * 1.6));
   font-family: var(--font-display);
   font-size: 34px;
   letter-spacing: 0.3em;
@@ -623,7 +623,7 @@ html.is-guided {
   }
 
   .stage__veil {
-    background: linear-gradient(0deg, rgb(5 5 6 / 0.94) 0%, rgb(5 5 6 / 0.7) 24%, rgb(5 5 6 / 0) 46%);
+    background: linear-gradient(0deg, rgb(4 6 10 / 0.94) 0%, rgb(4 6 10 / 0.7) 24%, rgb(4 6 10 / 0) 46%);
   }
 
   .js .gauge {
