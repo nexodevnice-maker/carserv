@@ -180,3 +180,41 @@ Médias ajoutés : `public/env/sky-{2048,4096}.webp` (HDRI étalonné en ciel de
 Défauts corrigés pendant la réalisation (vus sur captures) : panneau vidéo noir au bureau (Three.js dimensionne une Texture ordinaire par l'attribut `width` de la vidéo → VideoTexture), panneau éteint masquant l'univers (alpha lié à la lumière), plans de l'univers trop bas (visée recalculée sur l'arche de la Voie lactée), légende de la carte sur la côte, sous-titre de la location trop gros au téléphone, captures intermédiaires ramenées aux points d'accroche (accroche neutralisée en QA).
 
 Vérifié : 60/60 (`npm run qa:engine`) sur le serveur de dev et sur https://carservice.nexodevnice.workers.dev ; parcours publié bureau et téléphone, 17 pas, WebGL prêt en 4,9 s (bureau) et 2,3 s (téléphone, réseau réel), aucune erreur console.
+
+## 2026-09-17 — Un seul monde traversé, scroll maîtrisé de bout en bout (demandes du porteur : « la carte en 3D », « des transitions qui marquent l'esprit », « traverse l'univers, les nuages », « le scroll n'est pas maîtrisé bout à bout »)
+
+Scroll (src/engine/motion/follow.ts, src/engine/scroll/guide.ts, config.ts) :
+- cause du rendu mou : double lissage — défilement doux du navigateur vers le pas suivant, puis amorti du moteur ;
+- au bureau, les pas guidés sautent instantanément (`scrollBehavior: instant`) et le moteur seul fait le mouvement :
+  mode `glide`, une courbe d'Hermite quintique de durée réglée (26 s par unité de progression, bornée à 1,1–2,2 s),
+  qui repart de la vitesse en cours si un second geste arrive pendant le vol (aucun arrêt net) ; la barre de défilement
+  reste suivie par amorti ; au doigt, ressort critique MECA inchangé ;
+- mesuré sur l'accueil : premier geste = départ à vitesse nulle, arrivée posée en ~1,4 s ; second geste en vol, vitesse
+  continue.
+
+Monde (src/experience/world.ts) — l'univers n'est plus un chapitre mais le lieu de tout le récit :
+- sol mouillé infini calculé dans le shader du ciel (intersection du regard avec y = 0) : aucun bord, aucun plan
+  lointain, reflet de l'équirectangulaire, flaques tirées d'un bruit fractal précalculé (shared/noise-texture.ts, avec
+  mipmaps) ; il rejoint exactement le pied des collines à l'horizon, en rasant seulement. Remplace un plan de 900 m qui
+  produisait couture d'horizon, « piliers » verticaux (couleur d'horizon étirée) et rectangles (bruit de grille seuillé) ;
+- horizon du HDRI abaissé de 1,4° (collines posées sur le sol) ; zénith fondu vers la moyenne de la calotte (éventail de
+  repliement visible au téléphone) ;
+- rotation du ciel choisie pour que la route mène au cœur de la Voie lactée (collines basses du HDRI) au lieu d'un mur de
+  rochers ; le piqué vers la route fait tourner le ciel d'un quart de tour (descente en spirale) ;
+- nuages : bancs de plans face caméra (bruit précalculé, bord argenté), opacité fonction de la distance, traversés par
+  la caméra ; densité par canal (retirés au-dessus de la carte) ;
+- le 06 en volume (scenes/map) : contour IGN extrudé, dessus laqué qui reflète le ciel, tranche or, reflet inversé sur le
+  sol ; il sort du sol en une vague de la côte vers les montagnes, arête de lumière sur le front ; « 06 » et « Mer
+  Méditerranée » posés au sol. La carte SVG reste pour les lecteurs d'écran et le repli statique.
+
+Vols (shots.ts, chapters.ts) : ouverture au-dessus d'une mer de nuages → plongée à travers les nuages jusqu'au panneau →
+preuve → montée par-dessus le panneau vers le 06 → montée à travers les nuages dans la Voie lactée → travelling latéral
+→ piqué en virage vers la route (on la voit s'allumer d'en haut, les feux s'amorcent) → location → élévation finale.
+Objectif piloté par canaux (webgl-stage `lens`) : coup de focale au milieu des vols, roulis dans les virages, turbulence
+angulaire déterministe dans les nuages. Passage de l'eau : filets de ruissellement et éclat derrière la ligne.
+
+QA ajoutée : scripts/qa-flights.mjs (chaque vol filmé en 9 images à progression fixe, bureau et téléphone).
+
+Vérifié : typecheck, build, captures des 17 repos et de leurs milieux (bureau, téléphone), 6 vols filmés, 60/60
+(`qa-engine`, contrôle du retard adapté à maxLag 0,35) sur le serveur de dev et sur https://carservice.nexodevnice.workers.dev,
+parcours publié bureau et téléphone sans erreur console.

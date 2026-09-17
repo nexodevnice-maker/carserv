@@ -69,6 +69,13 @@ export interface StageConfig {
    * s'ouvre pour garder la même largeur de champ (le sujet ne sort pas du cadre) — technique MECA RIVIERA.
    */
   referenceAspect?: Partial<Record<Format, number>>;
+  /**
+   * Objectif piloté par des canaux, ajouté au plan : `fov` (degrés en plus, le coup de focale d'un vol), `roll`
+   * (radians, l'inclinaison d'un virage), `shake` (tremblement angulaire, en radians par unité de canal). Le
+   * tremblement est déterministe (fonction de la progression, jamais du temps) : il se reconstruit à l'identique au
+   * retour.
+   */
+  lens?: { fov?: string; roll?: string; shake?: { channel: string; amplitude: number } };
   background?: number;
 }
 
@@ -144,18 +151,29 @@ export async function createWebGLStage(options: {
     const pose = state.camera;
     if (!pose) return false;
     const [px, py, pz] = pose.position;
-    const [tx, ty, tz] = pose.target;
+    let [tx, ty, tz] = pose.target;
+    const lens = config.lens;
+    const still = state.reducedMotion;
+    const fov = pose.fov + (lens?.fov && !still ? (state.channels[lens.fov] ?? 0) : 0);
+    const roll = pose.roll + (lens?.roll && !still ? (state.channels[lens.roll] ?? 0) : 0);
+    const amount = lens?.shake && !still ? (state.channels[lens.shake.channel] ?? 0) * lens.shake.amplitude : 0;
+    if (amount > 0) {
+      const p = state.progress.shown;
+      const distance = Math.hypot(tx - px, ty - py, tz - pz);
+      tx += Math.sin(p * 1913.7) * Math.sin(p * 371.3) * amount * distance;
+      ty += Math.sin(p * 1277.1) * Math.sin(p * 229.9) * amount * distance;
+    }
     if (
       px === last.px && py === last.py && pz === last.pz && tx === last.tx && ty === last.ty && tz === last.tz &&
-      pose.fov === last.fov && pose.shiftX === last.sx && pose.shiftY === last.sy && pose.roll === last.roll
+      fov === last.fov && pose.shiftX === last.sx && pose.shiftY === last.sy && roll === last.roll
     )
       return false;
-    Object.assign(last, { px, py, pz, tx, ty, tz, fov: pose.fov, sx: pose.shiftX, sy: pose.shiftY, roll: pose.roll });
+    Object.assign(last, { px, py, pz, tx, ty, tz, fov, sx: pose.shiftX, sy: pose.shiftY, roll });
     camera.position.set(px, py, pz);
     camera.up.set(0, 1, 0);
     camera.lookAt(tx, ty, tz);
-    if (pose.roll) camera.rotateZ(pose.roll);
-    camera.fov = fovFor(pose.fov);
+    if (roll) camera.rotateZ(roll);
+    camera.fov = fovFor(fov);
     applyProjection();
     return true;
   };
@@ -181,7 +199,7 @@ export async function createWebGLStage(options: {
     renderer.setPixelRatio(quality.ratio);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    if (state.camera) camera.fov = fovFor(state.camera.fov);
+    if (Number.isFinite(last.fov)) camera.fov = fovFor(last.fov);
     applyProjection();
     for (const layer of layers) layer.resize?.(ctx);
     ctx.invalidate();

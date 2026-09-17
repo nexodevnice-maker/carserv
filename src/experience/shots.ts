@@ -2,9 +2,10 @@ import type { Framing, ShotDefinition } from '../engine/camera/camera-rig';
 import type { Vec3 } from '../engine/math/vec3';
 
 /**
- * Plans caméra de CAR SERVICE 06, en mètres. Repère : le panneau de preuve est centré en x = 0, face à +z, posé sur un
- * sol mouillé (y = 0) ; la route de la location part vers +x (x = 6 → 176), axe en z = −3,4, voie de la caméra
- * z ≈ −1,7. Bureau : texte à gauche (décalage optique vers la droite). Téléphone et tablette : légende en bas (décalage
+ * Plans caméra de CAR SERVICE 06, en mètres, dans un seul monde (world.ts) que la caméra traverse sans coupe. Repère :
+ * le panneau de preuve est centré en x = 0, face à +z, posé sur le sol mouillé de l'univers (y = 0) ; le 06 en volume
+ * au nord (z = −60) ; la route de la location part vers +x (x = 6 → 176), axe en z = −3,4, voie de la caméra z ≈ −1,7.
+ * Plans du ciel : directions du regard réglées sur la Voie lactée du HDRI pour la rotation (skyYaw) de leur repos. Bureau : texte à gauche (décalage optique vers la droite). Téléphone et tablette : légende en bas (décalage
  * vers le haut), focale plus ouverte, un pas en arrière.
  */
 type Portrait = Partial<Framing>;
@@ -15,20 +16,22 @@ export const shots: readonly ShotDefinition[] = [
     id: 'univers-ouverture',
     chapter: 'arrivee',
     at: 0,
-    intent: 'Tout : l’univers entier, la Voie lactée au-dessus des collines. Le regard est levé, rien d’autre n’existe encore.',
-    framing: { position: [0, 1.6, 12.5], target: [4, 11, -14], fov: 58, shift: [0.08, 0] },
-    ...portrait({ position: [0, 1.6, 12.5], target: [3, 12, -14], fov: 74, shift: [0, -0.05] }),
+    intent: 'Tout : au-dessus d’une mer de nuages, la Voie lactée au-dessus des collines. Rien d’autre n’existe encore.',
+    framing: { position: [0, 27, 46], target: [4, 30.2, 19.5], fov: 60, shift: [0.08, 0] },
+    ...portrait({ position: [0, 27, 46], target: [3.4, 30.8, 19.5], fov: 76, shift: [0, -0.04] }),
   },
   {
     id: 'nuit',
     chapter: 'arrivee',
     at: 0.45,
-    intent: 'La nuit : un panneau à peine éclairé au loin, son reflet au sol. On ne sait pas encore ce qu’on regarde.',
+    intent: 'La plongée : à travers les nuages, jusqu’à un panneau à peine éclairé posé sur le sol mouillé, son reflet dessous.',
     framing: { position: [0, 1.62, 11.5], target: [0, 1.6, 0], fov: 24, shift: [0.16, 0] },
     ...portrait({ position: [0, 1.7, 9.6], target: [0, 1.65, 0], fov: 40, shift: [0, 0.1] }),
-    // Du tout au rien : le regard descend de la Voie lactée au panneau pendant que l'iris se ferme et que la focale se
-    // resserre (58° → 24°) — une plongée, pas un fondu.
-    pace: { window: [0.02, 0.98], ease: 'inOut' },
+    // Du tout au rien : le regard bascule de la Voie lactée vers le sol pendant que la caméra traverse la couche de
+    // nuages et que la focale se resserre (60° → 24°).
+    via: [[0.6, 17, 31], [0.2, 5.5, 18]] as Vec3[],
+    targetVia: [[2, 12, 2]] as Vec3[],
+    pace: { window: [0, 1], ease: 'inOut' },
     lead: 0.12,
   },
   {
@@ -98,43 +101,48 @@ export const shots: readonly ShotDefinition[] = [
     pace: { window: [0.15, 0.85], ease: 'inOut' },
   },
   {
-    id: 'hauteur',
+    id: 'carte',
     chapter: 'zone',
     at: 0.55,
-    intent: 'Prendre de la hauteur dans le noir : le panneau devient petit, le territoire se dessine devant.',
-    framing: { position: [2.6, 3.4, 14.5], target: [0.4, 1.3, 0], fov: 28, shift: [0.02, 0] },
-    ...portrait({ position: [2.0, 4.0, 15.0], target: [0.2, 2.2, 0], fov: 42, shift: [0, -0.2] }),
-    pace: { window: [0.05, 0.95], ease: 'inOut' },
+    intent: 'S’élever par-dessus le panneau, traverser un banc de nuages : le 06 sort du sol mouillé sous la caméra, de trois quarts.',
+    framing: { position: [14, 33, -18], target: [3.5, 0, -59], fov: 44, shift: [0.14, 0] },
+    ...portrait({ position: [3, 80, -24], target: [0.5, 0, -60], fov: 58, shift: [0, 0.25] }),
+    via: { desktop: [[4, 13, 5], [9, 24, -12]] as Vec3[], tablet: [[3, 16, 6], [4, 46, -10]] as Vec3[], mobile: [[3, 16, 6], [4, 46, -10]] as Vec3[] },
+    targetVia: [[0, 5, -24]] as Vec3[],
+    pace: { window: [0.02, 0.98], ease: 'inOut' },
+    lead: 0.16,
   },
   {
     id: 'ciel',
     chapter: 'univers',
     at: 0.35,
-    intent: 'Du rien au tout : l’iris se rouvre, le regard monte dans l’univers au-dessus du 06 laissé derrière.',
-    framing: { position: [3.0, 5.0, 16.0], target: [6.4, 19.1, 2.3], fov: 64, shift: [0, 0] },
-    ...portrait({ position: [3.0, 5.0, 16.0], target: [6.0, 19.5, 3.0], fov: 78, shift: [0, 0] }),
-    via: [[3.2, 4.2, 15.2]] as Vec3[],
-    pace: { window: [0.05, 0.95], ease: 'inOut' },
-    lead: 0.15,
+    intent: 'Du 06 au tout : monter à travers les nuages au-dessus de la carte, le regard se lève dans la Voie lactée.',
+    framing: { position: [2, 62, -50], target: [5.4, 76.1, -63.7], fov: 64, shift: [0, 0] },
+    ...portrait({ position: [2, 62, -50], target: [5, 76.5, -63], fov: 78, shift: [0, 0] }),
+    via: [[6, 41, -36]] as Vec3[],
+    targetVia: [[1, 34, -86]] as Vec3[],
+    pace: { window: [0.03, 0.97], ease: 'inOut' },
+    lead: 0.14,
   },
   {
     id: 'voie-lactee',
     chapter: 'univers',
     at: 0.8,
-    intent: 'Longer la Voie lactée d’un seul mouvement : l’univers tourne autour du regard.',
-    framing: { position: [4.0, 5.5, 13.0], target: [13.1, 21.9, 6.1], fov: 66, shift: [0, 0] },
-    ...portrait({ position: [4.0, 5.5, 13.0], target: [12.5, 22.5, 6.5], fov: 80, shift: [0, 0] }),
-    pace: { window: [0.04, 0.96], ease: 'inOut' },
+    intent: 'Longer la Voie lactée d’un seul mouvement latéral : l’univers tourne autour du regard.',
+    framing: { position: [16, 64, -40], target: [25.1, 80.4, -46.9], fov: 66, shift: [0, 0] },
+    ...portrait({ position: [16, 64, -40], target: [24.5, 81, -46.5], fov: 80, shift: [0, 0] }),
+    pace: { window: [0.03, 0.97], ease: 'inOut' },
   },
   {
     id: 'virage',
     chapter: 'bascule',
     at: 0.8,
-    intent: 'Tourner le regard vers la droite, où une route mouillée s’éclaire : le regard précède le corps.',
+    intent: 'Le piqué : de la Voie lactée vers le sol, en virage, à travers deux bancs de nuages ; la route s’allume à l’arrivée.',
     framing: { position: [6.2, 1.55, 3.2], target: [24, 1.0, -2.2], fov: 34, shift: [0.1, 0] },
     ...portrait({ position: [6.2, 1.6, 3.2], target: [24, 1.0, -2.2], fov: 50, shift: [0, 0.1] }),
-    via: [[5.2, 3.2, 8.5]] as Vec3[],
-    pace: { window: [0.05, 0.95], ease: 'inOut' },
+    via: [[19, 45, -25], [12, 15, -5]] as Vec3[],
+    targetVia: [[30, 0, -10]] as Vec3[],
+    pace: { window: [0.02, 0.98], ease: 'inOut' },
     lead: 0.2,
   },
   {
@@ -168,9 +176,9 @@ export const shots: readonly ShotDefinition[] = [
     id: 'horizon',
     chapter: 'contact',
     at: 0.55,
-    intent: 'S’élever au-dessus de la route pendant que les feux s’éloignent : la place pour un seul geste.',
-    framing: { position: [58, 3.8, -2.0], target: [110, 2.6, -3.0], fov: 38, shift: [0, 0] },
-    ...portrait({ position: [56, 4.2, -2.0], target: [110, 2.4, -3.0], fov: 54, shift: [0, 0.18] }),
-    pace: { window: [0.1, 0.9], ease: 'inOut' },
+    intent: 'S’élever au-dessus de la route, le regard remonte vers l’univers pendant que les feux s’éloignent : la place pour un seul geste.',
+    framing: { position: [60, 6.5, -1], target: [120, 13, -4], fov: 42, shift: [0, 0] },
+    ...portrait({ position: [58, 7, -1], target: [120, 12, -4], fov: 56, shift: [0, 0.16] }),
+    pace: { window: [0.08, 0.92], ease: 'inOut' },
   },
 ];

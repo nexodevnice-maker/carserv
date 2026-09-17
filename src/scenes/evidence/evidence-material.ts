@@ -79,8 +79,18 @@ const fragmentShader = /* glsl */ `
     // Mouillé derrière la ligne : plus sombre et plus contrasté, sèche en s'éloignant.
     float wet = washed * exp(-max(-s, 0.0) * 5.0) * step(0.0001, uPassage) * (1.0 - step(0.9999, uPassage));
     col = mix(col, col * col * 1.35, wet * 0.5);
+    float running = step(0.0001, uPassage) * (1.0 - step(0.9999, uPassage));
     // Liseré de lumière sur l'eau (reflet froid du ciel).
-    col += edge * vec3(0.78, 0.86, 1.0) * 0.28 * step(0.0001, uPassage) * (1.0 - step(0.9999, uPassage));
+    col += edge * vec3(0.78, 0.86, 1.0) * 0.28 * running;
+    // Ruissellement : des filets d'eau tirés dans le sens de la coulée, derrière la ligne, qui s'effacent en séchant.
+    vec2 across = vec2(dir.y, -dir.x);
+    float rill = smoothstep(0.62, 0.92, noise(vec2(dot(uv, across) * 74.0, d * 3.0 + line * 2.0)));
+    float trail = washed * exp(-max(-s, 0.0) * 7.0) * running;
+    col = mix(col, col * 0.55, rill * trail * 0.6);
+    col += rill * trail * vec3(0.7, 0.78, 0.9) * 0.1;
+    // Éclat : la bande de ciel accrochée par le film d'eau, juste derrière la ligne.
+    float glint = exp(-pow((s + 0.045) / 0.012, 2.0)) * (0.55 + 0.45 * noise(vec2(dot(uv, across) * 18.0, line * 9.0)));
+    col += glint * vec3(0.92, 0.95, 1.0) * 0.42 * running;
 
     // Étalonnage de nuit : noirs tenus, hautes lumières douces.
     col = pow(col, vec3(1.12)) * 0.96;

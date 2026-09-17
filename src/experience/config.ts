@@ -12,11 +12,13 @@ import type { StageConfig } from '../engine/webgl/webgl-stage';
 
 export const ENGINE: EngineConfig = {
   follow: {
-    // MECA : molette et pavé avancent déjà par crans → amorti simple (taux 4,5/s).
-    desktop: { mode: 'damp', rate: 4.5, maxLag: 0.08 },
+    // Molette, pavé, clavier : un geste = un vol. La page saute au repos suivant (pas guidés instantanés), la caméra
+    // le rejoint en une glissade quintique de durée réglée : 26 s par unité de progression (un pas ≈ 1,5–2,2 s),
+    // bornée à [1,1 ; 2,2] s. La barre de défilement (petits sauts) est suivie par amorti.
+    desktop: { mode: 'glide', rate: 6, maxLag: 0.35, glide: { perUnit: 26, min: 1.1, max: 2.2, jump: 0.004 } },
     // MECA : au doigt, ressort critique (pulsation 4,8 rad/s : 90 % du trajet en ~0,8 s, posé à ~1 s).
-    tablet: { mode: 'spring', rate: 4.8, maxLag: 0.08 },
-    mobile: { mode: 'spring', rate: 4.8, maxLag: 0.1 },
+    tablet: { mode: 'spring', rate: 4.8, maxLag: 0.12 },
+    mobile: { mode: 'spring', rate: 4.8, maxLag: 0.12 },
   },
   // L'affichage est posé à moins d'un demi-pixel de défilement de sa cible : plus aucun rendu.
   settlePx: 0.5,
@@ -34,9 +36,11 @@ export const STAGE: StageConfig = {
   near: 0.05,
   far: 260,
   exposure: 1,
-  background: 0x050506,
+  background: 0x000000,
   // Focales écrites pour ces rapports d'écran : plus étroit, la focale s'ouvre (le sujet reste dans le cadre).
   referenceAspect: { desktop: 1.6, tablet: 0.75, mobile: 0.46 },
+  // Objectif piloté (chapters.ts) : coup de focale, roulis, turbulence (0,0035 rad ≈ 0,2° par unité de canal).
+  lens: { fov: 'lensFov', roll: 'lensRoll', shake: { channel: 'shake', amplitude: 0.0035 } },
 };
 
 /** Anticipation des chargements, en chapitres. Le mobile anticipe moins (données, mémoire). */

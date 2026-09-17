@@ -15,9 +15,14 @@ export interface GuideOptions {
   rests: () => readonly number[];
   /** Pendant l'entrée : aucun pas. */
   locked?: () => boolean;
+  /**
+   * Défilement des pas et des liens. `instant` : la page saute, le moteur seul anime la progression (glissade du
+   * suivi) — un seul mouvement maîtrisé par geste, sans double lissage navigateur + moteur.
+   */
+  scrollBehavior?: () => ScrollBehavior;
 }
 
-export function createGuide({ track, timeline, rests, locked = () => false }: GuideOptions) {
+export function createGuide({ track, timeline, rests, locked = () => false, scrollBehavior }: GuideOptions) {
   const html = document.documentElement;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let points: number[] = [];
@@ -50,7 +55,7 @@ export function createGuide({ track, timeline, rests, locked = () => false }: Gu
     update();
   };
 
-  const behavior = (): ScrollBehavior => (reduced.matches ? 'auto' : 'smooth');
+  const behavior = (): ScrollBehavior => scrollBehavior?.() ?? (reduced.matches ? 'auto' : 'smooth');
 
   const stepTo = (dir: number) => {
     const y = window.scrollY;

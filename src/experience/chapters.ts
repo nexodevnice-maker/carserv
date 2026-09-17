@@ -46,7 +46,7 @@ export const chapters: readonly Chapter[] = [
       { id: 'avant', in: 0.58, out: 0.985 },
     ],
     media: ['transformation-scrub', 'transformation-sequence', 'passage', 'sky'],
-    intent: 'L’univers entier (le HDRI fourni) se referme en iris jusqu’au noir, où apparaît la poussière réelle d’un vrai véhicule.',
+    intent: 'Au-dessus d’une mer de nuages, sous la Voie lactée (le HDRI fourni) : on plonge à travers les nuages jusqu’à un panneau posé sur le sol mouillé — la poussière réelle d’un vrai véhicule.',
   },
   {
     id: 'intervention',
@@ -91,7 +91,7 @@ export const chapters: readonly Chapter[] = [
     rests: [0.55],
     panels: [{ id: 'deplacement', in: 0.18, out: 0.985 }],
     media: [],
-    intent: 'Le 06 entier se dessine : le service se déplace, la carte le dit sans inventer de ville.',
+    intent: 'On s’élève au-dessus du panneau : le 06 sort du sol mouillé en volume, de la côte vers les montagnes. Le service se déplace, la carte le dit sans inventer de ville.',
   },
   {
     id: 'univers',
@@ -100,7 +100,7 @@ export const chapters: readonly Chapter[] = [
     rests: [0.35, 0.8],
     panels: [],
     media: ['sky'],
-    intent: 'Du rien au tout : l’univers se rouvre au-dessus du 06 quitté, la Voie lactée passe, puis tout se referme sur la route.',
+    intent: 'Du 06 au tout : on traverse les nuages au-dessus de la carte, la Voie lactée défile autour du regard.',
   },
   {
     id: 'bascule',
@@ -109,7 +109,7 @@ export const chapters: readonly Chapter[] = [
     rests: [0.8],
     panels: [{ id: 'autre-route', in: 0.42, out: 0.985 }],
     media: [],
-    intent: 'La lumière du panneau s’éteint, la route de nuit apparaît : même marque, autre univers.',
+    intent: 'Le piqué depuis l’univers, en virage, à travers les nuages : la route s’allume, les feux s’amorcent à l’arrivée.',
   },
   {
     id: 'location',
@@ -186,28 +186,104 @@ export const definition: ExperienceDefinition = {
       { chapter: 'arrivee', at: 0.45, value: 0.55, pace: smooth },
       { chapter: 'arrivee', at: 0.75, value: 1, pace: smooth },
       { chapter: 'prestations', at: 1, value: 1 },
-      { chapter: 'zone', at: 0.35, value: 0.08, pace: smooth },
+      { chapter: 'zone', at: 0.4, value: 0.12, pace: smooth },
       { chapter: 'univers', at: 0.25, value: 0, pace: { window: [0, 1], ease: 'in' } },
     ],
-    // L'univers : ouvert au départ, refermé jusqu'au noir sur le véhicule ; rouvert après la carte, refermé sur la route.
-    skyIris: [
+    // — L'univers, présent d'un bout à l'autre : plein à l'ouverture, sur la carte et dans la Voie lactée ; tenu en
+    // retrait derrière la preuve (la vidéo reste le sujet) et sur la route.
+    skyLight: [
       { chapter: 'arrivee', at: 0, value: 1 },
-      { chapter: 'arrivee', at: 0.42, value: 0, pace: { window: [0.02, 1], ease: 'inOut' } },
-      { chapter: 'zone', at: 0.85, value: 0 },
-      { chapter: 'univers', at: 0.32, value: 1, pace: { window: [0, 1], ease: 'out' } },
-      { chapter: 'univers', at: 0.82, value: 1 },
-      { chapter: 'bascule', at: 0.62, value: 0, pace: { window: [0, 1], ease: 'inOut' } },
+      { chapter: 'arrivee', at: 0.45, value: 0.62, pace: smooth },
+      { chapter: 'intervention', at: 0.2, value: 0.42, pace: smooth },
+      { chapter: 'transformation', at: 0.95, value: 0.42 },
+      { chapter: 'prestations', at: 0.75, value: 0.6, pace: smooth },
+      { chapter: 'zone', at: 0.55, value: 1, pace: { window: [0.2, 1], ease: 'inOut' } },
+      { chapter: 'univers', at: 0.8, value: 1 },
+      { chapter: 'bascule', at: 0.8, value: 0.78, pace: smooth },
+      { chapter: 'location', at: 0.9, value: 0.78 },
+      { chapter: 'contact', at: 0.55, value: 1, pace: smooth },
     ],
+    // Rotation de l'univers : fixe pendant chaque lecture, elle tourne pendant les vols (le ciel passe autour du regard).
+    // Au sol, le regard est tourné vers le cœur de la Voie lactée, au-dessus des collines basses du HDRI : derrière le
+    // panneau (u ≈ 0,46) comme au bout de la route (−0,31 : la route mène dans la galaxie). Le piqué vers la route
+    // fait donc tourner le ciel d'un quart de tour : une descente en spirale.
     skyYaw: [
       { chapter: 'arrivee', at: 0, value: 1.17 },
-      { chapter: 'arrivee', at: 0.42, value: 1.45, pace: linear },
-      { chapter: 'univers', at: 0, value: 1.2 },
-      { chapter: 'univers', at: 0.82, value: 1.78, pace: linear },
-      { chapter: 'bascule', at: 0.62, value: 1.95, pace: linear },
+      { chapter: 'arrivee', at: 0.45, value: 1.3, pace: smooth },
+      { chapter: 'zone', at: 0.55, value: 1.3 },
+      { chapter: 'univers', at: 0.35, value: 1.45, pace: smooth },
+      { chapter: 'univers', at: 0.8, value: 1.76, pace: smooth },
+      { chapter: 'bascule', at: 0.8, value: -0.31, pace: { window: [0.05, 1], ease: 'inOut' } },
+      { chapter: 'contact', at: 0.55, value: -0.25, pace: smooth },
     ],
+    // Dérive lente des étoiles (seule animation hors scroll) : à l'ouverture et dans la Voie lactée seulement.
+    skyDrift: [
+      { chapter: 'arrivee', at: 0, value: 1 },
+      { chapter: 'arrivee', at: 0.12, value: 0, pace: linear },
+      { chapter: 'univers', at: 0.2, value: 0 },
+      { chapter: 'univers', at: 0.3, value: 1, pace: linear },
+      { chapter: 'univers', at: 0.85, value: 1 },
+      { chapter: 'bascule', at: 0.05, value: 0, pace: linear },
+    ],
+    // Nuages : pleins pendant les vols, retirés sur la carte (le territoire se lit sans voile).
+    clouds: [
+      { chapter: 'arrivee', at: 0, value: 0.95 },
+      { chapter: 'zone', at: 0, value: 0.95 },
+      { chapter: 'zone', at: 0.55, value: 0.3, pace: { window: [0.45, 1], ease: 'inOut' } },
+      { chapter: 'univers', at: 0.2, value: 1, pace: smooth },
+      { chapter: 'contact', at: 0.55, value: 0.85, pace: smooth },
+    ],
+    // Le 06 sort du sol pendant l'arrivée au-dessus de la carte.
+    mapReveal: [
+      { chapter: 'zone', at: 0.05, value: 0 },
+      { chapter: 'zone', at: 0.55, value: 1, pace: { window: [0.3, 1], ease: 'inOut' } },
+    ],
+    // — Objectif : coup de focale au milieu de chaque vol, roulis dans les virages, turbulence dans les nuages.
+    lensFov: [
+      { chapter: 'arrivee', at: 0, value: 0 },
+      { chapter: 'arrivee', at: 0.22, value: 16, pace: smooth },
+      { chapter: 'arrivee', at: 0.45, value: 0, pace: smooth },
+      { chapter: 'prestations', at: 0.75, value: 0 },
+      { chapter: 'zone', at: 0.22, value: 12, pace: smooth },
+      { chapter: 'zone', at: 0.55, value: 0, pace: smooth },
+      { chapter: 'univers', at: 0.08, value: 12, pace: smooth },
+      { chapter: 'univers', at: 0.35, value: 0, pace: smooth },
+      { chapter: 'univers', at: 0.57, value: 8, pace: smooth },
+      { chapter: 'univers', at: 0.8, value: 0, pace: smooth },
+      { chapter: 'bascule', at: 0.36, value: 22, pace: smooth },
+      { chapter: 'bascule', at: 0.8, value: 0, pace: smooth },
+      { chapter: 'location', at: 0.375, value: 5, pace: smooth },
+      { chapter: 'location', at: 0.55, value: 0, pace: smooth },
+      { chapter: 'location', at: 0.725, value: 5, pace: smooth },
+      { chapter: 'location', at: 0.9, value: 0, pace: smooth },
+      { chapter: 'contact', at: 0.25, value: 7, pace: smooth },
+      { chapter: 'contact', at: 0.55, value: 0, pace: smooth },
+    ],
+    lensRoll: [
+      { chapter: 'arrivee', at: 0, value: 0 },
+      { chapter: 'arrivee', at: 0.22, value: 0.05, pace: smooth },
+      { chapter: 'arrivee', at: 0.45, value: 0, pace: smooth },
+      { chapter: 'zone', at: 0, value: 0 },
+      { chapter: 'zone', at: 0.26, value: -0.07, pace: smooth },
+      { chapter: 'zone', at: 0.55, value: 0, pace: smooth },
+      { chapter: 'univers', at: 0.35, value: 0 },
+      { chapter: 'univers', at: 0.57, value: 0.08, pace: smooth },
+      { chapter: 'univers', at: 0.8, value: 0, pace: smooth },
+      { chapter: 'bascule', at: 0.4, value: -0.17, pace: smooth },
+      { chapter: 'bascule', at: 0.8, value: 0, pace: smooth },
+    ],
+    shake: [
+      { chapter: 'arrivee', at: 0.08, value: 0 },
+      { chapter: 'arrivee', at: 0.24, value: 1, pace: smooth },
+      { chapter: 'arrivee', at: 0.4, value: 0, pace: smooth },
+      { chapter: 'bascule', at: 0.12, value: 0 },
+      { chapter: 'bascule', at: 0.42, value: 1.2, pace: smooth },
+      { chapter: 'bascule', at: 0.7, value: 0, pace: smooth },
+    ],
+    // La route s'allume sous la caméra pendant le piqué : vue d'en haut d'abord, les feux s'amorcent à l'arrivée.
     roadLight: [
-      { chapter: 'bascule', at: 0.3, value: 0 },
-      { chapter: 'bascule', at: 1, value: 1, pace: smooth },
+      { chapter: 'bascule', at: 0.12, value: 0 },
+      { chapter: 'bascule', at: 0.66, value: 1, pace: smooth },
       { chapter: 'contact', at: 0.35, value: 1 },
       { chapter: 'contact', at: 1, value: 0.45, pace: smooth },
     ],

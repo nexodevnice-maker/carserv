@@ -41,6 +41,7 @@ export function installQaHooks(experience: Experience, extra: Record<string, () 
     length: () => timeline.length,
     rests: () => [...experience.rests()],
     scrollFor: (p: number) => timeline.scrollFor(p),
+    toGlobal: (chapter: string, local: number) => timeline.toGlobal(chapter, local),
     seek(p: number) {
       experience.seek(p, 'instant');
     },

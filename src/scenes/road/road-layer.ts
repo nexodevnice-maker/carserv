@@ -2,7 +2,7 @@ import {
   AdditiveBlending,
   BoxGeometry,
   CanvasTexture,
-  Fog,
+  FogExp2,
   Group,
   Matrix4,
   Mesh,
@@ -19,18 +19,21 @@ import {
 } from 'three';
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
+import { FOG_DENSITY } from '../sky/sky-layer';
 
 /**
  * Couche « route » : la location comme mobilité. Une route mouillée dans la nuit, la durée peinte sur la chaussée
  * comme un marquage (1 JOUR, 7 JOURS, 15 JOURS — libellés du flyer), et devant la caméra un véhicule réduit à ses
  * feux arrière : de vraies sources (optique rouge + halo + lumière qui éclaire la chaussée), jamais une lueur peinte.
  * La chaussée est un matériau physique : elle reflète le ciel de nuit du HDRI fourni (environnement pré-calculé) et
- * la lumière des feux, plus nettement là où elle est mouillée.
+ * la lumière des feux, plus nettement là où elle est mouillée. Elle est posée sur le sol mouillé de l'univers (bords
+ * fondus, même brouillard) : on la voit depuis le ciel pendant le piqué, elle s'allume en arrivant (`roadLight`), les
+ * feux battent avant de tenir — une ampoule qui s'amorce, fonction de la progression.
  * Aucune voiture 3D : aucune image réelle du véhicule loué n'existe.
  */
 export const ROAD = {
   start: 6,
-  length: 170,
+  length: 440,
   center: -3.4,
   halfWidth: 6.8,
   lane: -1.7,
@@ -111,6 +114,29 @@ function roadTextures(): { map: CanvasTexture; roughness: CanvasTexture } {
   return { map, roughness };
 }
 
+/** Bords de chaussée fondus dans le sol mouillé (canal alpha, dans la largeur). */
+function edgeTexture(): CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 4;
+  canvas.height = 256;
+  const c = canvas.getContext('2d') as CanvasRenderingContext2D;
+  const g = c.createLinearGradient(0, 0, 0, 256);
+  g.addColorStop(0, '#000');
+  g.addColorStop(0.06, '#fff');
+  g.addColorStop(0.94, '#fff');
+  g.addColorStop(1, '#000');
+  c.fillStyle = g;
+  c.fillRect(0, 0, 4, 256);
+  return new CanvasTexture(canvas);
+}
+
+/** Amorçage déterministe des feux : quelques battements avant de tenir (0 → 1). */
+function ignite(light: number) {
+  if (light <= 0 || light >= 1) return light;
+  const beat = Math.sin(light * 61.7) * Math.sin(light * 23.3);
+  return light < 0.8 && beat < -0.18 ? light * 0.12 : light;
+}
+
 /** Durée peinte au sol, lettres étirées dans le sens de la marche (comme un marquage routier). */
 function markingTexture(label: string): CanvasTexture {
   const canvas = document.createElement('canvas');
@@ -164,16 +190,22 @@ export function createRoadLayer(options: { chapters: readonly string[] }) {
   const root = new Group();
   root.name = 'road';
   const textures: Texture[] = [];
-  const roadMaterial = new MeshStandardMaterial({ color: 0xffffff, metalness: 0, roughness: 1, envMapIntensity: 0.9 });
+  const edges = edgeTexture();
+  textures.push(edges);
+  const roadMaterial = new MeshStandardMaterial({
+    color: 0xffffff,
+    metalness: 0,
+    roughness: 1,
+    envMapIntensity: 0.9,
+    alphaMap: edges,
+    transparent: true,
+    depthWrite: false,
+  });
   const road = new Mesh(new PlaneGeometry(ROAD.length, ROAD.halfWidth * 2 + 2), roadMaterial);
   road.rotation.x = -Math.PI / 2;
-  road.position.set(ROAD.start + ROAD.length / 2, 0, ROAD.center);
-  // Bas-côtés : un terrain presque noir de part et d'autre, pour que la chaussée ne flotte pas dans le vide.
-  const vergeMaterial = new MeshStandardMaterial({ color: 0x0b0b0c, roughness: 0.95, metalness: 0 });
-  const verge = new Mesh(new PlaneGeometry(ROAD.length + 60, 140), vergeMaterial);
-  verge.rotation.x = -Math.PI / 2;
-  verge.position.set(ROAD.start + ROAD.length / 2, -0.02, ROAD.center);
-  root.add(verge, road);
+  road.position.set(ROAD.start + ROAD.length / 2, 0.005, ROAD.center);
+  road.renderOrder = 1;
+  root.add(road);
 
   const markingMaterials: MeshStandardMaterial[] = [];
   // Repère : u (largeur des lettres) vers +z (droite du conducteur), v (haut des lettres) vers +x (le lointain).
@@ -206,9 +238,8 @@ export function createRoadLayer(options: { chapters: readonly string[] }) {
     chapters: options.chapters,
     root,
     async init(ctx: StageContext) {
-      // Brouillard de nuit : la route se perd dans le noir au lieu de s'arrêter net. Les matériaux de la preuve
-      // (ShaderMaterial, fog: false) n'y sont pas soumis ; ils sont à moins de 20 m de la caméra.
-      ctx.scene.fog = new Fog(0x050506, 22, 95);
+      // Brouillard de nuit : la même loi que le sol de l'univers (sky-layer), la route s'y fond sans couture.
+      ctx.scene.fog = new FogExp2(0x000000, FOG_DENSITY);
       // Les marquages attendent la police (sinon dessinés dans la police de repli).
       await document.fonts?.load('700 150px "Barlow Condensed"').catch(() => undefined);
       const { map, roughness } = roadTextures();
@@ -223,26 +254,28 @@ export function createRoadLayer(options: { chapters: readonly string[] }) {
         markingMaterials.push(material);
         const decal = new Mesh(new PlaneGeometry(4.2, 8.4), material);
         decal.quaternion.setFromRotationMatrix(basis);
-        decal.position.set(x, 0.01, ROAD.lane);
+        decal.position.set(x, 0.012, ROAD.lane);
+        decal.renderOrder = 2;
         root.add(decal);
       }
     },
     update(state: Readonly<ExperienceState>): LayerUpdate {
       const light = state.channels.roadLight ?? 0;
+      const lamp = ignite(light);
       const camX = state.camera?.position[0] ?? 0;
       const tailX = camX + (state.channels.tailDistance ?? 18);
       if (light === last.light && tailX === last.tailX) return false;
       last.light = light;
       last.tailX = tailX;
-      roadMaterial.color.setScalar(light);
-      vergeMaterial.color.setScalar(0.043 * light);
+      roadMaterial.color.setScalar(0.35 + 0.65 * light);
+      roadMaterial.opacity = Math.min(1, light * 1.6);
       roadMaterial.envMapIntensity = 0.9 * light;
-      for (const material of markingMaterials) material.opacity = 0.9 * light;
+      for (const material of markingMaterials) material.opacity = 0.9 * Math.max(0, light * 1.4 - 0.4);
       tail.position.set(tailX, 0, ROAD.lane);
       // Jamais masqués : changer le nombre de lumières recompilerait les matériaux de la chaussée (à-coup).
-      lensMaterial.color.setRGB(1 * light, 0.16 * light, 0.12 * light);
-      for (const child of tail.children) if ((child as Sprite).isSprite) ((child as Sprite).material as SpriteMaterial).opacity = light;
-      for (const l of lights) l.intensity = 4 * light;
+      lensMaterial.color.setRGB(1 * lamp, 0.16 * lamp, 0.12 * lamp);
+      for (const child of tail.children) if ((child as Sprite).isSprite) ((child as Sprite).material as SpriteMaterial).opacity = lamp;
+      for (const l of lights) l.intensity = 4 * lamp;
       return true;
     },
     dispose() {

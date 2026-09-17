@@ -176,7 +176,7 @@ console.log(`\nBUREAU 1440×900 — ${BASE}/lab/engine`);
   const after = await info(page);
   check(G, 'molette : l’affichage suit avec amorti puis se pose', during.moving && !after.moving && near(after.shown, after.target, 1e-9), `lag ${Math.abs(during.target - during.shown).toFixed(4)}`);
 
-  // Défilement brutal : retard borné (maxLag 0,08), convergence.
+  // Défilement brutal : retard borné (maxLag du bureau, config.ts : 0,35 — la glissade anime le dernier morceau), convergence.
   const maxLag = await page.evaluate(async () => {
     let worst = 0;
     for (const t of [0, 1, 0.3, 0.9, 0.05, 0.6]) {
@@ -191,7 +191,7 @@ console.log(`\nBUREAU 1440×900 — ${BASE}/lab/engine`);
   });
   await waitRest(page);
   i = await info(page);
-  check(G, 'défilement brutal : retard borné et convergence', maxLag <= 0.0801 && near(i.shown, 0.6, 2 / length), `pire retard ${maxLag.toFixed(4)}`);
+  check(G, 'défilement brutal : retard borné et convergence', maxLag <= 0.3501 && near(i.shown, 0.6, 2 / length), `pire retard ${maxLag.toFixed(4)}`);
 
   // Clavier : Fin, Début.
   await page.keyboard.press('End');

@@ -179,6 +179,15 @@
   transform: translate3d(0, calc(-50% + (1 - var(--vis)) * 18px), 0);
 }
 
+/* Scène 3D prête : le 06 est dans la scène ; la carte SVG reste pour les lecteurs d'écran et le repli statique. */
+.is-3d:not(.is-static) .map {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
 .js [data-state]:not([data-state='active']) .panel,
 .js [data-state]:not([data-state='active']) .map {
   visibility: hidden;

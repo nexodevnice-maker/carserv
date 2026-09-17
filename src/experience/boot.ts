@@ -11,8 +11,11 @@ import type { WebGLStage } from '../engine/webgl/webgl-stage';
 import type { EvidenceLayer } from '../scenes/evidence/evidence-layer';
 import { chapters, definition } from './chapters';
 import { ENGINE, ENVIRONMENT, MEDIA_POLICY, SEQUENCE_BUDGET, STAGE } from './config';
+import { copy } from './copy';
+import map from './map-06.json';
 import generated from './media.generated.json';
 import { media } from './media';
+import { WORLD } from './world';
 
 /**
  * Démarrage de CAR SERVICE 06.
@@ -20,7 +23,8 @@ import { media } from './media';
  * première image WebGL (au plus tôt 1,2 s, au plus tard 4,5 s ; sans WebGL : sur l'affiche). Pendant l'entrée, la page
  * reste en haut et aucun pas n'est pris.
  * Puis : moteur (scroll → progression → état), pas guidés, registre média et liaisons (vidéo en mémoire au bureau,
- * séquence au téléphone), scène WebGL chargée en différé (preuve + route), repli statique à tout moment.
+ * séquence au téléphone), scène WebGL chargée en différé — un seul monde : l'univers (ciel et sol mouillé), les nuages,
+ * la preuve, le 06 en volume, la route —, repli statique à tout moment.
  */
 export function boot() {
   const html = document.documentElement;
@@ -66,7 +70,14 @@ export function boot() {
   // — Pas guidés : un geste, un plan.
   const guide = posterMode
     ? null
-    : createGuide({ track, timeline, rests: experience.rests, locked: () => !introDone });
+    : createGuide({
+        track,
+        timeline,
+        rests: experience.rests,
+        locked: () => !introDone,
+        // Au bureau, la glissade du moteur fait seule le mouvement ; au doigt, défilement natif.
+        scrollBehavior: () => (ENGINE.follow[state.format].mode === 'glide' ? 'instant' : 'smooth'),
+      });
 
   // — Médias.
   const registry = createMediaRegistry(media, {
@@ -175,13 +186,15 @@ export function boot() {
       import('../scenes/road/road-layer'),
       import('../scenes/sky/sky-layer'),
       import('../engine/webgl/environment'),
+      import('../scenes/map/map-layer'),
+      import('../scenes/clouds/cloud-layer'),
     ])
-      .then(async ([{ createWebGLStage }, { createEvidenceLayer }, { createRoadLayer }, { createSkyLayer }, { loadBakedEnvironment }]) => {
+      .then(async ([{ createWebGLStage }, { createEvidenceLayer }, { createRoadLayer }, { createSkyLayer }, { loadBakedEnvironment }, { createMapLayer }, { createCloudLayer }]) => {
         setIntroProgress(0.55);
         const portrait = state.format !== 'desktop';
         const stills = generated.passage;
         evidence = createEvidenceLayer({
-          chapters: chapters.filter((c) => ['arrivee', 'intervention', 'transformation', 'prestations', 'zone', 'univers'].includes(c.id)).map((c) => c.id),
+          chapters: chapters.filter((c) => ['arrivee', 'intervention', 'transformation', 'prestations', 'zone'].includes(c.id)).map((c) => c.id),
           stills: {
             before: portrait ? stills.before.mobile.src : stills.before.desktop.src,
             after: portrait ? stills.after.mobile.src : stills.after.desktop.src,
@@ -190,18 +203,25 @@ export function boot() {
         if (video.readyState >= 2 && scrub) evidence.setVideo(video);
         if (lastBitmap) evidence.setBitmap(lastBitmap);
         const road = createRoadLayer({ chapters: ['bascule', 'location', 'contact'] });
-        // L'univers (HDRI fourni) : 2048 px d'abord ; 4096 px ensuite sur grand écran.
-        const sky = createSkyLayer({
-          chapters: ['arrivee', 'zone', 'univers', 'bascule'],
-          low: '/env/sky-2048.webp',
-          high: state.format === 'desktop' ? '/env/sky-4096.webp' : undefined,
-          drift: true,
-        });
+        // L'univers (HDRI fourni), partout : 2048 px d'abord ; 4096 px ensuite sur grand écran.
+        const sky = createSkyLayer({ low: '/env/sky-2048.webp', high: state.format === 'desktop' ? '/env/sky-4096.webp' : undefined });
+        const territory = createMapLayer(
+          {
+            data: map,
+            center: WORLD.map.center,
+            scale: WORLD.map.scale,
+            depth: WORLD.map.depth,
+            labels: { number: '06', numberAt: WORLD.map.numberAt, sea: copy.zone.sea, seaAt: WORLD.map.seaAt },
+            font: '"Barlow Condensed", "Arial Narrow", sans-serif',
+          },
+          sky,
+        );
+        const clouds = createCloudLayer({ fields: WORLD.clouds });
         const created = await createWebGLStage({
           experience,
           canvas,
           host: stageEl,
-          layers: [sky, evidence, road],
+          layers: [sky, territory, evidence, road, clouds],
           config: STAGE,
           onReady: () => {
             stageStatus = 'ready';
