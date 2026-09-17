@@ -1,4 +1,5 @@
 import {
+  Color,
   NeutralToneMapping,
   PerspectiveCamera,
   Scene,
@@ -63,6 +64,12 @@ export interface StageConfig {
   toneMapping?: ToneMapping;
   exposure?: number;
   transparent?: boolean;
+  /**
+   * Rapport largeur/hauteur pour lequel les focales des plans sont écrites, par format. Écran plus étroit : la focale
+   * s'ouvre pour garder la même largeur de champ (le sujet ne sort pas du cadre) — technique MECA RIVIERA.
+   */
+  referenceAspect?: Partial<Record<Format, number>>;
+  background?: number;
 }
 
 export async function createWebGLStage(options: {
@@ -96,6 +103,7 @@ export async function createWebGLStage(options: {
   renderer.debug.checkShaderErrors = import.meta.env.DEV;
 
   const scene = new Scene();
+  if (config.background !== undefined) scene.background = new Color(config.background);
   const camera = new PerspectiveCamera(35, 1, config.near, config.far);
   let width = 1;
   let height = 1;
@@ -147,9 +155,16 @@ export async function createWebGLStage(options: {
     camera.up.set(0, 1, 0);
     camera.lookAt(tx, ty, tz);
     if (pose.roll) camera.rotateZ(pose.roll);
-    camera.fov = pose.fov;
+    camera.fov = fovFor(pose.fov);
     applyProjection();
     return true;
+  };
+  const fovFor = (fov: number) => {
+    const reference = config.referenceAspect?.[state.format];
+    const aspect = width / height;
+    if (!reference || aspect >= reference) return fov;
+    const half = (fov * Math.PI) / 360;
+    return (Math.atan((Math.tan(half) * reference) / aspect) * 360) / Math.PI;
   };
   const applyProjection = () => {
     const sx = state.camera?.shiftX ?? 0;
@@ -166,6 +181,7 @@ export async function createWebGLStage(options: {
     renderer.setPixelRatio(quality.ratio);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
+    if (state.camera) camera.fov = fovFor(state.camera.fov);
     applyProjection();
     for (const layer of layers) layer.resize?.(ctx);
     ctx.invalidate();

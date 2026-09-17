@@ -32,8 +32,11 @@ export const STAGE: StageConfig = {
   },
   layerMargin: 0.02,
   near: 0.05,
-  far: 200,
+  far: 260,
   exposure: 1,
+  background: 0x050506,
+  // Focales écrites pour ces rapports d'écran : plus étroit, la focale s'ouvre (le sujet reste dans le cadre).
+  referenceAspect: { desktop: 1.6, tablet: 0.75, mobile: 0.46 },
 };
 
 /** Anticipation des chargements, en chapitres. Le mobile anticipe moins (données, mémoire). */

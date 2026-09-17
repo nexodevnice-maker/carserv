@@ -154,3 +154,29 @@ Résultat : https://carservice.nexodevnice.workers.dev en ligne, **60/60** (`npm
 | Identifiant Snapchat exact, page Facebook, téléphone, e-mail | canaux d'action |
 | Adresse de production (domaine) | canonique, sitemap, indexation |
 | Provenance de l'HDRI (Poly Haven ?) | licence |
+
+## 2026-09-17 — Maquette complète en ligne (demandes du porteur : « site maquette totalement fini », « la vidéo comme un avant/après piloté par le scroll », « l'univers HDR mis en avant comme un réel passage du tout au rien, 3D animée au maximum »)
+
+Récit publié (src/experience/chapters.ts, shots.ts) — 9 chapitres, 17 pas guidés :
+
+| Chapitre | Scène WebGL | Ce qui se passe |
+|---|---|---|
+| Arrivée | ciel (HDRI) + preuve | l'univers entier (Voie lactée) se referme en iris pendant que le regard plonge (focale 58° → 24°) jusqu'au noir, où le panneau vidéo s'allume ; la vidéo poussiéreuse avance avec le scroll |
+| Le passage | preuve | une ligne d'eau (réfraction, bord mouillé, liseré) traverse le capot : images exactes de la vidéo (n° 165 et 257), jauge Avant / Après synchronisée |
+| Après | preuve | vidéo propre (capot, flanc) pilotée par le scroll, caméra en arc au ras du sol mouillé (reflet du panneau) |
+| Prestations | preuve | recul ; prestations et offre (src/domain) |
+| Le 06 | — (SVG) | contour réel du département (IGN) tracé par le scroll |
+| Univers | ciel | l'iris se rouvre (rien → tout), le regard longe la Voie lactée ; dérive lente des étoiles |
+| Bascule | ciel + route | l'univers se referme sur une route mouillée |
+| Location | route | durées peintes au sol (1 JOUR / 7 JOURS / 15 JOURS), feux arrière réels (optiques, halos, lumières ponctuelles), chaussée physique reflétant l'environnement pré-calculé du HDRI, brouillard |
+| Contact | route | la caméra s'élève, les feux s'éloignent ; Instagram |
+
+Techniques MECA RIVIERA intégrées : entrée qui couvre la préparation de la scène et tient la page en haut ; affiches capturées sur la vraie scène (scripts/capture-posters.mjs) ; pas guidés (un geste, un plan : molette, clavier, doigt) ; légendes posées sur la scène (bas d'écran au téléphone) ; barre d'action mobile ; ressort critique au doigt ; définition adaptative ; rendu à la demande ; décalage optique pour la colonne de texte ; focale compensée selon le rapport d'écran ; vraies sources lumineuses ; zoom au pincement tenu ; retour au premier plan à chaque arrivée ; SEO, 404, robots, sitemap ; QA navigateur (qa-shots, qa-engine) et parcours du site publié (scripts/qa-live.mjs).
+
+Médias ajoutés : `public/env/sky-{2048,4096}.webp` (HDRI étalonné en ciel de nuit, 88 et 516 Ko, scripts/media-sky.mjs), `passage-{before,after}-*.webp` (scripts/media-passage.mjs), `public/media/stage/poster-*` (affiches), `src/experience/map-06.json` (scripts/content-map.mjs, source IGN Admin Express via france-geojson). Typographie : Barlow Condensed (signalisation routière) et Barlow.
+
+Écart assumé avec la règle « aucun état piloté par le temps » : la dérive lente des étoiles, tant que l'univers est visible (rendu continu seulement pendant ce passage ; arrêtée en mouvement réduit et iris fermé).
+
+Défauts corrigés pendant la réalisation (vus sur captures) : panneau vidéo noir au bureau (Three.js dimensionne une Texture ordinaire par l'attribut `width` de la vidéo → VideoTexture), panneau éteint masquant l'univers (alpha lié à la lumière), plans de l'univers trop bas (visée recalculée sur l'arche de la Voie lactée), légende de la carte sur la côte, sous-titre de la location trop gros au téléphone, captures intermédiaires ramenées aux points d'accroche (accroche neutralisée en QA).
+
+Vérifié : 60/60 (`npm run qa:engine`) sur le serveur de dev et sur https://carservice.nexodevnice.workers.dev ; parcours publié bureau et téléphone, 17 pas, WebGL prêt en 4,9 s (bureau) et 2,3 s (téléphone, réseau réel), aucune erreur console.

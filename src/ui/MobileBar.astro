@@ -1,0 +1,64 @@
+---
+import { shown } from '../domain/facts';
+import { property } from '../domain/property';
+
+/**
+ * Barre d'action (technique MECA RIVIERA) : sur téléphone et tablette, le seul canal confirmé reste à portée de pouce
+ * pendant tout le récit. Aucun téléphone n'est connu : Instagram.
+ */
+const instagram = shown(property.channels.instagram);
+---
+
+{
+  instagram && (
+    <div class="mobile-bar">
+      <a class="mobile-bar__cta" href={`https://www.instagram.com/${instagram}/`} rel="noopener" target="_blank">
+        <span>Réserver · Nettoyage ou location</span>
+        <strong>@{instagram}</strong>
+      </a>
+    </div>
+  )
+}
+
+<style>
+  .mobile-bar {
+    display: none;
+  }
+
+  @media (max-width: 1099px) {
+    .mobile-bar {
+      position: fixed;
+      inset: auto 0 0;
+      z-index: var(--z-header);
+      display: block;
+      padding: 0.6rem var(--gutter) calc(0.6rem + env(safe-area-inset-bottom));
+      background: linear-gradient(0deg, rgb(5 5 6 / 0.94) 55%, rgb(5 5 6 / 0));
+    }
+
+    .mobile-bar__cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 48px;
+      padding: 0 1rem;
+      border: 1px solid rgb(243 241 236 / 0.22);
+      color: var(--text);
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      text-transform: uppercase;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .mobile-bar__cta strong {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .mobile-bar__cta:active {
+      background: rgb(243 241 236 / 0.08);
+    }
+  }
+</style>

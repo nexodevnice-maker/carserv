@@ -4,25 +4,35 @@ import { property } from '../domain/property';
 import { rentalFleet, rentalTerms } from '../domain/rental';
 import { cleaningOffers, cleaningServices } from '../domain/services';
 import { chapters } from '../experience/chapters';
+import { copy } from '../experience/copy';
+import map from '../experience/map-06.json';
 import generated from '../experience/media.generated.json';
 import Base from '../layouts/Base.astro';
 import Chapter from '../ui/Chapter.astro';
 import ExperienceTrack from '../ui/ExperienceTrack.astro';
+import MobileBar from '../ui/MobileBar.astro';
 import SiteHeader from '../ui/SiteHeader.astro';
+import '../styles/experience.css';
 
 /**
- * SQUELETTE STRUCTUREL — aucune direction artistique ici.
- * Le document complet, dans l'ordre de la narration, lisible sans script ni animation, indexable. Les scènes du
- * vertical slice viendront composer la vue épinglée et la typographie spatiale au-dessus de ce document, sans le
- * remplacer.
+ * CAR SERVICE 06 — le document complet, dans l'ordre du récit : lisible sans script ni animation, indexable.
+ * Avec script, chaque texte devient une légende posée sur la scène (fenêtre de visibilité tirée de chapters.ts) et la
+ * vue épinglée porte la scène WebGL (preuve vidéo, passage de l'eau, route de la location).
  */
 const chapter = (id: string) => chapters.find((c) => c.id === id)!;
+const win = (chapterId: string, panelId: string) => {
+  const panel = chapter(chapterId).panels.find((p) => p.id === panelId)!;
+  return `--in: ${panel.in}; --out: ${panel.out}`;
+};
 const euro = (amount: number) => `${amount} €`;
+const service = (id: string) => cleaningServices.find((s) => s.id === id)!;
 const vehicle = rentalFleet[0]!;
 const offer = cleaningOffers[0]!;
 const instagram = shown(property.channels.instagram);
-const before = generated.posters.before;
-const after = generated.posters.after;
+const instagramUrl = instagram ? `https://www.instagram.com/${instagram}/` : null;
+const rate = (days: number) => vehicle.rates.find((r) => r.days === days)!;
+const terms = [rentalTerms.insurance, rentalTerms.mileage, vehicle.energy, rentalTerms.comfort, rentalTerms.availability];
+const after = generated.passage.after;
 
 const title = 'CAR SERVICE 06 — Nettoyage auto premium, déplacement dans tout le 06 · Location Toyota C-HR';
 const description =
@@ -34,136 +44,207 @@ const description =
   description={description}
   image={{ src: after.desktop.src, width: after.desktop.width, height: after.desktop.height, alt: 'Capot d’un SUV gris foncé après nettoyage, reflétant les arbres.' }}
 >
+  <Fragment slot="head">
+    <script is:inline>
+      // Avant tout rendu : mise en page de l'expérience (.js) et entrée si l'on arrive en haut de page. Si le module ne
+      // démarre pas (erreur, blocage), le document redevient lisible au bout de 6 s.
+      (function () {
+        var h = document.documentElement;
+        h.classList.add('js');
+        var q = new URLSearchParams(location.search);
+        if (!location.hash && !q.has('poster')) h.classList.add('has-intro', 'is-intro');
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+        setTimeout(function () {
+          if (!h.classList.contains('has-experience')) h.classList.remove('js', 'has-intro', 'is-intro');
+        }, 6000);
+      })();
+    </script>
+  </Fragment>
+
+  <div class="intro" aria-hidden="true">
+    <p class="intro__mark">CAR SERVICE <span>06</span></p>
+    <p class="intro__line">{property.descriptors.cleaning.value} · Location</p>
+    <span class="intro__bar"><span></span></span>
+  </div>
+
   <SiteHeader />
+
   <main id="contenu">
-    <ExperienceTrack label="CAR SERVICE 06 : du véhicule sale à la location">
-      <picture slot="stage" class="stage-poster">
-        <source media="(max-width: 599px)" type="image/avif" srcset={before.mobile.avif} />
-        <source media="(max-width: 599px)" type="image/webp" srcset={before.mobile.src} />
-        <source type="image/avif" srcset={before.desktop.avif} />
-        <img src={before.desktop.src} width={before.desktop.width} height={before.desktop.height} alt="" fetchpriority="high" decoding="async" />
-      </picture>
+    <ExperienceTrack label="CAR SERVICE 06 : nettoyage, puis location">
+      <Fragment slot="stage">
+        <picture class="stage__poster stage__poster--scene">
+          <source media="(max-width: 1099px)" srcset="/media/stage/poster-mobile.avif" type="image/avif" />
+          <source media="(max-width: 1099px)" srcset="/media/stage/poster-mobile.webp" type="image/webp" />
+          <source srcset="/media/stage/poster-desktop.avif" type="image/avif" />
+          <img src="/media/stage/poster-desktop.webp" width="1440" height="900" alt="" fetchpriority="high" decoding="async" />
+        </picture>
+        <picture class="stage__poster stage__poster--after">
+          <source media="(max-width: 1099px)" srcset={after.mobile.src} type="image/webp" />
+          <img src={after.desktop.src} width={after.desktop.width} height={after.desktop.height} alt="" loading="lazy" decoding="async" />
+        </picture>
+        <canvas class="stage__canvas" data-stage-canvas></canvas>
+        <video class="stage__video" data-stage-video muted playsinline preload="none" tabindex="-1"></video>
+        <div class="stage__veil"></div>
+        <div class="gauge">
+          <span class="gauge__label gauge__label--before">Avant</span>
+          <span class="gauge__track"><span class="gauge__fill"></span><span class="gauge__dot"></span></span>
+          <span class="gauge__label gauge__label--after">Après</span>
+        </div>
+        <div class="stage__progress"><span></span></div>
+      </Fragment>
 
-      <Chapter id="arrivee" universe={chapter('arrivee').universe} span={chapter('arrivee').span} labelledby="arrivee-titre">
-        <h1>{property.name.value}</h1>
-        <p>{property.descriptors.cleaning.value}</p>
-        <h2 id="arrivee-titre">{chapter('arrivee').heading}</h2>
-        <p class="sr-only">Vidéo : un SUV gris foncé couvert de poussière — portière, capot, optique avant.</p>
-        <p>{property.taglines[0]!.value}</p>
+      <Chapter id="arrivee" universe="cleaning" span={chapter('arrivee').span} labelledby="titre-marque">
+        <div class="panel panel--hero" style={win('arrivee', 'marque')}>
+          <p class="kicker">{property.name.value} <span aria-hidden="true">·</span> {property.descriptors.cleaning.value}</p>
+          <h1 id="titre-marque" class="display">{property.taglines[0]!.value}</h1>
+          <p class="lede">{offer.label.value} · {property.coverage.value}</p>
+          <p class="hint" aria-hidden="true"><span></span>{copy.scroll}</p>
+        </div>
+        <div class="panel" style={win('arrivee', 'avant')}>
+          <p class="index"><span>{copy.avant.index}</span></p>
+          <h2 class="title">{copy.avant.title}</h2>
+          <p class="text">{copy.avant.text}</p>
+          <p class="sr-only">{copy.video}</p>
+        </div>
       </Chapter>
 
-      <Chapter id="intervention" universe={chapter('intervention').universe} span={chapter('intervention').span} labelledby="intervention-titre">
-        <h2 id="intervention-titre">{chapter('intervention').heading}</h2>
-        <p>{cleaningServices.find((s) => s.id === 'exterieur')!.title.value} : {cleaningServices.find((s) => s.id === 'exterieur')!.details.value.join(', ').toLowerCase()}.</p>
+      <Chapter id="intervention" universe="cleaning" span={chapter('intervention').span} labelledby="titre-passage">
+        <div class="panel" style={win('intervention', 'lavage')}>
+          <p class="index"><span>{copy.passage.index}</span></p>
+          <h2 id="titre-passage" class="title">{copy.passage.title}</h2>
+          <p class="text">
+            <strong>{service('exterieur').title.value}</strong>
+            {service('exterieur').details.value.join(' · ')}
+          </p>
+        </div>
+        <div class="panel" style={win('intervention', 'meme')}>
+          <p class="quote">{copy.passage.after}</p>
+        </div>
       </Chapter>
 
-      <Chapter id="transformation" universe={chapter('transformation').universe} span={chapter('transformation').span} labelledby="transformation-titre">
-        <h2 id="transformation-titre">{chapter('transformation').heading}</h2>
-        <figure>
-          <picture>
-            <source media="(max-width: 599px)" type="image/avif" srcset={after.mobile.avif} />
-            <source media="(max-width: 599px)" type="image/webp" srcset={after.mobile.src} />
-            <source type="image/avif" srcset={after.desktop.avif} />
-            <img src={after.desktop.src} width={after.desktop.width} height={after.desktop.height} alt="Le même SUV après nettoyage : capot brillant qui reflète les arbres." loading="lazy" decoding="async" />
-          </picture>
-          <figcaption>{cleaningServices.find((s) => s.id === 'finition')!.title.value} — {cleaningServices.find((s) => s.id === 'finition')!.details.value[0]!.toLowerCase()}.</figcaption>
+      <Chapter id="transformation" universe="cleaning" span={chapter('transformation').span} labelledby="titre-apres">
+        <div class="panel" style={win('transformation', 'apres')}>
+          <p class="index"><span>{copy.apres.index}</span></p>
+          <h2 id="titre-apres" class="title">{copy.apres.title}</h2>
+          <p class="text">
+            <strong>{service('finition').title.value}</strong>
+            {service('finition').details.value.join(' · ')}
+          </p>
+        </div>
+        <div class="panel" style={win('transformation', 'reflets')}>
+          <p class="quote">{copy.apres.reflets}</p>
+        </div>
+      </Chapter>
+
+      <Chapter id="prestations" universe="cleaning" span={chapter('prestations').span} labelledby="titre-prestations">
+        <div class="panel panel--list" style={win('prestations', 'interieur-exterieur')}>
+          <p class="index"><span>{copy.prestations.index}</span></p>
+          <h2 id="titre-prestations" class="title">{copy.prestations.title}</h2>
+          <ul class="services">
+            {
+              ['interieur', 'exterieur'].map((id) => (
+                <li>
+                  <h3>{service(id).title.value}</h3>
+                  <p>{service(id).details.value.join(' · ')}</p>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+        <div class="panel panel--list" style={win('prestations', 'finition-produits')}>
+          <ul class="services">
+            {
+              ['finition', 'produits'].map((id) => (
+                <li>
+                  <h3>{service(id).title.value}</h3>
+                  <p>{service(id).details.value.join(' · ')}</p>
+                </li>
+              ))
+            }
+          </ul>
+          <p class="offer" data-status={offer.price.status}>
+            <span class="offer__label">{offer.label.value}</span>
+            <span class="offer__price">{euro(offer.price.value.amount)}</span>
+          </p>
+        </div>
+      </Chapter>
+
+      <Chapter id="zone" universe="territory" span={chapter('zone').span} labelledby="titre-zone">
+        <div class="panel" style={win('zone', 'deplacement')}>
+          <p class="index"><span>{copy.zone.index}</span></p>
+          <h2 id="titre-zone" class="title">{copy.zone.title}</h2>
+          <p class="text"><strong>{property.coverage.value}.</strong> {offer.label.value}, chez vous.</p>
+          <p class="quote">{property.servicePromise.value}</p>
+        </div>
+        <figure class="map" style={win('zone', 'deplacement')}>
+          <svg viewBox={map.viewBox} role="img" aria-label="Carte des Alpes-Maritimes (06)">
+            {map.paths.map((d, k) => <path class={k === 0 ? 'map__land' : 'map__island'} d={d} pathLength="1" />)}
+            <text class="map__num" x="560" y="520">06</text>
+            <text class="map__sea" x="500" y="1215" text-anchor="middle">{copy.zone.sea}</text>
+          </svg>
+          <figcaption class="sr-only">Contour du département des Alpes-Maritimes (source : IGN Admin Express).</figcaption>
         </figure>
       </Chapter>
 
-      <Chapter id="prestations" universe={chapter('prestations').universe} span={chapter('prestations').span} labelledby="prestations-titre">
-        <h2 id="prestations-titre">{chapter('prestations').heading}</h2>
-        {
-          cleaningServices.map((service) => (
-            <div data-service={service.id}>
-              <h3>{service.title.value}</h3>
-              <p>{service.details.value.join(' · ')}</p>
-            </div>
-          ))
-        }
-        <p data-offer={offer.id} data-status={offer.price.status}>
-          {offer.label.value} : <strong>{euro(offer.price.value.amount)}</strong>
-        </p>
-        <p>{property.coverage.value}.</p>
-        <p>{property.taglines[1]!.value}</p>
+      <Chapter id="univers" universe="bridge" span={chapter('univers').span} labelledby="titre-univers">
+        <h2 id="titre-univers" class="sr-only">{copy.univers.title}</h2>
+        <p class="sr-only">{copy.univers.text}</p>
       </Chapter>
 
-      <Chapter id="bascule" universe={chapter('bascule').universe} span={chapter('bascule').span} labelledby="bascule-titre">
-        <h2 id="bascule-titre">{chapter('bascule').heading}</h2>
+      <Chapter id="bascule" universe="bridge" span={chapter('bascule').span} labelledby="titre-bascule">
+        <div class="panel" style={win('bascule', 'autre-route')}>
+          <p class="index index--red"><span>{copy.bascule.index}</span></p>
+          <h2 id="titre-bascule" class="title">{copy.bascule.title}</h2>
+          <p class="text">{copy.bascule.text}</p>
+        </div>
       </Chapter>
 
-      <Chapter id="location" universe={chapter('location').universe} span={chapter('location').span} labelledby="location-titre">
-        <h2 id="location-titre">{chapter('location').heading}</h2>
-        <dl data-vehicle={vehicle.id}>
+      <Chapter id="location" universe="rental" span={chapter('location').span} labelledby="titre-location">
+        <div class="panel panel--rate" style={win('location', 'jour')}>
+          <p class="index index--red"><span>{copy.location.index}</span></p>
+          <h2 id="titre-location" class="title title--small">Location — {vehicle.model.value} {vehicle.energy.value.toLowerCase()}</h2>
+          <p class="rate"><span class="rate__days">{rate(1).days} jour</span><span class="rate__price">{euro(rate(1).price.value.amount)}</span></p>
+        </div>
+        <div class="panel panel--rate" style={win('location', 'semaine')}>
+          <p class="rate"><span class="rate__days">{rate(7).days} jours</span><span class="rate__price">{euro(rate(7).price.value.amount)}</span></p>
+        </div>
+        <div class="panel panel--rate" style={win('location', 'quinzaine')}>
+          <p class="rate"><span class="rate__days">{rate(15).days} jours</span><span class="rate__price">{euro(rate(15).price.value.amount)}</span></p>
+          <ul class="terms" aria-label={copy.location.terms}>
+            {terms.map((term) => <li>{term.value}</li>)}
+          </ul>
+        </div>
+      </Chapter>
+
+      <Chapter id="contact" universe="action" span={chapter('contact').span} labelledby="titre-contact">
+        <div class="panel panel--cta" style={win('contact', 'action')}>
+          <p class="index"><span>{copy.contact.index}</span></p>
+          <h2 id="titre-contact" class="title">{copy.contact.title}</h2>
+          <p class="text">
+            {offer.label.value} · {property.coverage.value}. Location {vehicle.model.value}, {rentalTerms.availability.value.toLowerCase()}.
+          </p>
           {
-            vehicle.rates.map((rate) => (
-              <div>
-                <dt>{rate.days === 1 ? '1 jour' : `${rate.days} jours`}</dt>
-                <dd>{euro(rate.price.value.amount)}</dd>
-              </div>
-            ))
-          }
-        </dl>
-        <ul>
-          {[rentalTerms.insurance, rentalTerms.mileage, vehicle.energy, rentalTerms.comfort, rentalTerms.availability].map((term) => <li>{term.value}</li>)}
-        </ul>
-      </Chapter>
-
-      <Chapter id="contact" universe={chapter('contact').universe} span={chapter('contact').span} labelledby="contact-titre">
-        <h2 id="contact-titre">{chapter('contact').heading}</h2>
-        {
-          instagram && (
-            <p>
-              <a href={`https://www.instagram.com/${instagram}/`} rel="noopener" target="_blank">
-                Écrire sur Instagram : @{instagram}
+            instagramUrl && (
+              <a class="cta" href={instagramUrl} rel="noopener" target="_blank">
+                {copy.contact.channel} <span>@{instagram}</span>
               </a>
-            </p>
-          )
-        }
+            )
+          }
+        </div>
       </Chapter>
     </ExperienceTrack>
   </main>
+
   <footer class="site-footer">
     <p>© {property.name.value}</p>
     <p>Maquette de démonstration : informations commerciales à confirmer avant publication.</p>
-    <p>Toyota et C-HR sont des marques de leurs propriétaires ; aucune affiliation.</p>
+    <p>Toyota et C-HR sont des marques de leurs propriétaires ; aucune affiliation. Vidéo : story Snapchat Car-service06. Carte : IGN Admin Express.</p>
   </footer>
+
+  <MobileBar />
 </Base>
 
 <script>
   import { boot } from '../experience/boot';
   boot();
 </script>
-
-<style>
-  .stage-poster,
-  .stage-poster img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .stage-poster img {
-    opacity: 0.55;
-  }
-
-  main :global(.chapter) {
-    display: grid;
-    align-content: start;
-    gap: 1rem;
-    padding: calc(var(--header-h) + 2rem) var(--gutter) 4rem;
-    max-width: 44rem;
-  }
-
-  main :global(.chapter figure img) {
-    width: min(100%, 22rem);
-    height: auto;
-  }
-
-  .site-footer {
-    display: grid;
-    gap: 0.25rem;
-    padding: 3rem var(--gutter);
-    color: var(--text-3);
-    font-size: var(--step--1);
-  }
-</style>

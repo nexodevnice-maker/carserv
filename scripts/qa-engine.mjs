@@ -391,7 +391,7 @@ for (const profile of ['desktop', 'mobile']) {
     overflowX: document.documentElement.scrollWidth > innerWidth,
   }));
   check(G, 'un seul h1, hiérarchie sans saut', structure.h1 === 1 && structure.headings.every((h, k) => k === 0 || Number(h[1]) <= Number(structure.headings[k - 1][1]) + 1), structure.headings.join(' '));
-  check(G, 'sept chapitres dans l’ordre du registre', structure.chapters.join() === 'arrivee,intervention,transformation,prestations,bascule,location,contact', structure.chapters.join());
+  check(G, 'chapitres dans l’ordre du registre', structure.chapters.join() === 'arrivee,intervention,transformation,prestations,zone,univers,bascule,location,contact', structure.chapters.join());
   check(G, 'titre, description, langue', structure.title.length > 20 && structure.description.length > 50 && structure.lang === 'fr');
   check(G, 'aucun débordement horizontal', !structure.overflowX);
   // Les éléments fixes (en-tête) n'agrandissent pas la page : chaque lien doit être vérifié dans la vue.
@@ -422,7 +422,9 @@ for (const profile of ['desktop', 'mobile']) {
   });
   check(G, 'Tab : lien d’évitement visible avec contour', /Aller au contenu/.test(focus.text) && focus.outline !== 'none' && focus.visible, focus);
   // Navigation par chapitres (saut direct).
-  await page.click('a[href="#location"]');
+  // Après l'entrée (elle tient la page en haut) ; lien de l'en-tête (masqué sur téléphone : déclenché directement).
+  await page.waitForFunction(() => !document.documentElement.classList.contains('is-intro'), null, { timeout: 30000 }).catch(() => {});
+  await page.evaluate(() => document.querySelector('a[href="#location"]').click());
   await page.waitForFunction(() => document.querySelector('[data-track]')?.dataset.activeChapter === 'location', null, { timeout: 8000 }).catch(() => {});
   check(G, 'lien de chapitre → chapitre atteint', (await activeChapter()) === 'location', await activeChapter());
   await page.addScriptTag({ path: 'node_modules/axe-core/axe.min.js' });

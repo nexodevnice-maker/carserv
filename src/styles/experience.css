@@ -1,0 +1,708 @@
+/*
+ * Mise en scène de l'accueil. Sans script (`.js` absent) : un document lisible dans l'ordre. Avec script : la vue
+ * épinglée porte la scène WebGL et chaque texte devient une légende posée dessus, dont la visibilité est une fonction
+ * de la progression du chapitre (`--local`, écrit par le moteur) — jamais d'une horloge : l'état se reconstruit
+ * depuis le scroll, à l'aller comme au retour.
+ */
+
+/* — Scène épinglée ——————————————————————————————————————————————————————————————— */
+.stage__poster,
+.stage__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.stage__poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 66% 50%;
+  filter: brightness(0.62) contrast(1.05);
+}
+
+.stage__poster--scene img {
+  object-fit: cover;
+  object-position: 50% 50%;
+  filter: none;
+}
+
+.stage__poster--after {
+  opacity: 0;
+}
+
+.stage__canvas {
+  display: block;
+  opacity: 0;
+  transition: opacity 900ms var(--ease-out);
+}
+
+.stage__canvas.is-ready {
+  opacity: 1;
+}
+
+.is-static .stage__canvas {
+  display: none;
+}
+
+.is-static [data-active-chapter='transformation'] .stage__poster--after,
+.is-static [data-active-chapter='prestations'] .stage__poster--after {
+  opacity: 1;
+}
+
+.stage__video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Voile sous la colonne de texte (bureau) ou sous les légendes (téléphone) : jamais l'image entière assombrie. */
+.stage__veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgb(5 5 6 / 0.8) 0%, rgb(5 5 6 / 0.42) 30%, rgb(5 5 6 / 0) 54%);
+}
+
+.stage__progress {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  height: 2px;
+  background: rgb(243 241 236 / 0.06);
+}
+
+.stage__progress span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transform: scaleX(var(--p, 0));
+  transform-origin: 0 50%;
+}
+
+[data-active-chapter='bascule'] .stage__progress span,
+[data-active-chapter='location'] .stage__progress span,
+[data-active-chapter='contact'] .stage__progress span {
+  background: var(--red);
+}
+
+/* — Jauge Avant / Après (pilotée par la ligne d'eau) ————————————————————————————— */
+.gauge {
+  display: none;
+}
+
+.js .gauge {
+  position: absolute;
+  top: 50%;
+  right: var(--gutter);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  opacity: var(--gauge, 0);
+  transform: translate3d(0, -50%, 0);
+  pointer-events: none;
+}
+
+.gauge__label {
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.gauge__label--before {
+  color: rgb(243 241 236 / calc(0.9 - var(--clean, 0) * 0.55));
+}
+
+.gauge__label--after {
+  color: rgb(230 181 71 / calc(0.35 + var(--clean, 0) * 0.65));
+}
+
+.gauge__track {
+  position: relative;
+  width: 1px;
+  height: 34svh;
+  background: var(--line);
+}
+
+.gauge__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--gold);
+  transform: scaleY(var(--clean, 0));
+  transform-origin: 50% 0;
+}
+
+.gauge__dot {
+  position: absolute;
+  top: calc(var(--clean, 0) * 100% - 4px);
+  left: -4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.is-static .gauge,
+.is-poster .gauge {
+  display: none;
+}
+
+/* — Légendes ———————————————————————————————————————————————————————————————————— */
+.panel {
+  padding: 2.5rem var(--gutter) 0;
+}
+
+.js .panel,
+.js .map {
+  --f: 0.07;
+  --vis: clamp(0, min(calc((var(--local, 0) - var(--in)) / var(--f)), calc((var(--out) - var(--local, 0)) / var(--f))), 1);
+  opacity: var(--vis);
+  pointer-events: none;
+}
+
+.js .panel {
+  position: fixed;
+  top: 50%;
+  left: var(--gutter);
+  z-index: var(--z-content);
+  width: min(31rem, 40vw);
+  padding: 0;
+  transform: translate3d(0, calc(-50% + (1 - var(--vis)) * 18px), 0);
+}
+
+.js [data-state]:not([data-state='active']) .panel,
+.js [data-state]:not([data-state='active']) .map {
+  visibility: hidden;
+}
+
+.js [data-state='active'] .panel--cta {
+  pointer-events: auto;
+}
+
+.is-reduced-motion .panel {
+  transform: translate3d(0, -50%, 0);
+}
+
+.kicker {
+  margin-bottom: 1.4rem;
+  color: var(--text-2);
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.kicker span {
+  margin: 0 0.4em;
+  color: var(--gold);
+}
+
+.display {
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: 600;
+  line-height: 0.92;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.lede {
+  margin-top: 1.4rem;
+  color: var(--text-2);
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 3rem;
+  color: var(--text-3);
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.hint span {
+  width: 1px;
+  height: 2.6rem;
+  background: linear-gradient(var(--gold), rgb(230 181 71 / 0));
+}
+
+.index {
+  margin-bottom: 1rem;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+}
+
+.index span::after {
+  display: inline-block;
+  width: 3rem;
+  height: 1px;
+  margin-left: 0.9rem;
+  vertical-align: middle;
+  background: currentColor;
+  content: '';
+}
+
+.index--red {
+  color: var(--red);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: 600;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.title--small {
+  margin-bottom: 1.2rem;
+  color: var(--text-2);
+  font-size: var(--step-1);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.text {
+  max-width: 27rem;
+  margin-top: 1.2rem;
+  color: var(--text-2);
+  font-size: var(--step-0);
+  line-height: 1.55;
+}
+
+.text strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.quote {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 500;
+  line-height: 1;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.services {
+  display: grid;
+  gap: 0;
+  margin: 1.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.services li {
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.services h3 {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.services p {
+  margin-top: 0.25rem;
+  color: var(--text-2);
+}
+
+.offer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gold);
+}
+
+.offer__label {
+  color: var(--text-2);
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.offer__price {
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rate {
+  display: grid;
+}
+
+.rate__days {
+  color: var(--text-2);
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.rate__price {
+  font-family: var(--font-display);
+  font-size: var(--step-4);
+  font-weight: 700;
+  line-height: 0.95;
+}
+
+.rate__price::after {
+  display: block;
+  width: 4rem;
+  height: 2px;
+  margin-top: 0.8rem;
+  background: var(--red);
+  content: '';
+}
+
+.terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  margin: 1.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-2);
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.terms li::before {
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-right: 0.55rem;
+  vertical-align: 0.12em;
+  background: var(--red);
+  content: '';
+}
+
+.cta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.8rem;
+  min-height: 52px;
+  margin-top: 2rem;
+  padding: 0.7rem 1.4rem;
+  border: 1px solid var(--gold);
+  background: rgb(5 5 6 / 0.72);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background var(--duration-ui) linear, color var(--duration-ui) linear;
+}
+
+.cta span {
+  color: var(--gold);
+}
+
+.cta:hover {
+  background: var(--gold);
+  color: var(--night-0);
+}
+
+.cta:hover span {
+  color: var(--night-0);
+}
+
+/* — Carte du 06 ——————————————————————————————————————————————————————————————— */
+.map {
+  margin: 2rem var(--gutter);
+  --draw: 1;
+}
+
+.js .map {
+  --draw: clamp(0, calc((var(--local, 1) - 0.1) / 0.42), 1);
+  position: fixed;
+  top: 50%;
+  right: max(var(--gutter), 6vw);
+  z-index: var(--z-content);
+  width: min(36vw, 34rem);
+  margin: 0;
+  transform: translate3d(0, -50%, 0);
+}
+
+.map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.map__land,
+.map__island {
+  fill: rgb(230 181 71 / calc(max(0, var(--draw) - 0.8) * 0.4));
+  stroke: var(--gold);
+  stroke-width: 1.4;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--draw));
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.map__num {
+  fill: rgb(243 241 236 / calc(max(0, var(--draw) - 0.6) * 2.2));
+  font-family: var(--font-display);
+  font-size: 220px;
+  font-weight: 700;
+}
+
+.map__sea {
+  fill: rgb(243 241 236 / calc(max(0, var(--draw) - 0.7) * 1.6));
+  font-family: var(--font-display);
+  font-size: 34px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* — Entrée ——————————————————————————————————————————————————————————————————————— */
+.intro {
+  display: none;
+}
+
+.has-intro .intro {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-intro);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  background: var(--night-0);
+  transition:
+    opacity 800ms var(--ease-out),
+    visibility 0s linear 800ms;
+}
+
+.has-intro:not(.is-intro) .intro {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html.is-intro {
+  overflow: hidden;
+}
+
+.intro__mark {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 600;
+  letter-spacing: 0.24em;
+}
+
+.intro__mark span {
+  color: var(--gold);
+}
+
+.intro__line {
+  color: var(--text-3);
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.intro__bar {
+  width: min(14rem, 50vw);
+  height: 1px;
+  margin-top: 1rem;
+  background: var(--line);
+}
+
+.intro__bar span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transform: scaleX(var(--intro, 0));
+  transform-origin: 0 50%;
+  transition: transform 500ms var(--ease-out);
+}
+
+/* — Pas guidés ——————————————————————————————————————————————————————————————————— */
+html.is-guided {
+  scroll-snap-type: y mandatory;
+}
+
+.guide-point {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* — Pied de page ———————————————————————————————————————————————————————————————— */
+.site-footer {
+  position: relative;
+  z-index: calc(var(--z-content) + 1);
+  display: grid;
+  gap: 0.35rem;
+  padding: 4rem var(--gutter) calc(6rem + env(safe-area-inset-bottom));
+  background: var(--night-0);
+  color: var(--text-3);
+  font-size: var(--step--1);
+}
+
+/* — Affiche (capture de la première image) ——————————————————————————————————— */
+.is-poster .site-header,
+.is-poster .panel,
+.is-poster .map,
+.is-poster .mobile-bar,
+.is-poster .stage__veil,
+.is-poster .stage__progress,
+.is-poster .intro {
+  display: none !important;
+}
+
+/* — Téléphone et tablette : légendes en bas, au-dessus de la barre d'action ————— */
+@media (max-width: 1099px) {
+  .stage__poster img {
+    object-fit: cover;
+    object-position: 50% 30%;
+  }
+
+  .stage__poster--scene img {
+    object-position: 50% 50%;
+  }
+
+  .stage__veil {
+    background: linear-gradient(0deg, rgb(5 5 6 / 0.94) 0%, rgb(5 5 6 / 0.7) 24%, rgb(5 5 6 / 0) 46%);
+  }
+
+  .js .gauge {
+    top: calc(var(--header-h) + 0.2rem);
+    right: var(--gutter);
+    left: var(--gutter);
+    flex-direction: row;
+    transform: none;
+  }
+
+  .gauge__track {
+    flex: 1;
+    width: auto;
+    height: 1px;
+  }
+
+  .gauge__fill {
+    transform: scaleX(var(--clean, 0));
+    transform-origin: 0 50%;
+  }
+
+  .gauge__dot {
+    top: -4px;
+    left: calc(var(--clean, 0) * 100% - 4px);
+  }
+
+  .js .panel {
+    top: auto;
+    right: var(--gutter);
+    bottom: calc(5.6rem + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: 34rem;
+    transform: translate3d(0, calc((1 - var(--vis)) * 14px), 0);
+  }
+
+  .is-reduced-motion .panel {
+    transform: none;
+  }
+
+  .display {
+    font-size: clamp(2.3rem, 11vw, 4rem);
+  }
+
+  .title {
+    font-size: clamp(2.2rem, 11vw, 3.6rem);
+  }
+
+  .title--small {
+    font-size: var(--step-0);
+  }
+
+  .quote {
+    font-size: clamp(1.6rem, 7.4vw, 2.6rem);
+  }
+
+  .rate__price {
+    font-size: clamp(3.4rem, 18vw, 6rem);
+  }
+
+  .hint {
+    margin-top: 1.4rem;
+  }
+
+  .services li {
+    padding: 0.7rem 0;
+  }
+
+  .js .map {
+    top: calc(var(--header-h) + 0.5rem);
+    right: auto;
+    left: 50%;
+    width: min(74vw, 22rem);
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* Téléphone en paysage : légende plus compacte. */
+@media (max-height: 599px) and (pointer: coarse) {
+  .js .panel {
+    bottom: calc(4.2rem + env(safe-area-inset-bottom));
+  }
+
+  .display,
+  .title {
+    font-size: 2rem;
+  }
+
+  .js .map {
+    width: min(34vw, 14rem);
+  }
+}

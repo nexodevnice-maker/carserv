@@ -21,6 +21,7 @@ export const property = {
     'flyer-main',
     'Aussi « À votre service dans tout le 06 ! ». Communes précises : UNKNOWN — ne jamais en citer.',
   ),
+  servicePromise: fact('À votre service dans tout le 06 !', 'CONFIRMED', 'flyer-main'),
   /** Le nettoyage se fait chez le client (déplacement) ; aucun local n'est indiqué. */
   mobileService: fact(true, 'CONFIRMED', 'flyer-main', 'Pictogramme utilitaire + « Déplacement ». Adresse d’un local : UNKNOWN.'),
   channels: {

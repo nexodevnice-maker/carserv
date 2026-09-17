@@ -1,43 +1,45 @@
 /*
- * Jetons CAR SERVICE 06 — PROVISOIRES : direction artistique à arrêter pendant le vertical slice.
- * Règle (04_EXPERIENCE_DNA) : un système principal (nuit, blanc chaud) ; un accent par univers, jamais les deux à
- * pleine intensité ensemble. Les couleurs sources sont mesurées sur les flyers (scripts : relevé du 17/09/2026) et
- * conservées pour référence ; les accents utilisés en dérivent et restent à régler à l'œil sur les vraies images.
+ * Jetons CAR SERVICE 06.
+ * Système principal : la nuit et un blanc chaud. Un accent par univers, jamais les deux à pleine intensité ensemble :
+ * or (dérivé du logo du flyer nettoyage, #f9b926) pour le nettoyage et le territoire, rouge (dérivé du flyer location,
+ * #f20313) pour la location. Typographie : Barlow Condensed (dessinée d'après la signalisation routière — la route de
+ * la location, les marquages peints) pour les titres, Barlow pour le texte.
  */
 :root {
-  /* Sources mesurées (jamais utilisées telles quelles) */
-  --source-gold: #f9b926; /* logo « SERVICE06 », flyer nettoyage */
-  --source-gold-light: #fed136; /* aplat « 50€ », flyer nettoyage */
-  --source-red: #f20313; /* logo et tarifs, flyer location */
+  /* Sources mesurées (référence) */
+  --source-gold: #f9b926;
+  --source-red: #f20313;
 
   /* Nuit */
-  --night-0: #070708;
-  --night-1: #0e0e10;
-  --night-2: #17171a;
+  --night-0: #050506;
+  --night-1: #0c0c0e;
+  --night-2: #151518;
   --paper: #f3f1ec;
   --text: #f3f1ec;
-  --text-2: rgb(243 241 236 / 0.72);
+  --text-2: rgb(243 241 236 / 0.74);
   --text-3: rgb(243 241 236 / 0.58);
-  --line: rgb(243 241 236 / 0.14);
+  --line: rgb(243 241 236 / 0.16);
 
-  /* Accents par univers (à régler) : or désaturé pour le nettoyage, rouge profond pour la location */
-  --gold: #e3b449;
-  --red: #d6252b;
+  /* Accents */
+  --gold: #e6b547;
+  --red: #e0322c;
   --accent: var(--gold);
 
-  /* Typographie — famille à choisir (ni Archivo de MECA RIVIERA, ni pastiche des flyers) */
-  --font-text: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-display: var(--font-text);
-  --step--1: clamp(0.8rem, 0.78rem + 0.1vw, 0.875rem);
-  --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
-  --step-1: clamp(1.25rem, 1.15rem + 0.5vw, 1.6rem);
-  --step-2: clamp(1.6rem, 1.35rem + 1.2vw, 2.4rem);
+  /* Typographie */
+  --font-text: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --step--1: clamp(0.82rem, 0.8rem + 0.1vw, 0.9rem);
+  --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.12rem);
+  --step-1: clamp(1.2rem, 1.1rem + 0.5vw, 1.5rem);
+  --step-2: clamp(2rem, 1.5rem + 2.2vw, 3.4rem);
+  --step-3: clamp(2.6rem, 1.8rem + 3.6vw, 5.2rem);
+  --step-4: clamp(3.4rem, 2rem + 6vw, 8rem);
 
   /* Espace */
-  --gutter: clamp(1rem, 4vw, 4rem);
-  --header-h: 4rem;
+  --gutter: clamp(1.1rem, 4vw, 4.5rem);
+  --header-h: 4.25rem;
 
-  /* Mouvement (CSS seulement ; le mouvement piloté par le scroll vit dans src/experience) */
+  /* Mouvement */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --duration-ui: 220ms;
@@ -46,9 +48,11 @@
   --z-stage: 0;
   --z-content: 10;
   --z-header: 50;
+  --z-intro: 90;
   --z-skip: 100;
 }
 
-[data-universe='rental'] {
+[data-universe='rental'],
+[data-universe='bridge'] {
   --accent: var(--red);
 }

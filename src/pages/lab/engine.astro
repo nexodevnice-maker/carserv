@@ -9,6 +9,7 @@ import ExperienceTrack from '../../ui/ExperienceTrack.astro';
 ---
 
 <Base title="Laboratoire du moteur — CAR SERVICE 06" description="Piste de contrôle du moteur d’expérience." noindex qa>
+  <script is:inline slot="head">document.documentElement.classList.add('js');</script>
   <main id="contenu">
     <ExperienceTrack label="Piste de contrôle">
       <canvas slot="stage" class="probe-canvas" data-probe-canvas></canvas>

@@ -250,5 +250,33 @@
         "height": 1138
       }
     }
+  },
+  "passage": {
+    "before": {
+      "time": 5.5,
+      "desktop": {
+        "src": "/media/transformation/passage-before-desktop.webp",
+        "width": 900,
+        "height": 1424
+      },
+      "mobile": {
+        "src": "/media/transformation/passage-before-mobile.webp",
+        "width": 720,
+        "height": 1138
+      }
+    },
+    "after": {
+      "time": 8.5667,
+      "desktop": {
+        "src": "/media/transformation/passage-after-desktop.webp",
+        "width": 900,
+        "height": 1424
+      },
+      "mobile": {
+        "src": "/media/transformation/passage-after-mobile.webp",
+        "width": 720,
+        "height": 1138
+      }
+    }
   }
 }

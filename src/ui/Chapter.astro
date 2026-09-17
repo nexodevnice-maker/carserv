@@ -3,8 +3,8 @@ import type { Responsive } from '../engine/responsive/formats';
 
 /**
  * Section d'un chapitre : ancre, univers, longueur de scroll par format (données → `--span-*`, formats.css).
- * `min-height` : un texte plus long que le rythme prévu allonge le chapitre au lieu de déborder — le moteur mesure la
- * hauteur réelle.
+ * La longueur ne s'applique qu'avec script (`.js`) : sans script, le document se lit d'un seul tenant.
+ * `min-height` : un contenu plus long allonge le chapitre au lieu de déborder — le moteur mesure la hauteur réelle.
  */
 interface Props {
   id: string;
@@ -28,6 +28,9 @@ const style = Object.entries(spans)
 <style>
   .chapter {
     position: relative;
+  }
+
+  :global(.js) .chapter {
     min-height: calc(var(--span) * 1svh);
   }
 </style>

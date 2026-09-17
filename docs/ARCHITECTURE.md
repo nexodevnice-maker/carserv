@@ -86,7 +86,7 @@ src/
 │   ├── media.generated.json     sortie du pipeline vidéo
 │   └── boot.ts                  câblage de l'accueil (les scènes s'y branchent au vertical slice)
 │
-├── scenes/                      (vertical slice) une scène = abonnés de phase + couches WebGL + liaisons média
+├── scenes/                      couches WebGL : sky (univers HDRI, iris), evidence (vidéo, passage de l'eau, sol mouillé), road (route, marquages, feux)
 ├── ui/                          ExperienceTrack (vue épinglée + chapitres), Chapter, SiteHeader
 ├── layouts/Base.astro           SEO : robots, canonique, Open Graph, Twitter, JSON-LD WebSite
 ├── pages/                       index (squelette structurel), 404, robots.txt, lab/engine (instrument)
@@ -99,6 +99,8 @@ scripts/
 ├── media-env.mjs                HDRI → PMREM CubeUV 128/256
 ├── content-check.mjs            gate de publication (tout ce qui n'est pas CONFIRMED, droits médias)
 ├── qa-engine.mjs                validation navigateur (58 contrôles)
+├── media-sky.mjs / media-passage.mjs / content-map.mjs   ciel, images du passage, carte du 06
+├── capture-posters.mjs / qa-shots.mjs / qa-live.mjs      affiches, captures par pas, parcours du site publié
 ├── deploy-prepare.mjs           lots d'envoi GitHub + simulation du build Cloudflare (méthode MECA RIVIERA)
 ├── media-tools/                 ffmpeg/ffprobe du pipeline, paquet à part (jamais installé par Cloudflare)
 └── lib/                         navigateur local, outils vidéo, écriture Radiance HDR

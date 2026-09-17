@@ -1,33 +1,46 @@
 ---
-import { chapters } from '../experience/chapters';
+import { shown } from '../domain/facts';
 import { property } from '../domain/property';
 
 /**
- * En-tête : la marque et la navigation par chapitres (saut direct au clavier, au lecteur d'écran, au doigt).
- * Structure seulement — la présentation est à concevoir au vertical slice.
+ * En-tête : la marque (« 06 » à l'accent de l'univers), les chapitres (saut direct au clavier comme au doigt) et le
+ * seul canal confirmé. Sur téléphone : marque et Instagram ; l'action vit dans la barre du bas (MobileBar).
  */
-const nav = chapters.filter((c) => ['arrivee', 'prestations', 'location', 'contact'].includes(c.id));
-const labels: Record<string, string> = {
-  arrivee: 'Nettoyage',
-  prestations: 'Prestations',
-  location: 'Location',
-  contact: 'Contact',
-};
+const instagram = shown(property.channels.instagram);
+const nav = [
+  { href: '#arrivee', label: 'Nettoyage' },
+  { href: '#zone', label: 'Le 06' },
+  { href: '#location', label: 'Location' },
+  { href: '#contact', label: 'Contact' },
+];
 ---
 
 <header class="site-header">
-  <a class="site-header__brand" href="#arrivee">{property.name.value}</a>
-  <nav aria-label="Chapitres">
-    <ul class="site-header__nav">
+  <a class="site-header__brand" href="#arrivee" aria-label={`${property.name.value} — haut de page`}>
+    CAR SERVICE <span class="site-header__num">06</span>
+  </a>
+  <nav class="site-header__nav" aria-label="Chapitres">
+    <ul>
       {
-        nav.map((c) => (
+        nav.map((item) => (
           <li>
-            <a href={`#${c.id}`}>{labels[c.id]}</a>
+            <a href={item.href}>{item.label}</a>
           </li>
         ))
       }
     </ul>
   </nav>
+  {
+    instagram && (
+      <a class="site-header__social" href={`https://www.instagram.com/${instagram}/`} rel="noopener" target="_blank" aria-label={`Instagram @${instagram}`}>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.6" />
+          <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6" />
+          <circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" />
+        </svg>
+      </a>
+    )
+  }
 </header>
 
 <style>
@@ -37,52 +50,69 @@ const labels: Record<string, string> = {
     z-index: var(--z-header);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    gap: 2rem;
     height: var(--header-h);
     padding: 0 var(--gutter);
+    background: linear-gradient(180deg, rgb(5 5 6 / 0.72), rgb(5 5 6 / 0));
   }
 
   .site-header__brand {
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: 0.14em;
     text-decoration: none;
     white-space: nowrap;
   }
 
+  .site-header__num {
+    color: var(--gold);
+  }
+
   .site-header__nav {
+    margin-left: auto;
+  }
+
+  .site-header__nav ul {
     display: flex;
-    gap: 1.25rem;
+    gap: 1.6rem;
+    margin: 0;
     padding: 0;
     list-style: none;
-    font-size: var(--step--1);
   }
 
-  .site-header__nav a {
-    display: inline-block;
-    padding: 0.75rem 0;
-    text-decoration: none;
+  .site-header__nav a,
+  .site-header__social {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     color: var(--text-2);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: color var(--duration-ui) linear;
   }
 
-  /* Téléphone : marque au-dessus, liens en dessous — aucun lien coupé par le bord de l'écran. */
-  @media (max-width: 599px) {
-    .site-header {
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: center;
-      gap: 0;
-      height: auto;
-      min-height: var(--header-h);
-      padding-block: 0.5rem 0;
-    }
+  .site-header__nav a:hover,
+  .site-header__social:hover {
+    color: var(--text);
+  }
 
+  .site-header__social {
+    justify-content: center;
+    min-width: 44px;
+  }
+
+  @media (max-width: 1099px) {
     .site-header__nav {
-      gap: 1rem;
+      display: none;
     }
 
-    .site-header__nav a {
-      padding: 0.6rem 0;
+    .site-header__social {
+      margin-left: auto;
     }
   }
 </style>

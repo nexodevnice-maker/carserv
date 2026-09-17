@@ -4,7 +4,7 @@
 
 ## État
 
-Socle validé le 17/09/2026 (58/58, `npm run qa:engine`). Vertical slice pas commencé. Lire avant tout :
+Maquette complète en ligne le 17/09/2026 (https://carservice.nexodevnice.workers.dev, 60/60 `npm run qa:engine`). Lire avant tout :
 `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/MEDIA_INVENTORY.md`, `docs/EXPERIENCE_GRAMMAR.md`.
 
 ## Règles du code

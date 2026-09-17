@@ -178,6 +178,8 @@ export function createExperience(
       disposers.push(remove);
       return remove;
     },
+    /** Repos (progression globale, triés) : plans caméra et repos déclarés — pas guidés, mouvement réduit. */
+    rests: () => rests as readonly number[],
     onFormat(fn: (format: Format) => void) {
       formatListeners.add(fn);
       return () => formatListeners.delete(fn);

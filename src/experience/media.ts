@@ -2,20 +2,21 @@ import type { MediaDescriptor } from '../engine/media/media-types';
 import generated from './media.generated.json';
 
 /**
- * Registre média de CAR SERVICE 06. Les dimensions, durées et plages viennent du pipeline (scripts/media-video.mjs →
- * media.generated.json) : rien n'est recopié à la main. Provenance détaillée : docs/MEDIA_INVENTORY.md.
+ * Registre média de CAR SERVICE 06. Dimensions, durées et plages viennent du pipeline (scripts/media-video.mjs,
+ * scripts/media-passage.mjs → media.generated.json) : rien n'est recopié à la main. Provenance :
+ * docs/MEDIA_INVENTORY.md.
  *
- * Politique par format (docs/DECISIONS.md) :
- * - bureau, tablette : vidéo pilotée par le scroll (scrub H.264 GOP 5) ;
- * - mobile : séquence d'images (aucun seek décodeur ; Safari iOS et mode économie d'énergie) ;
- * - sans WebGL, économie de données, mouvement réduit : affiches « avant » et « après ».
+ * Politique par format :
+ * - bureau, tablette : vidéo pilotée par le scroll (H.264 GOP 5, chargée en mémoire : la production ignore Range) ;
+ * - mobile : séquence d'images regroupée (aucun seek décodeur) ;
+ * - toujours : les deux images exactes du passage (attente, repli, mouvement réduit).
  */
 export const segments = generated.segments as unknown as Record<'before' | 'after-hood' | 'after-flank', readonly [number, number]>;
 
 const story = 'Story Snapchat « Car-service06 », enregistrement d’écran fourni (tools/3d), recadrée et découpée';
 const storyRights = 'TO_CONFIRM — images publiées par l’entreprise ; accord du propriétaire du véhicule filmé à confirmer';
 const desktop = generated.renditions.find((r) => r.id === 'desktop');
-const posters = generated.posters;
+const passage = generated.passage;
 
 export const media: readonly MediaDescriptor[] = [
   {
@@ -27,7 +28,7 @@ export const media: readonly MediaDescriptor[] = [
     renditions: desktop
       ? [{ formats: ['desktop', 'tablet'], src: desktop.src, type: 'video/mp4', width: desktop.width, height: desktop.height, bytes: desktop.bytes }]
       : [],
-    poster: { ...posters.before.desktop },
+    poster: { ...passage.before.desktop },
     alt: 'Un SUV gris foncé couvert d’une couche de poussière — portière, capot, optique — puis le même véhicule nettoyé, dont le capot et le flanc reflètent les arbres.',
     scrub: { fps: generated.fps, duration: generated.duration },
     segments,
@@ -50,7 +51,7 @@ export const media: readonly MediaDescriptor[] = [
         bytes: generated.sequence.bytes,
       },
     ],
-    poster: { ...posters.before.mobile },
+    poster: { ...passage.before.mobile },
     alt: 'Un SUV gris foncé poussiéreux, puis le même véhicule nettoyé et brillant.',
     sequence: {
       count: generated.sequence.count,
@@ -65,39 +66,25 @@ export const media: readonly MediaDescriptor[] = [
     license: storyRights,
   },
   {
-    id: 'still-before',
+    id: 'passage',
     kind: 'image',
-    role: 'Affiche « avant » : premier écran, repli sans vidéo, mouvement réduit.',
-    chapters: ['arrivee'],
+    role: 'Les deux images exactes du passage : capot poussiéreux, capot brillant (chargées par la scène).',
+    chapters: ['arrivee', 'intervention', 'transformation'],
     priority: 'critical',
     renditions: [
-      { formats: ['desktop', 'tablet'], src: posters.before.desktop.src, type: 'image/webp', width: posters.before.desktop.width, height: posters.before.desktop.height },
-      { formats: ['mobile'], src: posters.before.mobile.src, type: 'image/webp', width: posters.before.mobile.width, height: posters.before.mobile.height },
+      { formats: ['desktop', 'tablet'], src: passage.before.desktop.src, type: 'image/webp', width: 900, height: 1424 },
+      { formats: ['mobile'], src: passage.before.mobile.src, type: 'image/webp', width: 720, height: 1138 },
     ],
-    alt: 'Capot et optique avant d’un SUV gris foncé sous une épaisse couche de poussière.',
-    source: story,
-    license: storyRights,
-  },
-  {
-    id: 'still-after',
-    kind: 'image',
-    role: 'Affiche « après » : le capot nettoyé reflète les arbres.',
-    chapters: ['transformation', 'prestations'],
-    priority: 'proximity',
-    renditions: [
-      { formats: ['desktop', 'tablet'], src: posters.after.desktop.src, type: 'image/webp', width: posters.after.desktop.width, height: posters.after.desktop.height },
-      { formats: ['mobile'], src: posters.after.mobile.src, type: 'image/webp', width: posters.after.mobile.width, height: posters.after.mobile.height },
-    ],
-    alt: 'Le capot du même SUV après nettoyage, brillant, reflétant les arbres.',
+    alt: 'Le capot du même SUV, poussiéreux puis nettoyé.',
     source: story,
     license: storyRights,
   },
   {
     id: 'env-night',
     kind: 'environment',
-    role: 'Lumière de nuit pour des reflets 3D — conditionnel, aucune scène ne l’utilise encore.',
-    chapters: [],
-    priority: 'idle',
+    role: 'Ciel de nuit du HDRI fourni, pré-calculé : reflets de la chaussée mouillée de la location.',
+    chapters: ['bascule', 'location', 'contact'],
+    priority: 'proximity',
     renditions: [{ formats: ['desktop', 'tablet', 'mobile'], src: '/env/night-128.hdr', width: 384, height: 512 }],
     alt: '',
     source: 'tools/3d/rogland_clear_night_4k.hdr — Poly Haven « Rogland Clear Night » (provenance probable)',
