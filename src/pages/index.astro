@@ -5,7 +5,6 @@ import { rentalFleet, rentalTerms } from '../domain/rental';
 import { cleaningOffers, cleaningServices } from '../domain/services';
 import { chapters } from '../experience/chapters';
 import { copy } from '../experience/copy';
-import map from '../experience/map-06.json';
 import Base from '../layouts/Base.astro';
 import BrandIcon from '../ui/BrandIcon.astro';
 import Chapter from '../ui/Chapter.astro';
@@ -112,8 +111,8 @@ const description =
         <div class="stage__progress"><span></span></div>
       </Fragment>
 
-      <Chapter id="univers" universe="territory" span={chapter('univers').span} labelledby="titre-marque">
-        <div class="panel panel--hero" style={win('univers', 'marque')}>
+      <Chapter id="galaxie" universe="territory" span={chapter('galaxie').span} labelledby="titre-marque">
+        <div class="panel panel--hero" style={win('galaxie', 'marque')}>
           <p class="kicker">{property.name.value} <span aria-hidden="true">·</span> {property.descriptors.cleaning.value}</p>
           <h1 id="titre-marque" class="display">{property.taglines[0]!.value}</h1>
           <ul class="badges" aria-label="Ce que comprend la prestation">
@@ -126,16 +125,21 @@ const description =
         <p class="sr-only">{copy.univers.alt}</p>
       </Chapter>
 
-      <Chapter id="ciel" universe="bridge" span={chapter('ciel').span} labelledby="titre-ciel">
+      <Chapter id="descente" universe="bridge" span={chapter('descente').span} labelledby="titre-ciel">
         <h2 id="titre-ciel" class="sr-only">{copy.ciel.title}</h2>
         <p class="sr-only">{copy.ciel.text}</p>
       </Chapter>
 
-      <Chapter id="territoire" universe="territory" span={chapter('territoire').span} labelledby="titre-zone">
-        <div class="panel panel--locator" style={win('territoire', 'france')}>
-          <p class="locator"><span>France</span><i aria-hidden="true"></i><span>Alpes-Maritimes</span></p>
+      <Chapter id="ville" universe="territory" span={chapter('ville').span} labelledby="titre-ville">
+        <div class="panel panel--note" style={win('ville', 'ville')}>
+          <p class="index"><span>{copy.ville.index}</span></p>
+          <h2 id="titre-ville" class="title">{copy.ville.title}</h2>
+          <p class="text">{copy.ville.text}</p>
         </div>
-        <div class="panel" style={win('territoire', 'deplacement')}>
+      </Chapter>
+
+      <Chapter id="arrivee" universe="cleaning" span={chapter('arrivee').span} labelledby="titre-zone">
+        <div class="panel" style={win('arrivee', 'deplacement')}>
           <p class="index"><span>{copy.zone.index}</span></p>
           <h2 id="titre-zone" class="title">{copy.zone.title}</h2>
           <p class="text"><strong>{property.coverage.value}.</strong> {offer.label.value}, chez vous.</p>
@@ -144,18 +148,7 @@ const description =
           </ul>
           <p class="script">{property.servicePromise.value}</p>
         </div>
-        <figure class="map" style={win('territoire', 'deplacement')}>
-          <svg viewBox={map.viewBox} role="img" aria-label="Carte des Alpes-Maritimes (06)">
-            {map.paths.map((d, k) => <path class={k === 0 ? 'map__land' : 'map__island'} d={d} pathLength="1" />)}
-            <text class="map__num" x="560" y="520">06</text>
-            <text class="map__sea" x="500" y="1215" text-anchor="middle">{copy.zone.sea}</text>
-          </svg>
-          <figcaption class="sr-only">Contour du département des Alpes-Maritimes (source : IGN Admin Express).</figcaption>
-        </figure>
-      </Chapter>
-
-      <Chapter id="avant" universe="cleaning" span={chapter('avant').span} labelledby="titre-avant">
-        <div class="panel" style={win('avant', 'avant')}>
+        <div class="panel" style={win('arrivee', 'avant')}>
           <p class="index"><span>{copy.avant.index}</span></p>
           <h2 id="titre-avant" class="title">{copy.avant.title}</h2>
           <p class="text">{copy.avant.text}</p>

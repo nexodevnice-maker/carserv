@@ -42,14 +42,17 @@ const fragmentShader = /* glsl */ `
   ${GROUND_GLSL}
   uniform float uGroundY;
   uniform vec3 uMotion;
+  uniform float uWorld;
   varying vec3 vDir;
 
   void main() {
     vec3 d = normalize(vDir);
     vec3 col;
-    if (d.y < 0.0) {
+    // uWorld : quand la caméra est dans l'espace (chapitres de la galaxie), le monde d'en bas n'existe pas encore —
+    // ni sol, ni horizon, ni collines. Il ne reste que le noir et les étoiles du modèle 3D.
+    if (d.y < 0.0 && uWorld > 0.002) {
       float t = max(cameraPosition.y - uGroundY, 0.05) / max(-d.y, 1e-5);
-      col = groundShade(cameraPosition.xz + d.xz * t, d, t, 1.0);
+      col = groundShade(cameraPosition.xz + d.xz * t, d, t, 1.0) * uWorld;
     } else if (dot(uMotion, uMotion) < 1e-8) {
       col = skySample(d) * uLight;
     } else {
@@ -102,6 +105,8 @@ export function createSkyLayer(options: SkyOptions) {
     uGroundH: { value: 9 },
     /** Présence du terrain photographié au sol (canal `terrain`). */
     uTerrain: { value: 1 },
+    /** Présence du monde d'en bas (canal `world`) : 0 dans l'espace, 1 une fois arrivé. */
+    uWorld: { value: 1 },
   };
   const material = new ShaderMaterial({
     uniforms: { ...shared, uGroundY: { value: options.groundY }, uMotion: { value: new Vector3() } },
@@ -118,7 +123,6 @@ export function createSkyLayer(options: SkyOptions) {
   const root = new Group();
   root.add(sphere);
 
-  const abort = new AbortController();
   let ready = false;
   const forward = new Vector3();
   const previous = new Vector3();
@@ -126,48 +130,15 @@ export function createSkyLayer(options: SkyOptions) {
   const motion = new Vector3();
   const last = { light: -1, yaw: NaN, fog: NaN, angle: NaN, fx: NaN, fy: NaN, fz: NaN, px: NaN, py: NaN, pz: NaN, mx: NaN, my: NaN, mz: NaN };
 
-  const load = async (url: string, ctx: StageContext) => {
-    const response = await fetch(url, { signal: abort.signal });
-    if (!response.ok) throw new Error(`${response.status} ${url}`);
-    const bitmap = await createImageBitmap(await response.blob());
-    (texture.image as ImageBitmap | undefined)?.close?.();
-    texture.image = bitmap;
-    shared.uSkySize.value.set(bitmap.width, bitmap.height);
-    // Couleur moyenne de la calotte (rangées entre ~68° et ~81° d'élévation).
-    const probe = document.createElement('canvas');
-    probe.width = 32;
-    probe.height = 1;
-    const pc = probe.getContext('2d', { willReadFrequently: true });
-    if (pc) {
-      pc.drawImage(bitmap, 0, Math.round(bitmap.height * 0.05), bitmap.width, Math.max(1, Math.round(bitmap.height * 0.07)), 0, 0, 32, 1);
-      const px = pc.getImageData(0, 0, 32, 1).data;
-      let r = 0;
-      let g = 0;
-      let b = 0;
-      for (let i = 0; i < 32; i++) {
-        r += px[i * 4]!;
-        g += px[i * 4 + 1]!;
-        b += px[i * 4 + 2]!;
-      }
-      shared.uZenith.value.set(r / 8160, g / 8160, b / 8160);
-    }
-    texture.needsUpdate = true;
-    ready = true;
-    ctx.invalidate();
-  };
-
   const layer: WebGLLayer & { uniforms: typeof shared } = {
     id: 'sky',
     root,
     uniforms: shared,
-    async init(ctx) {
-      await load(options.low, ctx).catch((error: Error) => {
-        if (error.name !== 'AbortError') console.warn('[sky]', error.message);
-      });
-      if (options.high)
-        load(options.high, ctx).catch((error: Error) => {
-          if (error.name !== 'AbortError') console.warn('[sky]', error.message);
-        });
+    init(ctx) {
+      // PLUS AUCUNE PHOTOGRAPHIE. Le ciel est calculé (shared/night-glsl) et le vrai ciel du récit est la galaxie 3D
+      // (scenes/galaxy), qu'on traverse. Cette couche ne porte plus que le sol mouillé, ses reflets et la brume.
+      ready = true;
+      ctx.invalidate();
     },
     update(state: Readonly<ExperienceState>, ctx: StageContext): LayerUpdate {
       const pose = state.camera;
@@ -208,7 +179,6 @@ export function createSkyLayer(options: SkyOptions) {
       return sway > 0.001 || motion.lengthSq() > 0 ? 'continue' : true;
     },
     dispose() {
-      abort.abort();
       (texture.image as ImageBitmap | undefined)?.close?.();
       texture.dispose();
       noise.dispose();

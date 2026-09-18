@@ -22,8 +22,12 @@ mkdirSync(OUT, { recursive: true });
  * maximale (DPR 2) au lieu de retomber à 1,25, ce qui rendait tout le site flou.
  */
 const MODELS = [
-  { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', ratio: 0.4, textures: 1024 },
-  { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', ratio: 0.4, textures: 1024 },
+  { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', ratio: 0.4, textures: 1024, mode: 'vehicle' },
+  { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', ratio: 0.4, textures: 1024, mode: 'vehicle' },
+  // L'univers : un nuage de 50 000 points colorés. On ne le simplifie pas — on le traverse.
+  { id: 'galaxy', src: 'tools/3d/GALAXY/need_some_space.glb', ratio: 1, textures: 1024, mode: 'points' },
+  // La ville de nuit : 2 000 triangles, 21 textures de façades. Tout le poids est dans les images.
+  { id: 'city', src: 'tools/3d/CITY/city-raw.glb', ratio: 1, textures: 1024, mode: 'scene' },
 ];
 
 for (const model of MODELS) {
@@ -34,7 +38,7 @@ for (const model of MODELS) {
   const out = join(OUT, `${model.id}.glb`);
   execFileSync(
     process.execPath,
-    ['build-3d.mjs', join('..', '..', model.src), join('..', '..', out), String(model.ratio), String(model.textures)],
+    ['build-3d.mjs', join('..', '..', model.src), join('..', '..', out), String(model.ratio), String(model.textures), model.mode],
     { cwd: TOOLS, stdio: 'inherit' },
   );
 }

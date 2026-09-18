@@ -20,8 +20,7 @@ import {
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
 import { WORLD } from '../../experience/world';
-import type { SharedNight } from '../map/map-layer';
-import { GROUND_GLSL, SKY_GLSL } from '../shared/night-glsl';
+import { GROUND_GLSL, SKY_GLSL, type SharedNight } from '../shared/night-glsl';
 import { FOG_DENSITY } from '../sky/sky-layer';
 
 /**

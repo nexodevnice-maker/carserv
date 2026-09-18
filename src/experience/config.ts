@@ -70,6 +70,13 @@ export const SEQUENCE_BUDGET: Record<Format, { window: number; decoded: number; 
   mobile: { window: 18, decoded: 6, concurrency: 4 },
 };
 
+/** Relevé photographique de l'enrobé (Poly Haven « Asphalt 06 », CC0), partagé par la chaussée et la place. */
+export const ROAD_ASPHALT = {
+  albedo: '/media/road/asphalt-albedo.webp',
+  arm: '/media/road/asphalt-arm.webp',
+  normal: '/media/road/asphalt-normal.webp',
+};
+
 /**
  * Destination des demandes de rendez-vous. Ce n'est PAS une adresse de l'entreprise (aucune n'est connue,
  * BUSINESS_TRUTH) : c'est la boîte de la maquette, qui relaie les demandes. Le courriel est préparé dans la messagerie
@@ -90,5 +97,5 @@ export const ENVIRONMENT = {
   sharpUrl: '/env/night-256.hdr',
   /** Les valeurs du HDRI sont celles d'une nuit : il faut les pousser pour que la laque existe. Le canal `gloss`
    * module ce niveau autour de 1 (plans de matière : un vrai miroir ; le reste du récit : une nuit polie). */
-  intensity: 2.2,
+  intensity: 3.4,
 };

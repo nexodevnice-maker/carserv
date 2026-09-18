@@ -38,40 +38,41 @@ export interface Chapter {
 
 export const chapters: readonly Chapter[] = [
   {
-    id: 'univers',
+    id: 'galaxie',
     universe: 'territory',
-    span: { desktop: 200, mobile: 210 },
-    rests: [0, 0.55],
-    panels: [{ id: 'marque', in: -1, out: 0.34 }],
-    intent:
-      'LE HÉROS : l’univers fourni. Face au cœur de la Voie lactée, au-dessus d’une mer de nuages. Puis le regard bascule vers le bas et une trouée s’ouvre : il y a un monde en dessous.',
-  },
-  {
-    id: 'ciel',
-    universe: 'bridge',
-    span: { desktop: 200, mobile: 210 },
-    rests: [0.55],
-    panels: [],
-    intent: 'Tomber dedans : la caméra traverse la mer de nuages et les crêtes sortent de la nuit, une à une, en vraie profondeur. Aucun texte.',
-  },
-  {
-    id: 'territoire',
-    universe: 'territory',
-    span: { desktop: 280, mobile: 280 },
-    rests: [0.4, 0.88],
-    panels: [
-      { id: 'france', in: 0.24, out: 0.54 },
-      { id: 'deplacement', in: 0.66, out: 0.985 },
-    ],
-    intent: 'Ce ciel couvre un pays : la France en volume, un seul point allumé — puis le 06 seul, de la mer aux montagnes.',
-  },
-  {
-    id: 'avant',
-    universe: 'cleaning',
     span: { desktop: 240, mobile: 250 },
-    rests: [0.42, 0.88],
-    panels: [{ id: 'avant', in: 0.62, out: 0.985 }],
-    intent: 'Se poser au pied de la colonne de lumière, entre les rochers : un véhicule attend. Sa laque ne renvoie plus rien.',
+    rests: [0, 0.5],
+    panels: [{ id: 'marque', in: -1, out: 0.32 }],
+    intent:
+      'LE HÉROS : on est DANS la galaxie fournie — un vrai volume de 50 000 étoiles. On avance vers le cœur, les étoiles proches défilent, les lointaines tiennent : la distance existe.',
+  },
+  {
+    id: 'descente',
+    universe: 'bridge',
+    span: { desktop: 220, mobile: 230 },
+    rests: [0.5],
+    panels: [],
+    intent: 'Le regard bascule : sous la galaxie, une lueur. Ce n’est pas une étoile — c’est une ville. Aucun texte.',
+  },
+  {
+    id: 'ville',
+    universe: 'territory',
+    span: { desktop: 240, mobile: 250 },
+    rests: [0.45],
+    panels: [{ id: 'ville', in: 0.18, out: 0.985 }],
+    intent: 'La ville de nuit, ses tours allumées, et la galaxie encore au-dessus. On descend entre les immeubles.',
+  },
+  {
+    id: 'arrivee',
+    universe: 'cleaning',
+    span: { desktop: 280, mobile: 300 },
+    rests: [0.45, 0.9],
+    panels: [
+      { id: 'deplacement', in: 0.18, out: 0.62 },
+      { id: 'avant', in: 0.66, out: 0.985 },
+    ],
+    intent:
+      'Se poser SUR LA PLACE : une aire de stationnement de nuit, mouillée, éclairée par ses candélabres — et le véhicule garé entre deux lignes. Puis au ras du sol : sa laque ne renvoie plus rien.',
   },
   {
     id: 'intervention',
@@ -157,22 +158,69 @@ export const definition: ExperienceDefinition = {
     // — Le relief en volume (crêtes et rochers). Éteint là-haut, où il n'y a rien sous nos pieds ; absent pendant que
     // la France occupe le monde (même échelle, il la traverserait) ; entier dès qu'on descend sur le 06.
     relief: [
-      { chapter: 'univers', at: 0, value: 0 },
-      { chapter: 'univers', at: 0.55, value: 0.25, pace: smooth },
-      { chapter: 'ciel', at: 0.55, value: 0.75, pace: smooth },
-      { chapter: 'territoire', at: 0.4, value: 0, pace: smooth },
-      { chapter: 'territoire', at: 0.88, value: 0.9, pace: smooth },
-      { chapter: 'avant', at: 0.42, value: 1, pace: smooth },
+      { chapter: 'galaxie', at: 0, value: 0 },
+      { chapter: 'galaxie', at: 0.5, value: 0.25, pace: smooth },
+      { chapter: 'ville', at: 0.2, value: 0.75, pace: smooth },
+
+      { chapter: 'arrivee', at: 0.45, value: 1, pace: smooth },
+    ],
+    // — L'UNIVERS : le nuage de points fourni. Il ouvre le site, on le traverse, puis il reste au-dessus de nous —
+    // c'est le même ciel, vu d'en dessous, une fois arrivé en ville.
+    galaxy: [
+      { chapter: 'galaxie', at: 0, value: 1 },
+      { chapter: 'ville', at: 0.45, value: 0.75, pace: smooth },
+      { chapter: 'arrivee', at: 0.45, value: 0.5, pace: smooth },
+      { chapter: 'contact', at: 0.6, value: 0.5 },
+    ],
+    // Une galaxie n'est jamais figée : elle tourne, très lentement, pendant tout le récit.
+    galaxySpin: [
+      { chapter: 'galaxie', at: 0, value: 0 },
+      { chapter: 'contact', at: 1, value: 0.55, pace: linear },
+    ],
+    // — LE MONDE D'EN BAS : il n'existe pas tant qu'on est dans l'espace (ni sol, ni horizon, ni collines).
+    world: [
+      { chapter: 'galaxie', at: 0, value: 0 },
+      { chapter: 'galaxie', at: 0.5, value: 0 },
+      { chapter: 'descente', at: 0.5, value: 0.35, pace: smooth },
+      { chapter: 'ville', at: 0.45, value: 1, pace: smooth },
+    ],
+    // — LA VILLE : elle apparaît par ses fenêtres, d'abord une lueur, puis un lieu.
+    city: [
+      { chapter: 'galaxie', at: 0.6, value: 0 },
+      { chapter: 'descente', at: 0.5, value: 1, pace: smooth },
+      { chapter: 'location', at: 0.93, value: 1 },
+      { chapter: 'rendezvous', at: 0.3, value: 0, pace: smooth },
+    ],
+    cityWindow: [
+      { chapter: 'galaxie', at: 0.55, value: 0 },
+      { chapter: 'descente', at: 0.5, value: 0.85, pace: smooth },
+      { chapter: 'ville', at: 0.45, value: 1, pace: smooth },
+      { chapter: 'location', at: 0.93, value: 1 },
+      { chapter: 'rendezvous', at: 0.3, value: 0, pace: smooth },
+    ],
+    // — La place : elle apparaît quand on descend sous les nuages et ne repart qu'avec la bascule vers la route.
+    place: [
+      { chapter: 'descente', at: 0.2, value: 0 },
+      { chapter: 'ville', at: 0.3, value: 1, pace: smooth },
+      { chapter: 'prestations', at: 1, value: 1 },
+      { chapter: 'bascule', at: 0.35, value: 0, pace: { window: [0, 1], ease: 'in' } },
+    ],
+    // Les candélabres s'allument juste avant qu'on arrive : c'est eux qui font exister le lieu.
+    placeLamp: [
+      { chapter: 'descente', at: 0.4, value: 0 },
+      { chapter: 'arrivee', at: 0.45, value: 1, pace: smooth },
+      { chapter: 'prestations', at: 1, value: 1 },
+      { chapter: 'bascule', at: 0.3, value: 0, pace: smooth },
     ],
     // — Le véhicule de la démonstration : il nous attend en bas, sale.
     carLight: [
-      { chapter: 'territoire', at: 0.88, value: 0 },
-      { chapter: 'avant', at: 0.42, value: 1, pace: smooth },
+      { chapter: 'descente', at: 0.3, value: 0 },
+      { chapter: 'arrivee', at: 0.45, value: 1, pace: smooth },
       { chapter: 'prestations', at: 1, value: 1 },
       { chapter: 'bascule', at: 0.3, value: 0, pace: { window: [0, 1], ease: 'in' } },
     ],
     dirt: [
-      { chapter: 'univers', at: 0, value: 1 },
+      { chapter: 'galaxie', at: 0, value: 1 },
       { chapter: 'intervention', at: 1, value: 1 },
       { chapter: 'transformation', at: 0.1, value: 0, pace: linear },
     ],
@@ -182,14 +230,14 @@ export const definition: ExperienceDefinition = {
       { chapter: 'intervention', at: 0.9, value: 1, pace: linear },
     ],
     polish: [
-      { chapter: 'univers', at: 0, value: 0 },
+      { chapter: 'galaxie', at: 0, value: 0 },
       { chapter: 'intervention', at: 0.12, value: 0 },
       { chapter: 'intervention', at: 0.9, value: 1, pace: linear },
       { chapter: 'prestations', at: 1, value: 1 },
     ],
     // Niveau de reflet des véhicules : sale, une carrosserie ne renvoie rien ; vernie, elle rend le ciel entier.
     gloss: [
-      { chapter: 'avant', at: 0.42, value: 0.72 },
+      { chapter: 'arrivee', at: 0.45, value: 0.72 },
       { chapter: 'intervention', at: 0.12, value: 0.72 },
       { chapter: 'intervention', at: 0.9, value: 1.2, pace: linear },
       { chapter: 'transformation', at: 0.35, value: 1.3, pace: smooth },
@@ -201,8 +249,8 @@ export const definition: ExperienceDefinition = {
       { chapter: 'intervention', at: 0.9, value: 1, pace: linear },
     ],
     gauge: [
-      { chapter: 'avant', at: 0.62, value: 0 },
-      { chapter: 'avant', at: 0.88, value: 1, pace: smooth },
+      { chapter: 'arrivee', at: 0.66, value: 0 },
+      { chapter: 'arrivee', at: 0.9, value: 1, pace: smooth },
       { chapter: 'transformation', at: 0.5, value: 1 },
       { chapter: 'transformation', at: 0.75, value: 0, pace: smooth },
     ],
@@ -224,16 +272,19 @@ export const definition: ExperienceDefinition = {
     ],
     // La balise : une adresse. Elle s'allume quand le pays apparaît, s'éteint quand on est arrivé.
     beacon: [
-      { chapter: 'ciel', at: 0.55, value: 0 },
-      { chapter: 'territoire', at: 0.4, value: 1, pace: smooth },
-      { chapter: 'avant', at: 0.42, value: 1 },
-      { chapter: 'avant', at: 0.72, value: 0, pace: smooth },
+      { chapter: 'galaxie', at: 0.5, value: 0 },
+      { chapter: 'ville', at: 0.2, value: 1, pace: smooth },
+      { chapter: 'arrivee', at: 0.45, value: 0.3, pace: smooth },
+      { chapter: 'arrivee', at: 0.7, value: 0, pace: smooth },
     ],
     // — L'univers, présent d'un bout à l'autre ; tenu en retrait quand la matière est le sujet.
     skyLight: [
-      { chapter: 'univers', at: 0, value: 1 },
-      { chapter: 'avant', at: 0.42, value: 0.95, pace: smooth },
-      { chapter: 'avant', at: 0.88, value: 0.7, pace: smooth },
+      { chapter: 'galaxie', at: 0, value: 0.16 },
+      { chapter: 'galaxie', at: 0.5, value: 0.12, pace: smooth },
+      { chapter: 'descente', at: 0.5, value: 0.5, pace: smooth },
+      { chapter: 'ville', at: 0.45, value: 1, pace: smooth },
+      { chapter: 'arrivee', at: 0.45, value: 0.95, pace: smooth },
+      { chapter: 'arrivee', at: 0.9, value: 0.7, pace: smooth },
       { chapter: 'intervention', at: 0.18, value: 0.55, pace: smooth },
       { chapter: 'transformation', at: 0.35, value: 0.9, pace: smooth },
       { chapter: 'prestations', at: 0.85, value: 0.85 },
@@ -243,45 +294,31 @@ export const definition: ExperienceDefinition = {
       { chapter: 'contact', at: 0.6, value: 1, pace: smooth },
     ],
     // Un seul ciel : même rotation d'un bout à l'autre (le nord regarde le cœur de la Voie lactée).
-    skyYaw: [{ chapter: 'univers', at: 0, value: WORLD.skyYaw }],
+    skyYaw: [{ chapter: 'galaxie', at: 0, value: WORLD.skyYaw }],
     // Un lent balancement, seulement là-haut : dans l'univers, rien n'est jamais parfaitement immobile.
     skySway: [
-      { chapter: 'univers', at: 0, value: 1 },
-      { chapter: 'ciel', at: 0.3, value: 0, pace: linear },
+      { chapter: 'galaxie', at: 0, value: 1 },
+      { chapter: 'descente', at: 0.3, value: 0, pace: linear },
     ],
     // Noir au loin selon l'altitude : transparent dans le ciel, dense au sol (la nuit se referme autour du véhicule).
     fog: [
-      { chapter: 'univers', at: 0, value: 0.00005 },
-      { chapter: 'ciel', at: 0.55, value: 0.00022, pace: smooth },
-      { chapter: 'territoire', at: 0.4, value: 0.000006, pace: smooth },
-      { chapter: 'territoire', at: 0.88, value: 0.00007, pace: smooth },
-      { chapter: 'avant', at: 0.42, value: 0.0011, pace: smooth },
-      { chapter: 'avant', at: 0.88, value: 0.0042, pace: smooth },
+      { chapter: 'galaxie', at: 0, value: 0.00005 },
+      { chapter: 'descente', at: 0.5, value: 0.00022, pace: smooth },
+      { chapter: 'ville', at: 0.45, value: 0.0004, pace: smooth },
+      { chapter: 'arrivee', at: 0.45, value: 0.0011, pace: smooth },
+      { chapter: 'arrivee', at: 0.9, value: 0.0042, pace: smooth },
       { chapter: 'prestations', at: 0.85, value: 0.0035 },
       { chapter: 'bascule', at: 0.5, value: 0.0002, pace: smooth },
       { chapter: 'bascule', at: 0.9, value: 0.0075, pace: { window: [0.35, 1], ease: 'in' } },
       { chapter: 'location', at: 0.93, value: 0.0075 },
       { chapter: 'contact', at: 0.6, value: 0.0014, pace: smooth },
     ],
+    // Les nuages n'ont rien à faire dans l'espace : ils reviennent en arrivant sur la ville, très bas.
     clouds: [
-      { chapter: 'univers', at: 0, value: 1 },
-      { chapter: 'ciel', at: 0.55, value: 0.7, pace: smooth },
-      { chapter: 'territoire', at: 0.4, value: 0.35, pace: smooth },
-      { chapter: 'territoire', at: 0.88, value: 0.8, pace: smooth },
-      { chapter: 'avant', at: 0.42, value: 1, pace: smooth },
-    ],
-    // Le pays : il n'apparaît QUE pour l'unité de la France. Dans l'univers, sous nos pieds, il n'y a que des nuages.
-    franceLight: [
-      { chapter: 'ciel', at: 0.55, value: 0 },
-      { chapter: 'territoire', at: 0.28, value: 1, pace: smooth },
-      { chapter: 'territoire', at: 0.62, value: 1 },
-      { chapter: 'territoire', at: 0.92, value: 0, pace: smooth },
-    ],
-    // La vague de lumière parcourt le 06 pendant la descente.
-    mapReveal: [
-      { chapter: 'ciel', at: 0.55, value: 0 },
-      { chapter: 'territoire', at: 0.4, value: 0.42, pace: smooth },
-      { chapter: 'territoire', at: 0.88, value: 1, pace: smooth },
+      { chapter: 'galaxie', at: 0, value: 0 },
+      { chapter: 'descente', at: 0.5, value: 0, pace: smooth },
+      { chapter: 'ville', at: 0.45, value: 0.45, pace: smooth },
+      { chapter: 'arrivee', at: 0.45, value: 0.8, pace: smooth },
     ],
     // — La route : le tracé rouge se dessine vu du ciel, la chaussée et les feux s'allument à l'arrivée.
     roadDraw: [

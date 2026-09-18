@@ -22,9 +22,15 @@ import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 import { statSync } from 'node:fs';
 
-const [src, out, ratioArg, sizeArg] = process.argv.slice(2);
+const [src, out, ratioArg, sizeArg, modeArg] = process.argv.slice(2);
 const ratio = Number(ratioArg ?? 0.45);
 const size = Number(sizeArg ?? 1024);
+/**
+ * `mode` : `vehicle` (chaîne complète), `scene` (décor : on fusionne et on compresse, mais on ne simplifie pas une
+ * géométrie déjà basse), `points` (nuage de points : ni soudure ni simplification — elles n'ont aucun sens sur des
+ * points, et les détruiraient).
+ */
+const mode = modeArg ?? 'vehicle';
 
 await MeshoptEncoder.ready;
 await MeshoptSimplifier.ready;
@@ -49,18 +55,33 @@ for (const animation of root.listAnimations()) animation.dispose();
 for (const node of root.listNodes()) node.setSkin(null);
 for (const skin of root.listSkins()) skin.dispose();
 
-await document.transform(
-  dequantize(),
-  prune({ keepAttributes: false, keepLeaves: false, keepSolidTextures: false }),
-  dedup(),
-  flatten(),
-  join({ keepNamed: false }),
-  weld(),
-  simplify({ simplifier: MeshoptSimplifier, ratio, error: 0.0012, lockBorder: false }),
-  textureCompress({ encoder: sharp, targetFormat: 'webp', resize: [size, size] }),
-  quantize(),
-  meshopt({ encoder: MeshoptEncoder, level: 'high' }),
-);
+const steps =
+  mode === 'points'
+    ? [prune({ keepAttributes: true, keepLeaves: false }), dedup()]
+    : mode === 'scene'
+      ? [
+          dequantize(),
+          prune({ keepAttributes: false, keepLeaves: false, keepSolidTextures: false }),
+          dedup(),
+          flatten(),
+          join({ keepNamed: true }),
+          textureCompress({ encoder: sharp, targetFormat: 'webp', resize: [size, size] }),
+          quantize(),
+          meshopt({ encoder: MeshoptEncoder, level: 'high' }),
+        ]
+      : [
+          dequantize(),
+          prune({ keepAttributes: false, keepLeaves: false, keepSolidTextures: false }),
+          dedup(),
+          flatten(),
+          join({ keepNamed: false }),
+          weld(),
+          simplify({ simplifier: MeshoptSimplifier, ratio, error: 0.0012, lockBorder: false }),
+          textureCompress({ encoder: sharp, targetFormat: 'webp', resize: [size, size] }),
+          quantize(),
+          meshopt({ encoder: MeshoptEncoder, level: 'high' }),
+        ];
+await document.transform(...steps);
 
 await io.write(out, document);
 const after = count();

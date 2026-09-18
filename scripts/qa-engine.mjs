@@ -394,7 +394,7 @@ for (const profile of ['desktop', 'mobile']) {
     overflowX: document.documentElement.scrollWidth > innerWidth,
   }));
   check(G, 'un seul h1, hiérarchie sans saut', structure.h1 === 1 && structure.headings.every((h, k) => k === 0 || Number(h[1]) <= Number(structure.headings[k - 1][1]) + 1), structure.headings.join(' '));
-  check(G, 'chapitres dans l’ordre du registre', structure.chapters.join() === 'univers,ciel,territoire,avant,intervention,transformation,prestations,bascule,location,rendezvous,contact', structure.chapters.join());
+  check(G, 'chapitres dans l’ordre du registre', structure.chapters.join() === 'galaxie,descente,ville,arrivee,intervention,transformation,prestations,bascule,location,rendezvous,contact', structure.chapters.join());
   check(G, 'titre, description, langue', structure.title.length > 20 && structure.description.length > 50 && structure.lang === 'fr');
   check(G, 'aucun débordement horizontal', !structure.overflowX);
   // Les éléments fixes (en-tête) n'agrandissent pas la page : chaque lien doit être vérifié dans la vue.
@@ -412,7 +412,7 @@ for (const profile of ['desktop', 'mobile']) {
     const track = document.querySelector('[data-track]');
     return { chapter: track?.dataset.activeChapter, p: track?.style.getPropertyValue('--p'), html: document.documentElement.className };
   });
-  check(G, 'moteur actif sur la page', trackState.chapter === 'univers' && trackState.p !== '' && /has-experience/.test(trackState.html), trackState);
+  check(G, 'moteur actif sur la page', trackState.chapter === 'galaxie' && trackState.p !== '' && /has-experience/.test(trackState.html), trackState);
   const hooks = await page.evaluate(() => ({ dev: Boolean(document.querySelector('script[src*="@vite/client"]')), qa: '__experience' in window }));
   check(G, 'crochets de QA : présents en dev seulement', hooks.dev === hooks.qa, hooks);
   // Focus visible au clavier, depuis le haut d'une page fraîche (avant tout clic).

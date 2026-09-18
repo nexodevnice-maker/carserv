@@ -1,0 +1,166 @@
+import { AdditiveBlending, Box3, Group, Points, ShaderMaterial, Vector3, type BufferGeometry, type Object3D } from 'three';
+import type { ExperienceState } from '../../engine/state/experience-state';
+import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
+
+/**
+ * LA GALAXIE — l'univers du site, et un vrai volume.
+ *
+ * Le modèle fourni (`need_some_space.glb`) est un **nuage de 50 000 points colorés**, pas une image : chaque étoile a
+ * une position dans l'espace. C'est exactement ce qui manquait au panorama 360° — une photographie tourne autour de
+ * son point de prise de vue et ne bouge jamais ; ici, on TRAVERSE. Quand la caméra avance, les étoiles proches
+ * défilent, les lointaines restent : la parallaxe est réelle, donc la distance existe.
+ *
+ * Rendu : un point = un disque doux, additif, dont la taille décroît avec la distance (`sizeAttenuation` maison, borné
+ * pour qu'une étoile proche ne remplisse pas l'écran). Aucune lumière, aucune texture : la couleur est dans le modèle.
+ * Un seul appel de dessin pour tout l'univers.
+ *
+ * Canaux : `galaxy` (présence) et `galaxySpin` (rotation lente sur son axe — une galaxie n'est jamais figée).
+ */
+const galaxyVertex = /* glsl */ `
+  uniform float uSize;
+  uniform float uPixels;
+  uniform float uBright;
+  varying vec3 vColor;
+  varying float vFade;
+  void main() {
+    // Le modèle fourni porte ses couleurs en RGBA : on ne garde que la couleur (l'alpha est géré par le halo).
+    vColor = color.rgb;
+    vec4 view = viewMatrix * modelMatrix * vec4(position, 1.0);
+    float dist = -view.z;
+    // Taille apparente : constante en unités du monde, bornée pour rester lisible de près comme de loin.
+    gl_PointSize = clamp(uSize * uPixels / max(dist, 1.0), 1.0, 26.0);
+    // Les étoiles très proches s'estompent : sinon on traverse des taches.
+    vFade = smoothstep(0.0, 1.0, clamp(dist / (uSize * 6.0), 0.0, 1.0)) * uBright;
+    gl_Position = projectionMatrix * view;
+  }
+`;
+
+const galaxyFragment = /* glsl */ `
+  varying vec3 vColor;
+  varying float vFade;
+  void main() {
+    // Disque doux : un noyau net, un halo qui meurt. Pas de texture, pas de bord dur.
+    vec2 d = gl_PointCoord - 0.5;
+    float r = dot(d, d) * 4.0;
+    if (r > 1.0) discard;
+    float core = exp(-r * 5.5) + exp(-r * 1.6) * 0.35;
+    gl_FragColor = vec4(vColor * core * vFade, 1.0);
+  }
+`;
+
+export interface GalaxyOptions {
+  url: string;
+  /** Fichier déjà en cours de téléchargement (boot.ts). */
+  buffer?: Promise<ArrayBuffer>;
+  /** Diamètre de la galaxie dans le monde (m) : c'est l'échelle du voyage. */
+  diameter: number;
+  /** Centre de la galaxie dans le monde (m). */
+  at: readonly [number, number, number];
+  /** Taille apparente d'une étoile (m à un mètre) et inclinaison du disque (rad). */
+  starSize: number;
+  tilt: number;
+  chapters?: readonly string[];
+}
+
+export function createGalaxyLayer(options: GalaxyOptions) {
+  const root = new Group();
+  root.name = 'galaxy';
+  const body = new Group();
+  body.position.set(options.at[0], options.at[1], options.at[2]);
+  body.rotation.z = options.tilt;
+  body.visible = false;
+  root.add(body);
+  const uniforms = {
+    uSize: { value: options.starSize },
+    uPixels: { value: 600 },
+    uBright: { value: 0 },
+  };
+  const material = new ShaderMaterial({
+    uniforms,
+    vertexShader: galaxyVertex,
+    fragmentShader: galaxyFragment,
+    transparent: true,
+    depthWrite: false,
+    depthTest: true,
+    blending: AdditiveBlending,
+    vertexColors: true,
+  });
+  let stage: StageContext | null = null;
+  let loading: Promise<void> | null = null;
+  let loaded = false;
+  const last = { bright: -1, spin: NaN };
+
+  /** Mise à l'échelle : le nuage est ramené au diamètre voulu, centré sur son propre barycentre. */
+  const place = (scene: Object3D) => {
+    const box = new Box3().setFromObject(scene);
+    const size = box.getSize(new Vector3());
+    const center = box.getCenter(new Vector3());
+    const scale = options.diameter / Math.max(size.x, size.y, size.z);
+    scene.scale.multiplyScalar(scale);
+    scene.position.sub(center.multiplyScalar(scale));
+    // Un nœud glTF peut avoir `matrixAutoUpdate` à false (sa matrice vient du fichier) : sans cette remise à jour
+    // explicite, changer position ou échelle n'a AUCUN effet — le modèle reste à la taille du fichier.
+    scene.matrixAutoUpdate = true;
+    scene.updateMatrix();
+    scene.traverse((node) => {
+      const points = node as Points;
+      if (!points.isPoints) return;
+      points.material = material;
+      points.frustumCulled = false;
+      (points.geometry as BufferGeometry).computeBoundingSphere();
+    });
+    body.add(scene);
+  };
+
+  const load = async () => {
+    const [{ GLTFLoader }, { MeshoptDecoder }] = await Promise.all([
+      import('three/addons/loaders/GLTFLoader.js'),
+      import('three/addons/libs/meshopt_decoder.module.js'),
+    ]);
+    const loader = new GLTFLoader();
+    loader.setMeshoptDecoder(MeshoptDecoder);
+    const gltf = options.buffer ? await loader.parseAsync(await options.buffer, '') : await loader.loadAsync(options.url);
+    place(gltf.scene);
+    loaded = true;
+    if (!stage) return;
+    await stage.renderer.compileAsync(body, stage.camera, stage.scene).catch(() => undefined);
+    stage.invalidate();
+  };
+
+  const layer: WebGLLayer & { ensure(): Promise<void> } = {
+    id: 'galaxy',
+    chapters: options.chapters,
+    root,
+    init(ctx: StageContext) {
+      stage = ctx;
+      uniforms.uPixels.value = ctx.height * 0.5;
+    },
+    resize(ctx: StageContext) {
+      // La taille d'une étoile est donnée en mètres : elle doit suivre la hauteur du rendu, pas les pixels.
+      uniforms.uPixels.value = ctx.height * 0.5;
+    },
+    ensure() {
+      loading ??= load().catch((error: unknown) => {
+        loading = null;
+        console.warn('[galaxy]', error instanceof Error ? error.message : error);
+      });
+      return loading;
+    },
+    update(state: Readonly<ExperienceState>): LayerUpdate {
+      const bright = state.channels.galaxy ?? 0;
+      const spin = state.channels.galaxySpin ?? 0;
+      body.visible = loaded && bright > 0.001;
+      if (!body.visible) return false;
+      if (bright === last.bright && spin === last.spin) return false;
+      last.bright = bright;
+      last.spin = spin;
+      uniforms.uBright.value = bright;
+      body.rotation.y = spin;
+      return true;
+    },
+    dispose() {
+      material.dispose();
+    },
+  };
+  return layer;
+}

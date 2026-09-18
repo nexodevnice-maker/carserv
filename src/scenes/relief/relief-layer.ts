@@ -1,8 +1,7 @@
 import { BufferGeometry, Float32BufferAttribute, Group, IcosahedronGeometry, InstancedMesh, Matrix4, Mesh, Quaternion, ShaderMaterial, Vector3 } from 'three';
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
-import type { SharedNight } from '../map/map-layer';
-import { GROUND_GLSL, SKY_GLSL } from '../shared/night-glsl';
+import { GROUND_GLSL, SKY_GLSL, type SharedNight } from '../shared/night-glsl';
 
 /**
  * LE RELIEF — le monde en volume autour de nous.

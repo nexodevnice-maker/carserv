@@ -252,6 +252,10 @@ export function createVehicleLayer(options: VehicleOptions) {
     const center = box.getCenter(new Vector3()).multiplyScalar(scale);
     const floor = box.min.y * scale;
     model.position.set(-center.x, -floor, -center.z);
+    // Un nœud glTF peut avoir `matrixAutoUpdate` à false (sa matrice vient du fichier) : sans cette remise à jour
+    // explicite, changer position ou échelle n'a AUCUN effet — le modèle reste à la taille du fichier.
+    model.matrixAutoUpdate = true;
+    model.updateMatrix();
     const inner = new Group();
     inner.add(model);
     inner.rotation.y = -options.heading + (axis === 'z' ? Math.PI / 2 : 0) + (options.flip ? Math.PI : 0);

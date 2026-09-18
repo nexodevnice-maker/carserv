@@ -1,38 +1,41 @@
-import france from './map-france.json';
 import type { CloudField } from '../scenes/clouds/cloud-layer';
 
 /**
  * Composition du monde de CAR SERVICE 06, en mètres : un seul univers, à l'échelle, que la caméra traverse d'un bout à
  * l'autre du récit. Tout le voyage est tourné vers le nord, vers le cœur de la Voie lactée.
- * - le 06 : le contour IGN à l'échelle 1 m par unité de carte (≈ 1 km × 1,1 km), plateau affleurant à y = 0,
- *   falaises d'or de 40 m sur la mer de nuit ;
- * - le véhicule de la démonstration à l'origine, capot vers l'est, sur un point sans nom ;
+ * - la place de stationnement à l'origine : enrobé mouillé, places peintes, trois candélabres ;
+ * - le véhicule de la démonstration garé dans la place centrale, capot vers l'est ;
  * - la route de la location part vers le nord derrière lui : son point de fuite tombe sous la galaxie ;
  * - une mer de nuages à 1 500 m (percée d'une trouée pour la plongée vers le 06) et des bancs bas vers 400 m.
  */
 const NORTH = -Math.PI / 2;
 
-const anchor = [400, 900] as const;
-/** Boîte de la France dans le monde (mêmes unités que la carte : 1 unité = 1 m ; 1 m ≈ 90 m réels). */
-const box = france.box.map((v, k) => v - anchor[k % 2]);
-
 export const WORLD = {
-  /** La France : centre et taille dans le monde, calculés depuis les contours (map-france.json). */
-  france: {
-    center: [(box[0]! + box[2]!) / 2, (box[1]! + box[3]!) / 2] as const,
-    size: [box[2]! - box[0]!, box[3]! - box[1]!] as const,
-  },
   /** Rotation du ciel, constante sur tout le site : regarder au nord, c'est regarder le cœur de la Voie lactée. */
   skyYaw: 1.32,
   north: NORTH,
-  map: {
-    /** Point de la carte (viewBox de map-06.json) posé à l'origine du monde : l'emplacement du véhicule. */
-    anchor,
-    scale: 1,
-    depth: 40,
-    bevel: 5,
-    numberAt: [640, 470] as const,
-    seaAt: [520, 1205] as const,
+  /** Profondeur de la mer de nuit sous le sol du monde (m) : le sol de l'univers, hors de la place. */
+  seaDepth: 40,
+  /**
+   * LA GALAXIE (modèle fourni, nuage de 50 000 points) : l'univers du site, et un vrai volume qu'on traverse.
+   * Diamètre en mètres — c'est l'échelle du voyage ; la caméra part de l'intérieur et en sort par le bas.
+   */
+  galaxy: { diameter: 30000, at: [0, 12000, -4000] as const, starSize: 52, tilt: 0.42 },
+  /** LA VILLE (modèle fourni) : posée à l'ouest de la place, elle ferme l'horizon derrière le véhicule. */
+  city: { height: 240, at: [-155, -205] as const, heading: 0.25 },
+  /**
+   * LA PLACE : l'aire de stationnement où le véhicule est garé, centrée sur l'origine du monde. Le véhicule occupe la
+   * place centrale du côté droit ; l'allée passe devant lui, c'est par là que la caméra arrive.
+   */
+  place: {
+    size: [70, 48] as const,
+    bay: { width: 2.6, length: 5.4, count: 5 },
+    lamps: [
+      [7.6, -9.1],
+      [7.6, 9.1],
+      [-4.2, 14.6],
+    ] as const,
+    lampHeight: 7.2,
   },
   /**
    * Les deux véhicules (modèles 3D fournis, tools/3d). Longueurs réelles des modèles concernés : le modèle est mis à
@@ -63,7 +66,7 @@ export const WORLD = {
       { radius: 7600, height: 900, segments: 180 },
       { radius: 17000, height: 1750, segments: 150 },
     ],
-    rocks: { count: 54, inner: 9, outer: 74, small: 0.5, large: 2.4 },
+    rocks: { count: 54, inner: 46, outer: 140, small: 0.6, large: 3.2 },
     corridor: { lane: 0, width: 11, from: -230, to: -680 },
   },
   cloudFar: 8000,

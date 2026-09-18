@@ -7,14 +7,20 @@ export const copy = {
   hero: { script: 'Un véhicule propre, c’est un plaisir au quotidien !' },
   /** Unité 1 : le héros. L'image 360° fournie, telle qu'elle a été photographiée. */
   univers: {
-    alt: 'Ciel de nuit réel photographié en 360° : la Voie lactée au-dessus d’une mer de nuages, les crêtes des montagnes en dessous.',
+    alt: 'Une galaxie en trois dimensions, faite de dizaines de milliers d’étoiles colorées, que la caméra traverse.',
+  },
+  /** Unité 4 : la ville de nuit, lieu d'arrivée. */
+  ville: {
+    index: '01',
+    title: 'La nuit, en ville',
+    text: 'On descend entre les tours. C’est ici que le véhicule attend — et c’est ici qu’on se déplace.',
   },
   /** Unité 3 : aucun texte à l'écran, seulement pour qui ne voit pas la scène. */
   ciel: {
-    title: 'Descendre dans le 06',
-    text: 'La caméra traverse la mer de nuages ; les crêtes des montagnes sortent de la nuit l’une derrière l’autre, puis le département apparaît, éclairé d’un seul point.',
+    title: 'Descendre sur la ville',
+    text: 'Le regard bascule sous la galaxie : une lueur grandit en dessous. Ce n’est pas une étoile, c’est une ville de nuit — et c’est là qu’on va.',
   },
-  zone: { index: '01', title: 'Dans tout le 06', sea: 'Mer Méditerranée' },
+  zone: { index: '02', title: 'Dans tout le 06', sea: 'Mer Méditerranée' },
   avant: {
     index: '02',
     title: 'Avant',

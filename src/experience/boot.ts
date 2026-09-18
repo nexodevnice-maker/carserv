@@ -9,9 +9,8 @@ import type { VehicleLightLayer } from '../scenes/vehicle/vehicle-light';
 import { chapters, definition } from './chapters';
 import { ENGINE, ENVIRONMENT, MEDIA_POLICY, STAGE } from './config';
 import { copy } from './copy';
-import france from './map-france.json';
-import map from './map-06.json';
 import { media } from './media';
+import { ROAD_ASPHALT } from './config';
 import { WORLD } from './world';
 
 /**
@@ -47,11 +46,11 @@ export function boot() {
           return response.arrayBuffer();
         })
       : undefined;
+  const galaxyFile = heavy('/models/galaxy.glb');
   const carFile = heavy('/models/rs6.glb');
-  const nightFile = heavy(state.format === 'desktop' ? ENVIRONMENT.sharpUrl : ENVIRONMENT.url[state.format]);
   // Une erreur réseau ici n'est pas fatale : la couche retombe sur son propre chargement.
+  galaxyFile?.catch(() => undefined);
   carFile?.catch(() => undefined);
-  nightFile?.catch(() => undefined);
 
   // — Entrée.
   const introStart = performance.now();
@@ -102,6 +101,8 @@ export function boot() {
     wake: experience.invalidate,
   });
 
+  let galaxyLayer: { ensure(): Promise<void> } | null = null;
+  let cityLayer: { ensure(): Promise<void> } | null = null;
   let cleaningCar: VehicleLayer | null = null;
   let rentalCar: VehicleLayer | null = null;
   let vehicleLight: VehicleLightLayer | null = null;
@@ -119,9 +120,10 @@ export function boot() {
       // recompilation de shaders au pire moment.
       release() {},
     });
+  bindLayer('galaxy', () => galaxyLayer);
+  bindLayer('city', () => cityLayer);
   bindLayer('vehicle-cleaning', () => cleaningCar);
   bindLayer('vehicle-rental', () => rentalCar);
-  bindLayer('env-night', () => vehicleLight);
 
   // Jauge Avant / Après : deux variables CSS sur la vue épinglée, réécrites seulement si elles changent.
   const dom = createDomWriter();
@@ -153,7 +155,9 @@ export function boot() {
     Promise.all([
       import('../engine/webgl/webgl-stage'),
       import('../scenes/sky/sky-layer'),
-      import('../scenes/map/map-layer'),
+      import('../scenes/place/place-layer'),
+      import('../scenes/galaxy/galaxy-layer'),
+      import('../scenes/city/city-layer'),
       import('../scenes/clouds/cloud-layer'),
       import('../scenes/beacon/beacon-layer'),
       import('../scenes/relief/relief-layer'),
@@ -165,7 +169,9 @@ export function boot() {
         async ([
           { createWebGLStage },
           { createSkyLayer },
-          { createMapLayer },
+          { createPlaceLayer },
+          { createGalaxyLayer },
+          { createCityLayer },
           { createCloudLayer },
           { createBeaconLayer },
           { createReliefLayer },
@@ -179,22 +185,16 @@ export function boot() {
           const sky = createSkyLayer({
             low: '/env/sky-2048.webp',
             high: desktop ? '/env/sky-4096.webp' : undefined,
-            groundY: -WORLD.map.depth,
+            groundY: -WORLD.seaDepth,
             streakTaps: desktop ? 10 : 6,
           });
-          const territory = createMapLayer(
-            {
-              data: map,
-              france,
-              anchor: WORLD.map.anchor,
-              scale: WORLD.map.scale,
-              depth: WORLD.map.depth,
-              bevel: WORLD.map.bevel,
-              labels: { number: '06', numberAt: WORLD.map.numberAt, sea: copy.zone.sea, seaAt: WORLD.map.seaAt },
-              font: '"Barlow Condensed", "Arial Narrow", sans-serif',
-            },
-            sky.uniforms,
-          );
+          // La place : l'endroit où le véhicule est garé. Un vrai lieu de nuit (enrobé mouillé, places peintes,
+          // candélabres) plutôt qu'un objet posé sur un sol abstrait.
+          const place = createPlaceLayer({ night: sky.uniforms, ...WORLD.place, asphalt: ROAD_ASPHALT });
+          // L'univers : le nuage de points fourni. C'est LUI qu'on traverse — une image 360° ne peut pas l'être.
+          const galaxy = createGalaxyLayer({ url: '/models/galaxy.glb', buffer: galaxyFile, ...WORLD.galaxy });
+          // La ville de nuit : le lieu d'arrivée, et l'horizon derrière le véhicule.
+          const city = createCityLayer({ url: '/models/city.glb', night: sky.uniforms, ...WORLD.city });
           const beacon = createBeaconLayer({ at: WORLD.vehicles.cleaning.at, height: WORLD.beaconHeight });
           // Le relief : ce qui donne un CORPS au lieu photographié. Sans lui, la caméra peut voler des kilomètres
           // sans que rien ne bouge derrière — une image 360° n'a pas de profondeur.
@@ -220,12 +220,13 @@ export function boot() {
             chapters: ['bascule', 'location', 'rendezvous'],
           });
           vehicleLight = createVehicleLightLayer({
-            url: desktop ? ENVIRONMENT.sharpUrl : ENVIRONMENT.url[state.format],
-            buffer: nightFile,
             intensity: ENVIRONMENT.intensity,
             yaw: WORLD.skyYaw,
             channels: ['carLight', 'chrLight'],
             boost: 'gloss',
+            // Les deux candélabres les plus proches du véhicule : ce sont eux qui l'éclairent vraiment.
+            lamps: WORLD.place.lamps.map(([x, z]) => [x, WORLD.place.lampHeight - 0.4, z] as const),
+            lampChannel: 'placeLamp',
           });
           const road = createRoadLayer({
             placement: WORLD.road,
@@ -238,26 +239,30 @@ export function boot() {
             noise: sky.uniforms.uNoise.value,
             far: WORLD.cloudFar,
           });
+          galaxyLayer = galaxy;
+          cityLayer = city;
+          // L'environnement des véhicules est calculé (aucun fichier) : on le prépare dès que la scène existe.
+          void Promise.resolve().then(() => vehicleLight?.ensure());
           const created = await createWebGLStage({
             experience,
             canvas,
             host: stageEl,
-            layers: [sky, relief, territory, beacon, vehicleLight, cleaningCar, road, rentalCar, clouds],
+            layers: [sky, galaxy, relief, city, place, beacon, vehicleLight, cleaningCar, road, rentalCar, clouds],
             config: { ...STAGE, busy: () => registry.busy },
             onReady: () => {
               stageStatus = 'ready';
               html.classList.add('is-3d');
               setIntroProgress(1);
               // L'écran d'entrée couvre la préparation de la PREMIÈRE IMAGE : or la première image du récit est la
-              // laque du véhicule (unité 1). On ne lève donc pas le rideau sur un cadre vide — on attend le modèle,
-              // au plus 3 s (le garde-fou général lève l'entrée à 4,5 s quoi qu'il arrive).
-              const subject = registry.get('vehicle-cleaning');
+              // galaxie elle-même. On ne lève donc pas le rideau sur un cadre vide — on attend le modèle, au plus 3 s
+              // (le garde-fou général lève l'entrée à 4,5 s quoi qu'il arrive).
+              const subject = registry.get('galaxy');
               if (!subject || subject.status === 'ready' || subject.status === 'error' || subject.status === 'poster') {
                 liftIntro();
                 return;
               }
               const stop = registry.onChange((entry) => {
-                if (entry.descriptor.id !== 'vehicle-cleaning' || entry.status === 'loading') return;
+                if (entry.descriptor.id !== 'galaxy' || entry.status === 'loading') return;
                 stop();
                 liftIntro();
               });
@@ -295,6 +300,7 @@ export function boot() {
     stageStatus: () => stageStatus,
     media: () => registry.snapshot(),
     vehicle: () => cleaningCar?.debug() ?? null,
+    city: () => (cityLayer as { debug?(): unknown } | null)?.debug?.() ?? null,
     guide: () => guide?.points.length ?? 0,
     intro: () => !introDone,
   });
