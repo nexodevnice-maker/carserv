@@ -1,16 +1,15 @@
 import type { ExperienceDefinition } from '../engine/experience';
 import type { Responsive } from '../engine/responsive/formats';
-import type { NumberKey } from '../engine/timeline/keys';
-import generated from './media.generated.json';
 import { shots } from './shots';
 import { WORLD } from './world';
 
 /**
  * Registre des chapitres de CAR SERVICE 06 : la narration comme donnée. La page et le moteur lisent la même liste.
  *
- * Un voyage continu dans un seul monde (world.ts, shots.ts) : UNIVERS → le 06 vu du ciel → la balise → AVANT
- * (poussière réelle) → SCAN puis LE PASSAGE (ligne d'eau) → APRÈS (reflets) → PRESTATIONS → ascension dans l'univers
- * → descente verrouillée sur la route → LOCATION (la durée comme une route) → CONTACT.
+ * Un voyage continu dans un seul monde (world.ts, shots.ts) : UNIVERS → la France puis le 06 vus du ciel → la balise →
+ * AVANT (un vrai véhicule 3D, sali volontairement) → LE SCAN (une ligne de lumière le nettoie et le vernit) → APRÈS
+ * (reflets, puis l'habitacle) → PRESTATIONS → ascension dans l'univers → descente verrouillée sur la route →
+ * LOCATION (le C-HR roule devant nous) → RENDEZ-VOUS (le seul écran sans 3D) → CONTACT.
  *
  * Un chapitre a des repos (`rests`, positions locales) : un pas guidé mène à chacun, la caméra s'y pose et la légende
  * correspondante y est entièrement lisible. Les fenêtres des légendes (`panels`) encadrent ces repos.
@@ -53,37 +52,37 @@ export const chapters: readonly Chapter[] = [
       { id: 'france', in: 0.28, out: 0.58 },
       { id: 'deplacement', in: 0.66, out: 0.985 },
     ],
-    intent: 'La plongée par une trouée des nuages : le 06 entier, d’or, s’allume de la côte aux montagnes. Le service se déplace partout ; la carte le dit sans inventer de ville.',
+    intent: 'La France entière, département par département, puis la descente sur le 06 : le service se déplace partout dans le 06.',
   },
   {
     id: 'avant',
     universe: 'cleaning',
-    span: { desktop: 240, mobile: 220 },
-    rests: [0.42, 0.88],
-    panels: [{ id: 'avant', in: 0.64, out: 0.985 }],
-    intent: 'Descendre vers la balise, franchir la falaise, se poser devant le monolithe : la poussière réelle d’un vrai véhicule.',
+    span: { desktop: 250, mobile: 260 },
+    rests: [0.42, 0.86],
+    panels: [{ id: 'avant', in: 0.6, out: 0.985 }],
+    intent: 'Se poser devant le véhicule : un vrai modèle 3D, volontairement sali — poussière sur la laque, reflets éteints.',
   },
   {
     id: 'intervention',
     universe: 'cleaning',
-    span: { desktop: 270, mobile: 250 },
-    rests: [0.15, 0.5, 0.9],
+    span: { desktop: 300, mobile: 320 },
+    rests: [0.18, 0.55, 0.9],
     panels: [
-      { id: 'lavage', in: 0.02, out: 0.64 },
+      { id: 'lavage', in: 0.02, out: 0.68 },
       { id: 'meme', in: 0.74, out: 0.985 },
     ],
-    intent: 'Une ligne d’or relève entièrement le véhicule, de haut en bas ; puis une ligne d’eau le franchit : sous elle, le même capot, propre.',
+    intent: 'Une ligne de lumière parcourt le véhicule de l’avant vers l’arrière : derrière elle, la poussière a disparu et la laque est vernie.',
   },
   {
     id: 'transformation',
     universe: 'cleaning',
-    span: { desktop: 200, mobile: 180 },
-    rests: [0.45, 0.95],
+    span: { desktop: 250, mobile: 270 },
+    rests: [0.35, 0.85],
     panels: [
-      { id: 'apres', in: 0.06, out: 0.66 },
-      { id: 'reflets', in: 0.72, out: 0.985 },
+      { id: 'apres', in: 0.06, out: 0.62 },
+      { id: 'interieur', in: 0.68, out: 0.985 },
     ],
-    intent: 'Le même véhicule rend les arbres en reflet : capot, puis flanc, au ras du sol mouillé.',
+    intent: 'Le véhicule propre rend l’univers en reflet, au ras du sol mouillé ; puis l’habitacle, vu de l’intérieur.',
   },
   {
     id: 'prestations',
@@ -95,7 +94,7 @@ export const chapters: readonly Chapter[] = [
       { id: 'finition-produits', in: 0.44, out: 0.7 },
       { id: 'offre', in: 0.74, out: 0.985 },
     ],
-    intent: 'Les prestations comme conséquences de ce qui vient d’être vu ; l’offre comme un fait.',
+    intent: 'Les quatre prestations du flyer autour du véhicule propre, puis la formule et le déplacement.',
   },
   {
     id: 'univers',
@@ -116,104 +115,110 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'location',
     universe: 'rental',
-    span: { desktop: 360, mobile: 380 },
-    rests: [0.15, 0.42, 0.68, 0.92],
+    span: { desktop: 440, mobile: 460 },
+    rests: [0.18, 0.44, 0.7, 0.93],
     panels: [
       { id: 'jour', in: 0.03, out: 0.3 },
-      { id: 'semaine', in: 0.33, out: 0.55 },
-      { id: 'quinzaine', in: 0.58, out: 0.78 },
-      { id: 'conditions', in: 0.82, out: 0.995 },
+      { id: 'semaine', in: 0.34, out: 0.56 },
+      { id: 'quinzaine', in: 0.6, out: 0.8 },
+      { id: 'conditions', in: 0.84, out: 0.995 },
     ],
-    intent: 'La durée comme une route, à vive allure : 1 jour, 7, 15 — le véhicule devant, réduit à ses feux, la galaxie au bout.',
+    intent: 'Le C-HR roule devant nous sur la route du 06 : on le rattrape, on le double, il s’éloigne vers la galaxie, il s’arrête au bord du 06.',
+  },
+  {
+    id: 'rendezvous',
+    universe: 'action',
+    span: { desktop: 240, mobile: 280 },
+    rests: [0.5],
+    panels: [{ id: 'agenda', in: 0.08, out: 0.985 }],
+    intent: 'Le seul écran sans 3D : un calendrier, des créneaux, un formulaire — la demande arrive par courriel.',
   },
   {
     id: 'contact',
     universe: 'action',
-    span: { desktop: 160, mobile: 160 },
+    span: { desktop: 160, mobile: 170 },
     rests: [0.6],
     panels: [{ id: 'action', in: 0.3, out: 2 }],
-    intent: 'S’élever au-dessus de la route, les feux s’éloignent vers la galaxie : un seul geste, vers le seul canal confirmé.',
+    intent: 'Retour dans la nuit du 06, au bord du territoire : un seul geste, vers le seul canal confirmé.',
   },
 ];
 
 // — Canaux : tout ce que les scènes lisent, en fonction de la progression.
 const linear = { window: [0, 1], ease: 'linear' } as const;
 const smooth = { window: [0, 1], ease: 'inOut' } as const;
-const passage = generated.passage;
-
-/** Temps de la vidéo publiée (s). Arrêts et reprises sur les images exactes du passage (scripts/media-passage.mjs). */
-const videoTime: NumberKey[] = [
-  { chapter: 'avant', at: 0.5, value: 0 },
-  { chapter: 'avant', at: 0.88, value: 4.1, pace: linear },
-  { chapter: 'avant', at: 1, value: passage.before.time, pace: linear },
-  { chapter: 'intervention', at: 0.6, value: passage.before.time },
-  // Pendant que les images fixes sont à l'écran (scan, passage), la vidéo se place sur le capot propre.
-  { chapter: 'intervention', at: 0.62, value: passage.after.time },
-  { chapter: 'transformation', at: 0, value: passage.after.time },
-  { chapter: 'transformation', at: 0.45, value: 10.2, pace: linear },
-  { chapter: 'transformation', at: 0.62, value: 10.63, pace: linear },
-  { chapter: 'transformation', at: 0.68, value: 10.7, pace: linear },
-  { chapter: 'transformation', at: 0.95, value: 12.1, pace: linear },
-];
 
 export const definition: ExperienceDefinition = {
   chapters: chapters.map(({ id, rests }) => ({ id, rests })),
   shots,
   channels: {
-    videoTime,
-    evidenceMode: [
-      { chapter: 'avant', at: 1, value: 0 },
-      { chapter: 'intervention', at: 0, value: 1 },
+    // — Le véhicule du nettoyage (modèle 3D fourni) : présent, sale, scanné, verni.
+    carLight: [
+      { chapter: 'avant', at: 0.2, value: 0 },
+      { chapter: 'avant', at: 0.42, value: 1, pace: smooth },
+      { chapter: 'prestations', at: 1, value: 1 },
+      { chapter: 'univers', at: 0.25, value: 0, pace: { window: [0, 1], ease: 'in' } },
+    ],
+    dirt: [
+      { chapter: 'avant', at: 0.42, value: 1 },
       { chapter: 'intervention', at: 1, value: 1 },
-      { chapter: 'transformation', at: 0, value: 0 },
+      { chapter: 'transformation', at: 0.1, value: 0, pace: linear },
     ],
-    // Scan : la ligne d'or descend de 0 à 1 ; le relevé reste affiché jusqu'au passage de l'eau.
+    // La ligne de lumière traverse le véhicule pendant tout le chapitre du lavage.
     scan: [
-      { chapter: 'intervention', at: 0.17, value: 0 },
-      { chapter: 'intervention', at: 0.5, value: 1, pace: { window: [0, 1], ease: 'linear' } },
-    ],
-    passage: [
-      { chapter: 'intervention', at: 0.55, value: 0 },
+      { chapter: 'intervention', at: 0.12, value: 0 },
       { chapter: 'intervention', at: 0.9, value: 1, pace: linear },
     ],
-    // Jauge Avant / Après : la propreté suit exactement la ligne d'eau ; visible pendant toute la preuve.
+    polish: [
+      { chapter: 'intervention', at: 0.12, value: 0 },
+      { chapter: 'intervention', at: 0.9, value: 1, pace: linear },
+      { chapter: 'prestations', at: 1, value: 1 },
+    ],
+    // Jauge Avant / Après : elle suit exactement la ligne de lumière.
     clean: [
-      { chapter: 'intervention', at: 0.55, value: 0 },
+      { chapter: 'intervention', at: 0.12, value: 0 },
       { chapter: 'intervention', at: 0.9, value: 1, pace: linear },
     ],
     gauge: [
-      { chapter: 'avant', at: 0.55, value: 0 },
-      { chapter: 'avant', at: 0.78, value: 1, pace: smooth },
-      { chapter: 'transformation', at: 0.97, value: 1 },
-      { chapter: 'prestations', at: 0.12, value: 0, pace: smooth },
+      { chapter: 'avant', at: 0.6, value: 0 },
+      { chapter: 'avant', at: 0.86, value: 1, pace: smooth },
+      { chapter: 'transformation', at: 0.5, value: 1 },
+      { chapter: 'transformation', at: 0.75, value: 0, pace: smooth },
     ],
-    evidenceLight: [
-      { chapter: 'avant', at: 0.15, value: 0 },
-      { chapter: 'avant', at: 0.42, value: 0.75, pace: smooth },
-      { chapter: 'avant', at: 0.7, value: 1, pace: smooth },
-      { chapter: 'prestations', at: 1, value: 1 },
-      { chapter: 'univers', at: 0.3, value: 0, pace: { window: [0, 1], ease: 'in' } },
+    // — Le C-HR de la location : présent sur la route, et sa position le long de celle-ci (m depuis le début).
+    chrLight: [
+      { chapter: 'bascule', at: 0.55, value: 0 },
+      { chapter: 'bascule', at: 0.9, value: 1, pace: smooth },
+      { chapter: 'location', at: 1, value: 1 },
+      { chapter: 'rendezvous', at: 0.2, value: 0, pace: smooth },
     ],
-    // La balise : visible du ciel, éteinte à l'arrivée au pied du monolithe.
+    // Avance du C-HR sur la route (m). La caméra, elle, passe par 60, 78, 180, 296 et 390 m (shots.ts) : on le
+    // rattrape, on le double au ras, il reprend la tête et s'éloigne, puis on le rejoint arrêté au bord du 06.
+    chrTravel: [
+      { chapter: 'bascule', at: 0.9, value: 84 },
+      { chapter: 'location', at: 0.18, value: 104, pace: smooth },
+      { chapter: 'location', at: 0.44, value: 186, pace: linear },
+      { chapter: 'location', at: 0.7, value: 345, pace: linear },
+      { chapter: 'location', at: 0.93, value: 398, pace: smooth },
+    ],
+    // La balise : visible du ciel, éteinte à l'arrivée au pied du véhicule.
     beacon: [
       { chapter: 'zone', at: 0.15, value: 0 },
       { chapter: 'zone', at: 0.45, value: 1, pace: smooth },
-      { chapter: 'zone', at: 0.88, value: 1, pace: smooth },
       { chapter: 'avant', at: 0.42, value: 1 },
       { chapter: 'avant', at: 0.72, value: 0, pace: smooth },
     ],
-    // — L'univers, présent d'un bout à l'autre ; tenu en retrait derrière la preuve (la vidéo reste le sujet).
+    // — L'univers, présent d'un bout à l'autre ; tenu en retrait pendant que le véhicule est le sujet.
     skyLight: [
       { chapter: 'arrivee', at: 0, value: 1 },
       { chapter: 'avant', at: 0.42, value: 0.95 },
-      { chapter: 'avant', at: 0.88, value: 0.62, pace: smooth },
-      { chapter: 'intervention', at: 0.15, value: 0.45, pace: smooth },
-      { chapter: 'transformation', at: 0.95, value: 0.45 },
-      { chapter: 'prestations', at: 0.85, value: 0.7, pace: smooth },
+      { chapter: 'avant', at: 0.86, value: 0.7, pace: smooth },
+      { chapter: 'intervention', at: 0.18, value: 0.55, pace: smooth },
+      { chapter: 'transformation', at: 0.35, value: 0.8, pace: smooth },
+      { chapter: 'prestations', at: 0.85, value: 0.85, pace: smooth },
       { chapter: 'univers', at: 0.42, value: 1, pace: smooth },
       { chapter: 'bascule', at: 0.5, value: 1 },
-      { chapter: 'bascule', at: 0.9, value: 0.88, pace: smooth },
-      { chapter: 'location', at: 0.9, value: 0.88 },
+      { chapter: 'bascule', at: 0.9, value: 0.9, pace: smooth },
+      { chapter: 'location', at: 0.93, value: 0.9 },
       { chapter: 'contact', at: 0.6, value: 1, pace: smooth },
     ],
     // Un seul ciel : même rotation d'un bout à l'autre (le nord regarde le cœur de la Voie lactée).
@@ -222,18 +227,18 @@ export const definition: ExperienceDefinition = {
       { chapter: 'arrivee', at: 0, value: 1 },
       { chapter: 'zone', at: 0.1, value: 0, pace: linear },
     ],
-    // Noir au loin selon l'altitude : transparent dans le ciel, dense au sol (la nuit se referme autour de la preuve).
+    // Noir au loin selon l'altitude : transparent dans le ciel, dense au sol (la nuit se referme autour du véhicule).
     fog: [
       { chapter: 'arrivee', at: 0, value: 0.00005 },
       { chapter: 'zone', at: 0.45, value: 0.000006, pace: smooth },
       { chapter: 'zone', at: 0.88, value: 0.00007, pace: smooth },
       { chapter: 'avant', at: 0.42, value: 0.0011, pace: smooth },
-      { chapter: 'avant', at: 0.88, value: 0.0045, pace: smooth },
-      { chapter: 'prestations', at: 0.85, value: 0.0035, pace: smooth },
+      { chapter: 'avant', at: 0.86, value: 0.005, pace: smooth },
+      { chapter: 'prestations', at: 0.85, value: 0.004, pace: smooth },
       { chapter: 'univers', at: 0.42, value: 0.00005, pace: { window: [0, 0.6], ease: 'inOut' } },
       { chapter: 'bascule', at: 0.5, value: 0.0002 },
       { chapter: 'bascule', at: 0.9, value: 0.0075, pace: { window: [0.35, 1], ease: 'in' } },
-      { chapter: 'location', at: 0.9, value: 0.0075 },
+      { chapter: 'location', at: 0.93, value: 0.0075 },
       { chapter: 'contact', at: 0.6, value: 0.0014, pace: smooth },
     ],
     clouds: [
@@ -242,7 +247,7 @@ export const definition: ExperienceDefinition = {
       { chapter: 'zone', at: 0.88, value: 0.8, pace: smooth },
       { chapter: 'avant', at: 0.42, value: 1, pace: smooth },
     ],
-    // La vague de lumière parcourt le 06 pendant la descente par la trouée.
+    // La vague de lumière parcourt le 06 pendant la descente.
     mapReveal: [
       { chapter: 'zone', at: 0.05, value: 0 },
       { chapter: 'zone', at: 0.45, value: 0.42, pace: smooth },
@@ -257,7 +262,7 @@ export const definition: ExperienceDefinition = {
       { chapter: 'bascule', at: 0.12, value: 0 },
       { chapter: 'bascule', at: 0.42, value: 1, pace: smooth },
       { chapter: 'bascule', at: 0.86, value: 0, pace: smooth },
-      { chapter: 'contact', at: 0.2, value: 0 },
+      { chapter: 'location', at: 0.93, value: 0 },
       { chapter: 'contact', at: 0.6, value: 0.45, pace: smooth },
     ],
     roadLight: [
@@ -265,12 +270,6 @@ export const definition: ExperienceDefinition = {
       { chapter: 'bascule', at: 0.72, value: 1, pace: smooth },
       { chapter: 'contact', at: 0.35, value: 1 },
       { chapter: 'contact', at: 1, value: 0.5, pace: smooth },
-    ],
-    tailDistance: [
-      { chapter: 'location', at: 0, value: 24 },
-      { chapter: 'location', at: 0.92, value: 22, pace: smooth },
-      { chapter: 'contact', at: 0.1, value: 20 },
-      { chapter: 'contact', at: 0.6, value: 64, pace: smooth },
     ],
   },
 };

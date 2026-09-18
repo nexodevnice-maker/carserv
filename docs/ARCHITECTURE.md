@@ -83,10 +83,13 @@ src/
 │   ├── config.ts                valeurs de réglage centralisées (suivi, définition, politique média, budgets)
 │   ├── chapters.ts              registre des chapitres : univers, titre, rythme par format, médias, repos, intention
 │   ├── media.ts                 registre média (lit media.generated.json, jamais recopié à la main)
-│   ├── media.generated.json     sortie du pipeline vidéo
+│   ├── media.generated.json     sortie du pipeline vidéo (laboratoire seulement : le site ne montre plus de vidéo)
+│   ├── rendezvous.ts            calendrier réel + demande assemblée en courriel (aucun serveur)
 │   └── boot.ts                  câblage de l'accueil (les scènes s'y branchent au vertical slice)
 │
-├── scenes/                      couches WebGL : sky (univers HDRI, iris), evidence (vidéo, passage de l'eau, sol mouillé), road (route, marquages, feux)
+├── scenes/                      couches WebGL : sky (univers HDRI, sol mouillé), map (France + 06 en volume), beacon
+│                                 (colonne de lumière), vehicle (modèles fournis : salissure, relevé, vernis, ombre de
+│                                 contact + leur lumière à eux), road (chaussée, marquages, feux du C-HR), clouds
 ├── ui/                          ExperienceTrack (vue épinglée + chapitres), Chapter, SiteHeader
 ├── layouts/Base.astro           SEO : robots, canonique, Open Graph, Twitter, JSON-LD WebSite
 ├── pages/                       index (squelette structurel), 404, robots.txt, lab/engine (instrument)
@@ -98,7 +101,8 @@ scripts/
 ├── media-video.mjs              recadrage, plages sans plaques, scrub, séquence regroupée, affiches
 ├── media-env.mjs                HDRI → PMREM CubeUV 128/256
 ├── content-check.mjs            gate de publication (tout ce qui n'est pas CONFIRMED, droits médias)
-├── qa-engine.mjs                validation navigateur (58 contrôles)
+├── media-3d.mjs                 modèles fournis (tools/3d) → public/models (meshopt, WebP 1024)
+├── qa-engine.mjs                validation navigateur (60 contrôles)
 ├── media-sky.mjs / media-passage.mjs / content-map.mjs   ciel, images du passage, carte du 06
 ├── capture-posters.mjs / qa-shots.mjs / qa-live.mjs      affiches, captures par pas, parcours du site publié
 ├── deploy-prepare.mjs           lots d'envoi GitHub + simulation du build Cloudflare (méthode MECA RIVIERA)
@@ -163,8 +167,9 @@ timeline → `engine/timeline` ; scroll → `engine/scroll` ; motion → `engine
 | Retard max (p) | 0,08 | 0,08 | 0,10 |
 | Définition WebGL | 1,75 → 0,75 | 2 → 1,25 | 2 → 1,25 |
 | Préchargement (chapitres devant / derrière / libération) | 2 / 1 / 3 | 1 / 1 / 2 | 1 / 1 / 2 |
-| Transformation | scrub vidéo 900 px (6,2 Mio) | idem | séquence 540 px (3,9 Mio, 6 images décodées max) |
-| Environnement (si utilisé) | cube 128 (447 Kio) | 128 | 128 |
+| Véhicule du nettoyage | rs6.glb 3,0 Mio (chargé au chapitre « avant ») | idem | idem |
+| Véhicule de location | chr.glb 1,7 Mio (chargé à la bascule) | idem | idem |
+| Environnement des véhicules | cube 256 (1,7 Mio) | cube 128 (447 Kio) | 128 |
 
 Poids JavaScript mesurés (gzip) : accueil 9,4 Kio de moteur ; Three.js + scène 136 Kio, **chargés seulement** quand une
 couche WebGL est requise (WebGL 2 présent, pas d'économie de données).
@@ -191,7 +196,7 @@ couche WebGL est requise (WebGL 2 présent, pas d'économie de données).
 | Mobile | déclinaison vidéo mobile servie ; ressort ; définition ≤ 2 |
 | Mouvement réduit | affichage posé sur le repos le plus proche, sans interpolation |
 | Libération | contexte rendu au navigateur ; plus aucune boucle ensuite |
-| Accueil | 1 h1, hiérarchie sans saut, 7 chapitres dans l'ordre, aucun débordement, axe-core WCAG 2.1 AA : 0 violation, console vide, crochets QA absents du build |
+| Accueil | 1 h1, hiérarchie sans saut, 11 chapitres dans l'ordre, aucun débordement, axe-core WCAG 2.1 AA : 0 violation, console vide, crochets QA absents du build |
 | SEO | `SITE_URL` défini : canonique, OG, JSON-LD WebSite, sitemap sans /lab/ ; sinon noindex + `Disallow: /` |
 
 Limites connues : voir `docs/DECISIONS.md` § Limites.

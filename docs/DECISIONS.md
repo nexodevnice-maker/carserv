@@ -311,3 +311,52 @@ environnement pré-calculé à télécharger.
 Vérifié : typecheck, build, 60/60 (`qa-engine`, attentes allongées pour les vols en navigateur sans écran ; rôles ARIA
 du cadre de tarifs corrigés), 41 captures du parcours téléphone (repos et milieux de vol), parcours publié bureau et
 téléphone (21 pas) sans erreur console, https://carservice.nexodevnice.workers.dev.
+
+## 2026-09-18 — Les véhicules 3D fournis, le rendez-vous, la profondeur au téléphone (demandes du porteur, mobile d'abord : « on n'a pas cette impression de profondeur sur mobile », « supprime la partie où la vidéo avant/après passe avec le scan », « rajoute un calendrier, les courriels doivent atterrir sur nexodevnice@gmail.com », « je t'ai rajouté une voiture 3D, elle remplacera la vidéo, salis-la puis rends-la brillante, on veut une vue de l'intérieur », « la Toyota pour la location », « les deux premiers scrolls de location sont inutiles, on doit voyager 10x plus »)
+
+La preuve vidéo est supprimée. Le monolithe, le passage de l'eau, le recalage des images, le scrub et la séquence
+mobile ne sont plus dans le site : `src/scenes/evidence/*` n'est plus chargé, la balise est devenue sa propre couche
+(`src/scenes/beacon/`), la page n'a plus de `<video>`. Le laboratoire (`/lab/engine`) garde le banc vidéo : c'est là
+qu'on éprouve le moteur, pas dans le récit.
+
+À la place, **les deux modèles 3D fournis** (tools/3d), allégés par `npm run media:3d`
+(gltf-transform : textures WebP 1024, quantification, compression meshopt) :
+- `public/models/rs6.glb` (13 Mo → 3,0 Mo) — le véhicule de la démonstration, posé à l'origine du monde ;
+- `public/models/chr.glb` (1,8 Mo) — le véhicule de location, qui roule sur la route du 06.
+
+`src/scenes/vehicle/vehicle-layer.ts` ne pose pas un objet dans une scène : il **modifie la matière du modèle** selon le
+scroll. La salissure (`dirt`) est calculée dans les shaders du modèle — plus épaisse sur ce qui regarde le ciel et dans
+le bas de caisse, bruitée, elle ternit la couleur, matifie la laque (rugosité 0,93) et éteint le métal ; la ligne de
+lumière (`scan`) parcourt la caisse de l'avant vers l'arrière et, derrière elle, la poussière n'est plus là et le vernis
+revient (`polish`, rugosité × 0,35). Aucune image, aucun fondu : un même objet, deux états, pilotés par la position du
+scroll. Les vitres en transmission sont converties en verre sombre (une passe de rendu de moins : rédhibitoire au
+téléphone). Les matériaux d'emblème et de plaque sont masqués au chargement (règle de vérité).
+
+**La lumière des véhicules et d'eux seuls** (`src/scenes/vehicle/vehicle-light.ts`) : l'environnement de nuit
+pré-calculé (PMREM, 447 Ko au téléphone / 1,7 Mo au bureau) plus deux directionnelles. Le reste du monde est en shaders
+maison et les ignore : le blanchiment de la chaussée qu'un PMREM avait provoqué le 17/09 ne peut pas revenir. Sans ce
+reflet, une carrosserie noire dans la nuit n'est qu'une silhouette. Une **ombre de contact** (empreinte sombre, plus
+dense sous les trains) évite que le modèle flotte sur le sol mouillé.
+
+Profondeur au téléphone : les plans ne sont plus des vues de trois quarts au centre du cadre. Chaque plan a du proche et
+du lointain, la carrosserie fuit en diagonale, et les distances sont écrites pour un écran **portrait** (un véhicule de
+5 m ne tient dans un cadre 0,46 qu'à partir de 13 m avec une focale de 50°) : plans d'ensemble à 13–26 m, et des macros
+assumées (l'aile et la roue, l'optique) au lieu de plans larges rognés. L'habitacle est un vrai plan : assis à la place
+du conducteur, tableau de bord et pare-brise, l'univers derrière.
+
+La location voyage : le C-HR avance de 84 à 398 m sur la chaussée (`chrTravel`) pendant que la caméra va de 60 à 390 m.
+On le rattrape (26 m), **on le double au ras** (la caméra passe sur la voie de gauche et le cadre se remplit de sa
+carrosserie), il reprend la tête et s'éloigne (50 m, ses feux deviennent deux points), puis il s'arrête au bord du 06 et
+on le rejoint. Les feux arrière ne sont plus un véhicule fantôme : ce sont ceux du modèle, et la chaussée en calcule le
+reflet étiré.
+
+**Rendez-vous** (`src/ui/Rendezvous.astro`, `src/experience/rendezvous.ts`) : le seul écran sans 3D — la nuit s'éteint
+derrière la carte, la barre d'action s'efface. Bande de 14 jours régénérée à partir d'aujourd'hui (un site statique ne
+doit jamais proposer une date passée), créneau, nom, téléphone, commune, véhicule, besoin, précisions. La demande part
+par **courriel préparé** vers nexodevnice@gmail.com : aucun serveur, aucune donnée stockée ni transmise à un tiers, le
+client relit et envoie depuis sa messagerie ; sans script, le lien courriel reste écrit dans la page. Les créneaux sont
+ceux que DEMANDE le client : aucun horaire d'ouverture n'est confirmé (BUSINESS_TRUTH), l'entreprise confirme.
+
+Limite connue : les emblèmes de marque restent visibles sur les modèles fournis quand un matériau ne les isole pas (le
+C-HR n'en a qu'un seul pour toute la caisse). Ils ne sont jamais mis en avant par un plan ; le pied de page rappelle
+qu'aucune affiliation n'existe. À trancher avec le porteur avant publication.

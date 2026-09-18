@@ -28,10 +28,6 @@
   filter: none;
 }
 
-.stage__poster--after {
-  opacity: 0;
-}
-
 .stage__canvas {
   display: block;
   opacity: 0;
@@ -44,21 +40,6 @@
 
 .is-static .stage__canvas {
   display: none;
-}
-
-.is-static [data-active-chapter='transformation'] .stage__poster--after,
-.is-static [data-active-chapter='prestations'] .stage__poster--after {
-  opacity: 1;
-}
-
-.stage__video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 2px;
-  height: 2px;
-  opacity: 0;
-  pointer-events: none;
 }
 
 /* Voile sous la colonne de texte (bureau) ou sous les légendes (téléphone) : jamais l'image entière assombrie. */
@@ -193,8 +174,21 @@
   visibility: hidden;
 }
 
-.js [data-state='active'] .panel--cta {
+.js [data-state='active'] .panel--cta,
+.js [data-state='active'] .panel--form {
   pointer-events: auto;
+}
+
+/*
+ * Rendez-vous : la seule légende qui soit une interface. Elle ne se pose pas SUR la scène, elle la remplace — carte
+ * noire opaque, aucune 3D derrière (demande du porteur), et assez de place pour les champs.
+ */
+.js .panel--form {
+  top: 50%;
+  right: var(--gutter);
+  left: var(--gutter);
+  width: auto;
+  max-width: none;
 }
 
 .is-reduced-motion .panel {
@@ -713,6 +707,323 @@ html.is-guided {
 
   .js .map {
     width: min(34vw, 14rem);
+  }
+}
+
+/* Rendez-vous : la nuit s'éteint derrière la carte — c'est le seul écran sans 3D. */
+[data-active-chapter='rendezvous'] .stage__veil {
+  background: rgb(0 0 0 / 0.94);
+}
+
+/* — Rendez-vous ——————————————————————————————————————————————————————————————— */
+.rdv {
+  --rdv-line: rgb(255 255 255 / 0.16);
+  max-width: 46rem;
+  padding: 1.5rem 1.6rem 1.7rem;
+  border: 1px solid var(--rdv-line);
+  background: rgb(0 0 0 / 0.93);
+  box-shadow: 0 1.4rem 4rem rgb(0 0 0 / 0.75);
+}
+
+.js .panel--form .rdv {
+  margin: 0 auto;
+}
+
+.rdv__lede {
+  margin-top: 0.7rem;
+  color: var(--text-2);
+  font-size: var(--step--1);
+  line-height: 1.5;
+}
+
+.rdv__block {
+  margin: 1.2rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.rdv__legend {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0;
+  color: var(--text-2);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.rdv__legend svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--yellow);
+}
+
+/* Bande de dates : défilement horizontal (il n'entre jamais en conflit avec le défilement de la page). */
+.rdv__days {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding-bottom: 0.3rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.rdv__days::-webkit-scrollbar {
+  display: none;
+}
+
+.day {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 0.05rem;
+  justify-items: center;
+  min-width: 3.3rem;
+  padding: 0.45rem 0.3rem 0.5rem;
+  border: 1px solid var(--rdv-line);
+  color: var(--text-2);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: border-color var(--duration-ui) linear, color var(--duration-ui) linear, background var(--duration-ui) linear;
+}
+
+.day input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.day__weekday,
+.day__month {
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.day__num {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.day--sunday .day__weekday {
+  color: var(--red);
+}
+
+.day:hover {
+  border-color: rgb(255 255 255 / 0.4);
+  color: var(--text);
+}
+
+.day:has(input:checked) {
+  border-color: var(--yellow);
+  background: var(--yellow);
+  color: var(--night-0);
+}
+
+.day:has(input:focus-visible),
+.slot:has(input:focus-visible) {
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+.rdv__slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.slot {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--rdv-line);
+  border-radius: 999px;
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: border-color var(--duration-ui) linear, color var(--duration-ui) linear, background var(--duration-ui) linear;
+}
+
+.slot input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.slot:has(input:checked) {
+  border-color: var(--yellow);
+  background: var(--yellow);
+  color: var(--night-0);
+}
+
+.rdv__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.field__label {
+  color: var(--text-2);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 2.6rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--rdv-line);
+  background: rgb(255 255 255 / 0.04);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.field textarea {
+  min-height: 3.6rem;
+  resize: vertical;
+}
+
+.field input:focus-visible,
+.field select:focus-visible,
+.field textarea:focus-visible {
+  border-color: var(--yellow);
+  outline: none;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: rgb(255 255 255 / 0.32);
+}
+
+.cta--send {
+  margin-top: 1.3rem;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.rdv__note {
+  margin-top: 0.7rem;
+  color: var(--text-2);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.rdv__note--alt a {
+  color: var(--yellow);
+}
+
+[data-rdv-state='incomplet'] .cta--send {
+  border-color: var(--red);
+}
+
+@media (max-width: 1099px) {
+  /* Le formulaire ne se pose pas au-dessus de la scène : il occupe l'écran, sous l'en-tête et les onglets. */
+  .js .panel--form {
+    top: calc(var(--header-h) + 3.1rem);
+    bottom: auto;
+    transform: translate3d(0, calc((1 - var(--vis)) * 14px), 0);
+  }
+
+  .rdv {
+    padding: 0.9rem 0.95rem 1rem;
+  }
+
+  .rdv__lede {
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .rdv__block {
+    margin-top: 0.85rem;
+  }
+
+  .rdv__grid {
+    gap: 0.45rem;
+    margin-top: 0.85rem;
+  }
+
+  .slot {
+    padding: 0.38rem 0.7rem;
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+  }
+
+  .day {
+    min-width: 3rem;
+    padding: 0.35rem 0.25rem 0.4rem;
+  }
+
+  .day__num {
+    font-size: 1.2rem;
+  }
+
+  .field__label {
+    font-size: 0.66rem;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    min-height: 2.3rem;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.95rem;
+  }
+
+  .field textarea {
+    min-height: 2.6rem;
+  }
+
+  .cta--send {
+    min-height: 46px;
+    margin-top: 0.9rem;
+    padding: 0.5rem 1rem;
+    font-size: var(--step-0);
+  }
+
+  .rdv__note {
+    margin-top: 0.55rem;
+    font-size: 0.72rem;
+  }
+}
+
+/* Téléphone en paysage : le formulaire ne tient pas en hauteur — les précisions passent dans le courriel. */
+@media (max-height: 599px) and (pointer: coarse) {
+  .rdv__lede,
+  .rdv__note {
+    display: none;
+  }
+
+  .field textarea {
+    min-height: 2.6rem;
   }
 }
 

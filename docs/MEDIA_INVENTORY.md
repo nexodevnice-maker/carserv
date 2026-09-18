@@ -3,7 +3,9 @@
 Relevé du 17/09/2026. Mesures reproductibles : `npm run media:inspect` → `docs/media-inventory.json`.
 Sources dans `tools/` (hors version, jamais modifiées). Dérivés publiables : `npm run media:video`, `npm run media:env`.
 
-Aucun modèle 3D n'existe dans le corpus (`tools/3d` ne contient qu'une vidéo et un HDRI).
+Mise à jour du 18/09/2026 : le porteur a fourni **deux modèles 3D de véhicules** (`tools/3d/RS6`, `tools/3d/TOYOTA`).
+Ils remplacent la preuve vidéo dans le récit ; la vidéo reste dans `tools/` et ne sert plus qu'au banc du laboratoire.
+Dérivés publiables : `npm run media:3d`.
 
 ---
 
@@ -45,7 +47,31 @@ assurance comprise · kilométrage illimité · hybride économe · confort & s�
 
 **Rôle retenu : source de vérité commerciale uniquement.** Aucune image réelle du véhicule loué n'existe : à fournir.
 
-## 3. `tools/3d/ScreenRecording_09-16-2026 22-57-08_1.mp4` — vidéo avant/après
+## 3. `tools/3d/RS6/2020_audi_rs6_avant.glb` — véhicule de la démonstration
+
+| Mesure | Valeur |
+|---|---|
+| Source | fournie par le porteur (18/09/2026) |
+| Brut | glTF binaire, 13,0 Mio, 217 018 triangles, 26 matériaux, 38 images |
+| Publié | `public/models/rs6.glb` — **3,0 Mio** (`npm run media:3d` : WebP 1024, quantification + meshopt) |
+| Droits | **TO_CONFIRM** — origine et licence du modèle à confirmer auprès du porteur (usage de démonstration) |
+
+Rôle : le véhicule sali puis relevé, verni, et visité de l'intérieur (chapitres avant → prestations). Les matériaux
+d'emblème, de badge et de plaque sont masqués au chargement ; aucun plan ne met une marque en avant.
+
+## 4. `tools/3d/TOYOTA/source/MDL14246_reversed.glb` — véhicule de location
+
+| Mesure | Valeur |
+|---|---|
+| Source | fournie par le porteur (18/09/2026) |
+| Brut | glTF binaire, 1,8 Mio, 201 073 triangles, 5 matériaux, 10 images |
+| Publié | `public/models/chr.glb` — **1,7 Mio** |
+| Droits | **TO_CONFIRM** — origine et licence du modèle à confirmer auprès du porteur |
+
+Rôle : le véhicule qui roule devant nous sur la route du 06 (chapitres bascule → location). Un seul matériau couvre
+toute la caisse : les emblèmes ne peuvent pas en être isolés, aucun plan ne les met en avant.
+
+## 5. `tools/3d/ScreenRecording_09-16-2026 22-57-08_1.mp4` — vidéo avant/après (retirée du site le 18/09/2026)
 
 | Mesure | Valeur |
 |---|---|

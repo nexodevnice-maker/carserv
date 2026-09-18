@@ -25,6 +25,12 @@ const instagram = shown(property.channels.instagram);
     display: none;
   }
 
+  /* Pendant le rendez-vous, le formulaire est l'action : la barre s'efface pour lui laisser l'écran. */
+  :global(html[data-scene='rendezvous']) .mobile-bar {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   @media (max-width: 1099px) {
     .mobile-bar {
       position: fixed;
@@ -33,6 +39,7 @@ const instagram = shown(property.channels.instagram);
       display: block;
       padding: 0.6rem var(--gutter) calc(0.6rem + env(safe-area-inset-bottom));
       background: linear-gradient(0deg, rgb(0 0 0 / 0.94) 55%, rgb(0 0 0 / 0));
+      transition: opacity var(--duration-ui) linear;
     }
 
     .mobile-bar__cta {

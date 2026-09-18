@@ -1,5 +1,6 @@
 import type { Framing, ShotDefinition } from '../engine/camera/camera-rig';
 import type { Vec3 } from '../engine/math/vec3';
+import { ROAD } from '../scenes/road/road-layer';
 import { WORLD } from './world';
 
 /** Centre de la France dans le monde (world.ts, calculé depuis les contours IGN). */
@@ -9,11 +10,14 @@ const FRANCE = WORLD.france.center;
  * Plans caméra de CAR SERVICE 06, en mètres, dans un seul monde à l'échelle (world.ts) que la caméra traverse sans
  * coupe : on EST la caméra. Le voyage est tourné vers le nord, vers le cœur de la Voie lactée (skyYaw constant).
  *
- * Ouverture dans l'univers, au-dessus d'une mer de nuages → plongée par une trouée vers le 06 entier → descente vers la
- * balise → le monolithe (preuve vidéo, scan, passage de l'eau, reflets) → ascension verticale à travers les nuages
- * jusqu'aux étoiles → cap sur le cœur de la galaxie → descente verrouillée : le regard ne quitte jamais le nord, la
- * galaxie reste au même point de l'image, la route rouge monte à la rencontre de la caméra et son point de fuite tombe
- * sous la galaxie → la location, à vive allure → élévation finale.
+ * Univers au-dessus d'une mer de nuages → la France entière → descente sur le 06 → la balise → le véhicule 3D fourni,
+ * sali, parcouru par la ligne de lumière, verni, puis son habitacle → prestations → ascension verticale jusqu'aux
+ * étoiles → cap au nord → descente verrouillée sur la route → la location : le C-HR devant nous, qu'on rattrape, qu'on
+ * double au ras, qui s'éloigne vers la galaxie, qui s'arrête au bord du 06 → rendez-vous → un seul geste.
+ *
+ * Profondeur (au téléphone surtout) : aucun sujet plat au centre du cadre. Les plans sont bas et de trois quarts, la
+ * carrosserie fuit en diagonale, il y a toujours du proche (le sol mouillé, une aile, le marquage sous nos roues) et du
+ * lointain (les falaises, la route qui converge, la galaxie).
  *
  * Bureau : texte à gauche (décalage optique vers la droite). Téléphone et tablette : légende en bas (décalage vers le
  * haut), focale plus ouverte. `flight` : l'enveloppe du vol qui mène au plan (focale, roulis, plongée, turbulence),
@@ -22,8 +26,14 @@ const FRANCE = WORLD.france.center;
 type Portrait = Partial<Framing>;
 const portrait = (framing: Portrait) => ({ tablet: framing, mobile: framing });
 const N = WORLD.north;
-/** Repos le long de la route : la voie est en x = 0, la route part de z = −300 vers le nord. */
-const lane = (z: number) => [0, 1.3, z] as Vec3;
+
+/**
+ * Repère de la route : `lane(x le long de la route, décalage latéral, hauteur d'œil)`. La route part de
+ * WORLD.road.origin vers le nord ; la voie de la caméra est en x = 0 dans le monde, la voie de gauche vers x négatif.
+ */
+const lane = (along: number, side = 0, y = 1.28) => [side, y, WORLD.road.origin[1] - along] as Vec3;
+/** Point visé sur le C-HR (il roule dans la voie, x = 0) à `along` mètres du début de la route. */
+const chr = (along: number, y = 1.02) => [0, y, WORLD.road.origin[1] - along] as Vec3;
 
 export const shots: readonly ShotDefinition[] = [
   {
@@ -62,10 +72,11 @@ export const shots: readonly ShotDefinition[] = [
     id: 'balise',
     chapter: 'avant',
     at: 0.42,
-    intent: 'Piquer sur la mer, franchir la falaise d’or au ras : devant, un monolithe de lumière sous sa colonne, reflété dans le sol mouillé.',
-    framing: { position: [-20, 36, 72], target: [0, 11, 0], fov: 40, shift: [0.12, 0] },
-    ...portrait({ position: [-14, 44, 84], target: [0, 16, 0], fov: 54, shift: [0, 0.12] }),
-    via: [[-150, 600, 760], [-100, 190, 330]] as Vec3[],
+    intent:
+      'Piquer sur la mer, franchir la falaise d’or au ras : au pied de la colonne de lumière, un véhicule attend, seul sur le sol mouillé, et son reflet avec lui.',
+    framing: { position: [-11.5, 6.6, 21], target: [0, 1.3, 0], fov: 42, shift: [0.12, 0] },
+    ...portrait({ position: [-9.4, 7.8, 23], target: [0, 1.4, 0], fov: 54, shift: [0, 0.1] }),
+    via: [[-150, 600, 760], [-70, 150, 260], [-30, 30, 80]] as Vec3[],
     pace: { window: [0.02, 0.98], ease: 'inOut' },
     lead: 0.12,
     flight: { fov: 12, roll: 0.08, shake: 0.5 },
@@ -73,81 +84,86 @@ export const shots: readonly ShotDefinition[] = [
   {
     id: 'poussiere',
     chapter: 'avant',
-    at: 0.88,
-    intent: 'Se poser au pied du monolithe, rasant le sol : la vidéo réelle remplit le cadre, la poussière d’un vrai véhicule.',
-    framing: { position: [0.6, 4.56, 21.6], target: [0.15, 4.56, 0], fov: 24, shift: [0.15, 0] },
-    ...portrait({ position: [0.3, 4.92, 12.6], target: [0.1, 4.8, 0], fov: 40, shift: [0, 0.06] }),
-    via: [[-9, 18, 48], [-2, 7, 32]] as Vec3[],
+    at: 0.86,
+    intent: 'Se poser au ras du sol : l’aile arrière et la roue en gros plan, la poussière mate sur la laque, le flanc qui fuit vers l’avant.',
+    framing: { position: [-4.6, 0.68, 3.4], target: [-1.1, 0.72, 0.35], fov: 36, shift: [0.14, 0] },
+    ...portrait({ position: [-4.2, 0.72, 3.1], target: [-1.2, 0.76, 0.4], fov: 46, shift: [0, 0.06] }),
+    via: [[-16, 4.2, 15], [-8.4, 1.7, 8]] as Vec3[],
     pace: { window: [0.02, 0.98], ease: 'inOut' },
     flight: { fov: 8, roll: -0.04 },
   },
   {
     id: 'capot',
     chapter: 'intervention',
-    at: 0.15,
-    intent: 'Au plus près du capot poussiéreux et de l’optique : le panneau que le scan puis l’eau vont traverser.',
-    framing: { position: [0.54, 4.86, 12.9], target: [0, 4.86, 0], fov: 25, shift: [0.13, 0] },
-    ...portrait({ position: [0.3, 5.1, 10.4], target: [0, 5, 0], fov: 40, shift: [0, 0.05] }),
+    at: 0.18,
+    intent: 'Devant le capot poussiéreux, à hauteur d’optique : ce que la ligne de lumière va traverser, de l’avant vers l’arrière.',
+    framing: { position: [4.6, 0.78, 2.5], target: [1.6, 0.78, 0.2], fov: 36, shift: [0.13, 0] },
+    ...portrait({ position: [4.3, 0.8, 2.3], target: [1.5, 0.8, 0.25], fov: 46, shift: [0, 0.05] }),
+    via: { desktop: [[1.2, 0.8, 5.4]] as Vec3[], tablet: [[1, 0.86, 4.8]] as Vec3[], mobile: [[1, 0.86, 4.8]] as Vec3[] },
     pace: { window: [0.08, 0.95], ease: 'out' },
+    flight: { fov: 6, roll: 0.05 },
   },
   {
     id: 'scan',
     chapter: 'intervention',
-    at: 0.5,
-    intent: 'Le relevé : une ligne d’or descend sur le monolithe et dépasse dans la nuit ; derrière elle, tout le véhicule est relevé. La caméra recule d’un souffle pour le voir entier.',
-    framing: { position: [0.3, 4.9, 15.4], target: [0.05, 4.84, 0], fov: 30, shift: [0.13, 0] },
-    ...portrait({ position: [0.2, 5.0, 13.6], target: [0.03, 4.9, 0], fov: 42, shift: [0, 0.06] }),
+    at: 0.55,
+    intent: 'Le relevé : une ligne d’or traverse le véhicule ; derrière elle la poussière a disparu. La caméra recule d’un souffle pour le voir entier.',
+    framing: { position: [-8.6, 2.2, 9.8], target: [0, 1.0, 0], fov: 40, shift: [0.16, 0] },
+    ...portrait({ position: [-7.8, 2.5, 9.6], target: [0, 1.05, 0], fov: 54, shift: [0, 0.08] }),
     pace: { window: [0, 1], ease: 'inOut' },
+    flight: { fov: 5 },
   },
   {
-    id: 'passage',
+    id: 'verni',
     chapter: 'intervention',
     at: 0.9,
-    intent: 'Relevé complet, le nettoyage : la ligne d’eau passe et rend le véhicule propre, en couleurs ; la caméra revient au capot.',
-    framing: { position: [-0.84, 5.28, 11.7], target: [0.15, 5.22, 0], fov: 25, shift: [0.13, 0] },
-    ...portrait({ position: [-0.55, 5.2, 11.2], target: [0.06, 5.05, 0], fov: 40, shift: [0, 0.05] }),
+    intent: 'Fin du passage : la laque est vernie et l’univers revient dedans. Plan rasant le long du flanc, la galaxie au-dessus.',
+    framing: { position: [-1.8, 0.6, 6.2], target: [1.6, 0.9, -0.2], fov: 34, shift: [0.13, 0] },
+    ...portrait({ position: [-1.6, 0.68, 5.6], target: [1.4, 0.95, -0.2], fov: 46, shift: [0, 0.07] }),
     pace: { window: [0, 1], ease: 'inOut' },
+    flight: { fov: 6, roll: -0.03 },
   },
   {
-    id: 'reflets-capot',
+    id: 'reflets',
     chapter: 'transformation',
-    at: 0.45,
-    intent: 'Contourner par la gauche en descendant : le monolithe devient un objet dans l’espace, les reflets vivent.',
-    framing: { position: [-5.4, 3.15, 13.2], target: [0.45, 4.5, 0], fov: 27, shift: [0.14, 0] },
-    ...portrait({ position: [-4.2, 3.9, 12.8], target: [0.3, 4.7, 0], fov: 40, shift: [0, 0.06] }),
-    via: { desktop: [[-3, 3.96, 13.8]] as Vec3[], mobile: [[-2.7, 4.35, 16.8]] as Vec3[], tablet: [[-2.7, 4.35, 16.8]] as Vec3[] },
-    pace: { window: [0.08, 0.9], ease: 'inOut' },
+    at: 0.35,
+    intent: 'Trois quarts avant, au ras du sol mouillé : les reflets sont revenus sur le capot, la Voie lactée s’y lit.',
+    framing: { position: [10.6, 0.78, 7.8], target: [0.5, 1.0, 0], fov: 36, shift: [0.14, 0] },
+    ...portrait({ position: [9.8, 0.88, 7.4], target: [0.4, 1.05, 0], fov: 48, shift: [0, 0.1] }),
+    via: { desktop: [[3.2, 0.6, 6.5]] as Vec3[], tablet: [[2.7, 0.64, 6.1]] as Vec3[], mobile: [[2.7, 0.64, 6.1]] as Vec3[] },
+    pace: { window: [0.06, 0.94], ease: 'inOut' },
     lead: 0.1,
-    flight: { fov: 4, roll: 0.03 },
+    flight: { fov: 6, roll: 0.04 },
   },
   {
-    id: 'flanc',
+    id: 'habitacle',
     chapter: 'transformation',
-    at: 0.95,
-    intent: 'Passer au ras du sol mouillé vers la droite : le flanc brillant et son reflet ensemble.',
-    framing: { position: [4.8, 1.86, 15], target: [-0.3, 3.45, 0], fov: 28, shift: [0.14, 0] },
-    ...portrait({ position: [3.6, 2.6, 13.4], target: [-0.3, 3.8, 0], fov: 40, shift: [0, 0.06] }),
-    via: { desktop: [[0.3, 2.1, 16.8]] as Vec3[], mobile: [[0.3, 2.64, 19.2]] as Vec3[], tablet: [[0.3, 2.64, 19.2]] as Vec3[] },
-    pace: { window: [0.1, 0.95], ease: 'inOut' },
-    flight: { fov: 4, roll: -0.03 },
+    at: 0.85,
+    intent: 'Entrer : assis à la place du conducteur, le tableau de bord et les sièges nets — le nettoyage intérieur, vu de l’intérieur.',
+    framing: { position: [-0.3, 1.02, -0.36], target: [2.4, 0.74, 0.2], fov: 58, shift: [0.06, 0] },
+    ...portrait({ position: [-0.32, 1.04, -0.34], target: [2.2, 0.72, 0.24], fov: 70, shift: [0, 0.04] }),
+    via: { desktop: [[2.4, 1.4, 2.1]] as Vec3[], tablet: [[2.2, 1.4, 1.9]] as Vec3[], mobile: [[2.2, 1.4, 1.9]] as Vec3[] },
+    pace: { window: [0.04, 0.96], ease: 'inOut' },
+    flight: { fov: 8 },
   },
   {
     id: 'recul',
     chapter: 'prestations',
     at: 0.25,
-    intent: 'Reculer et se décaler : le monolithe cède la gauche de l’écran aux prestations.',
-    framing: { position: [7.2, 5.7, 24.6], target: [0.9, 4.65, 0], fov: 28, shift: [0.22, 0] },
-    ...portrait({ position: [4.2, 7.2, 26.4], target: [0.6, 5.85, 0], fov: 42, shift: [0, 0.22] }),
-    pace: { window: [0.1, 0.9], ease: 'inOut' },
-    flight: { fov: 3 },
+    intent: 'Ressortir et prendre un peu de hauteur : le véhicule propre entier, la place aux prestations.',
+    framing: { position: [-8.6, 2.9, 9.6], target: [0.4, 1.1, 0], fov: 38, shift: [0.22, 0] },
+    ...portrait({ position: [-7.4, 3.3, 10], target: [0.3, 1.2, 0], fov: 48, shift: [0, 0.22] }),
+    via: { desktop: [[-3.6, 1.6, 7.2]] as Vec3[], tablet: [[-3.2, 1.8, 7]] as Vec3[], mobile: [[-3.2, 1.8, 7]] as Vec3[] },
+    pace: { window: [0.08, 0.92], ease: 'inOut' },
+    flight: { fov: 4 },
   },
   {
     id: 'trois-quarts',
     chapter: 'prestations',
     at: 0.55,
-    intent: 'Tourner autour du monolithe : le véhicule de trois quarts, la deuxième moitié de la liste à gauche.',
-    framing: { position: [17.5, 6.6, 16], target: [1.5, 5, 0], fov: 34, shift: [0.2, 0] },
-    ...portrait({ position: [12, 8.4, 21], target: [1, 6.2, 0], fov: 46, shift: [0, 0.22] }),
+    intent: 'Tourner autour : trois quarts avant, la carrosserie en fuite, la suite de la liste à gauche.',
+    framing: { position: [9.8, 2.2, 7.4], target: [0.6, 1.1, 0], fov: 40, shift: [0.2, 0] },
+    ...portrait({ position: [8.6, 2.5, 7.8], target: [0.5, 1.2, 0], fov: 50, shift: [0, 0.2] }),
     pace: { window: [0.08, 0.92], ease: 'inOut' },
     lead: 0.1,
     flight: { fov: 5, roll: 0.05 },
@@ -156,9 +172,9 @@ export const shots: readonly ShotDefinition[] = [
     id: 'offre',
     chapter: 'prestations',
     at: 0.85,
-    intent: 'Reculer dans la nuit : le monolithe entier sous la Voie lactée, la place pour la formule et le prix.',
-    framing: { position: [26, 11, 70], target: [2, 7, 0], fov: 30, shift: [0.24, 0] },
-    ...portrait({ position: [12, 14, 72], target: [1, 9, 0], fov: 44, shift: [0, 0.24] }),
+    intent: 'Reculer dans la nuit : le véhicule propre sous la Voie lactée, la place pour la formule et le déplacement.',
+    framing: { position: [-16, 5.4, 22], target: [1, 1.4, 0], fov: 34, shift: [0.24, 0] },
+    ...portrait({ position: [-12, 6.4, 20], target: [0.8, 1.6, 0], fov: 44, shift: [0, 0.24] }),
     pace: { window: [0.08, 0.92], ease: 'inOut' },
     flight: { fov: 6, roll: 0.04 },
   },
@@ -189,9 +205,9 @@ export const shots: readonly ShotDefinition[] = [
     chapter: 'bascule',
     at: 0.9,
     intent:
-      'La descente verrouillée : le regard ne quitte pas le cœur de la galaxie ; la caméra traverse les nuages, la route rouge se dessine sur le 06 et monte à sa rencontre, jusqu’à se poser dans la voie — son point de fuite exactement sous la galaxie. Les feux s’allument devant.',
-    framing: { position: lane(-300), look: [N, -0.022], fov: 36, shift: [0.1, 0] },
-    ...portrait({ position: [0, 1.45, -302], look: [N, -0.03], fov: 52, shift: [0, 0.12] }),
+      'La descente verrouillée : le regard ne quitte pas le cœur de la galaxie ; la caméra traverse les nuages, la route rouge se dessine sur le 06 et monte à sa rencontre, jusqu’à se poser dans la voie — et le véhicule de location roule déjà devant nous.',
+    framing: { position: lane(60), look: [N, -0.022], fov: 36, shift: [0.1, 0] },
+    ...portrait({ position: lane(58, 0, 1.42), look: [N, -0.03], fov: 52, shift: [0, 0.12] }),
     via: [[0, 1350, 1150], [0, 520, 420], [0, 95, -40], [0, 14, -170], [0, 3, -250]] as Vec3[],
     pace: { window: [0.02, 0.98], ease: 'inOut' },
     flight: { fov: 22, pitch: -0.24, shake: 1 },
@@ -199,48 +215,63 @@ export const shots: readonly ShotDefinition[] = [
   {
     id: 'un-jour',
     chapter: 'location',
-    at: 0.15,
-    intent: 'Rouler : « 1 JOUR » peint devant, les feux du véhicule plus loin, la galaxie au bout de la route.',
-    framing: { position: lane(-331.5), look: [N, -0.017], fov: 36, shift: [0.1, 0] },
-    ...portrait({ position: [0, 1.45, -329.5], look: [N, -0.025], fov: 54, shift: [0, 0.12] }),
-    pace: { window: [0.06, 0.94], ease: 'inOut' },
-    flight: { fov: 7 },
+    at: 0.18,
+    intent: 'On roule derrière lui : le C-HR passe sur « 1 JOUR » peint dans la chaussée, ses feux allumés, la galaxie au bout de la route.',
+    framing: { position: lane(78, 1.9), target: chr(104, 1.05), fov: 38, shift: [0.12, 0] },
+    ...portrait({ position: lane(76, 1.8, 1.34), target: chr(104, 1.1), fov: 48, shift: [0, 0.12] }),
+    pace: { window: [0.04, 0.96], ease: 'inOut' },
+    lead: 0.12,
+    flight: { fov: 8, shake: 0.4 },
   },
   {
     id: 'sept-jours',
     chapter: 'location',
-    at: 0.42,
-    intent: 'Cent mètres plus loin, à vive allure : la durée s’allonge comme la route.',
-    framing: { position: lane(-431.5), look: [N, -0.017], fov: 36, shift: [0.1, 0] },
-    ...portrait({ position: [0, 1.45, -429.5], look: [N, -0.025], fov: 54, shift: [0, 0.12] }),
-    pace: { window: [0.04, 0.96], ease: 'inOut' },
-    flight: { fov: 9, shake: 0.3 },
+    at: 0.44,
+    intent: 'Cent mètres avalés, on se déporte et on le double : il passe à portée de main, trois quarts arrière, la laque prend la galaxie.',
+    framing: { position: lane(176, -3.8, 1.14), target: chr(184, 0.95), fov: 44, shift: [0.1, 0] },
+    ...portrait({ position: lane(174, -3.4, 1.18), target: chr(184, 1.0), fov: 56, shift: [0, 0.08] }),
+    via: { desktop: [[-2.2, 1.3, WORLD.road.origin[1] - 130]] as Vec3[], tablet: [[-2, 1.34, WORLD.road.origin[1] - 128]] as Vec3[], mobile: [[-2, 1.34, WORLD.road.origin[1] - 128]] as Vec3[] },
+    pace: { window: [0.02, 0.98], ease: 'inOut' },
+    lead: 0.14,
+    flight: { fov: 14, roll: 0.05, shake: 0.9 },
   },
   {
     id: 'quinze-jours',
     chapter: 'location',
-    at: 0.68,
-    intent: 'Encore cent mètres : 15 jours, et les conditions de location.',
-    framing: { position: lane(-531.5), look: [N, -0.017], fov: 36, shift: [0.1, 0] },
-    ...portrait({ position: [0, 1.45, -529.5], look: [N, -0.025], fov: 54, shift: [0, 0.12] }),
-    pace: { window: [0.04, 0.96], ease: 'inOut' },
-    flight: { fov: 9, shake: 0.3 },
+    at: 0.7,
+    intent: 'Il reprend la tête et s’éloigne : la route converge vers la galaxie, ses feux deviennent deux points rouges au loin.',
+    framing: { position: lane(296, 0.8), target: chr(345, 1.25), fov: 36, shift: [0.1, 0] },
+    ...portrait({ position: lane(294, 0.7, 1.32), target: chr(345, 1.3), fov: 48, shift: [0, 0.12] }),
+    via: { desktop: [[-1.6, 1.22, WORLD.road.origin[1] - 240]] as Vec3[], tablet: [[-1.4, 1.26, WORLD.road.origin[1] - 238]] as Vec3[], mobile: [[-1.4, 1.26, WORLD.road.origin[1] - 238]] as Vec3[] },
+    pace: { window: [0.02, 0.98], ease: 'inOut' },
+    flight: { fov: 12, shake: 0.8 },
   },
   {
     id: 'conditions',
     chapter: 'location',
-    at: 0.92,
-    intent: 'Rouler encore, le regard au bout de la route : la place pour les tarifs et les conditions du flyer.',
-    framing: { position: lane(-600), look: [N, -0.015], fov: 38, shift: [0.1, 0] },
-    ...portrait({ position: [0, 1.45, -598], look: [N, -0.022], fov: 56, shift: [0, 0.24] }),
+    at: 0.93,
+    intent: 'Il s’arrête au bord du 06, nous derrière lui : trois quarts arrière, la falaise d’or et la mer de nuit devant — la place pour les tarifs et les conditions.',
+    framing: { position: lane(390, -3.3, 1.22), target: chr(398, 1.02), fov: 40, shift: [0.12, 0] },
+    ...portrait({ position: lane(388, -3, 1.26), target: chr(398, 1.06), fov: 50, shift: [0, 0.22] }),
+    pace: { window: [0.02, 0.98], ease: 'inOut' },
+    flight: { fov: 10, shake: 0.5 },
+  },
+  {
+    id: 'agenda',
+    chapter: 'rendezvous',
+    at: 0.5,
+    intent: 'L’écran du rendez-vous : la caméra s’immobilise au-dessus du bord du 06, la nuit passe derrière le calendrier.',
+    framing: { position: [0, 30, WORLD.road.origin[1] - ROAD.length + 15], look: [N, -0.07], fov: 48, shift: [0, 0] },
+    ...portrait({ position: [0, 36, WORLD.road.origin[1] - ROAD.length + 20], look: [N, -0.09], fov: 62, shift: [0, 0] }),
+    via: { desktop: [[-1.6, 8, WORLD.road.origin[1] - ROAD.length + 4]] as Vec3[], tablet: [[-1.4, 9, WORLD.road.origin[1] - ROAD.length + 6]] as Vec3[], mobile: [[-1.4, 9, WORLD.road.origin[1] - ROAD.length + 6]] as Vec3[] },
     pace: { window: [0.04, 0.96], ease: 'inOut' },
-    flight: { fov: 8, shake: 0.25 },
+    flight: { fov: 8 },
   },
   {
     id: 'horizon',
     chapter: 'contact',
     at: 0.6,
-    intent: 'Au bout de la route, au bord du 06 : les feux s’arrêtent au pied de la falaise d’or, la mer de nuit et la galaxie devant. La place pour un seul geste.',
+    intent: 'Au bout de la route, au bord du 06 : la mer de nuit et la galaxie devant. La place pour un seul geste.',
     framing: { position: [0, 13, -645], look: [N, -0.035], fov: 54, shift: [0, 0] },
     ...portrait({ position: [0, 17, -642], look: [N, -0.055], fov: 68, shift: [0, 0.16] }),
     pace: { window: [0.06, 0.94], ease: 'inOut' },

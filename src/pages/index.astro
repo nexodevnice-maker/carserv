@@ -6,12 +6,12 @@ import { cleaningOffers, cleaningServices } from '../domain/services';
 import { chapters } from '../experience/chapters';
 import { copy } from '../experience/copy';
 import map from '../experience/map-06.json';
-import generated from '../experience/media.generated.json';
 import Base from '../layouts/Base.astro';
 import BrandIcon from '../ui/BrandIcon.astro';
 import Chapter from '../ui/Chapter.astro';
 import ExperienceTrack from '../ui/ExperienceTrack.astro';
 import MobileBar from '../ui/MobileBar.astro';
+import Rendezvous from '../ui/Rendezvous.astro';
 import SiteHeader from '../ui/SiteHeader.astro';
 import Tabs from '../ui/Tabs.astro';
 import '../styles/experience.css';
@@ -34,7 +34,6 @@ const offer = cleaningOffers[0]!;
 const instagram = shown(property.channels.instagram);
 const instagramUrl = instagram ? `https://www.instagram.com/${instagram}/` : null;
 const rate = (days: number) => vehicle.rates.find((r) => r.days === days)!;
-const after = generated.passage.after;
 
 /** Prestations du flyer MAIN : pictogramme, titre, détails — dans l'ordre du flyer. */
 const cleaningIcons = { interieur: 'seat', exterieur: 'car', finition: 'sparkle', produits: 'shield' } as const;
@@ -55,7 +54,12 @@ const description =
 <Base
   title={title}
   description={description}
-  image={{ src: after.desktop.src, width: after.desktop.width, height: after.desktop.height, alt: 'Capot d’un SUV gris foncé après nettoyage, reflétant les arbres.' }}
+  image={{
+    src: '/media/stage/poster-desktop.webp',
+    width: 1440,
+    height: 900,
+    alt: 'La Voie lactée au-dessus d’une mer de nuages, et le contour des Alpes-Maritimes éclairé dans la nuit.',
+  }}
 >
   <Fragment slot="head">
     <script is:inline>
@@ -95,12 +99,7 @@ const description =
           <source srcset="/media/stage/poster-desktop.avif" type="image/avif" />
           <img src="/media/stage/poster-desktop.webp" width="1440" height="900" alt="" fetchpriority="high" decoding="async" />
         </picture>
-        <picture class="stage__poster stage__poster--after">
-          <source media="(max-width: 1099px)" srcset={after.mobile.src} type="image/webp" />
-          <img src={after.desktop.src} width={after.desktop.width} height={after.desktop.height} alt="" loading="lazy" decoding="async" />
-        </picture>
         <canvas class="stage__canvas" data-stage-canvas></canvas>
-        <video class="stage__video" data-stage-video muted playsinline preload="none" tabindex="-1"></video>
         <div class="stage__veil"></div>
         <div class="gauge">
           <span class="gauge__label gauge__label--before">Avant</span>
@@ -152,7 +151,7 @@ const description =
           <p class="index"><span>{copy.avant.index}</span></p>
           <h2 id="titre-avant" class="title">{copy.avant.title}</h2>
           <p class="text">{copy.avant.text}</p>
-          <p class="sr-only">{copy.video}</p>
+          <p class="sr-only">{copy.scene}</p>
         </div>
       </Chapter>
 
@@ -174,13 +173,18 @@ const description =
         <div class="panel" style={win('transformation', 'apres')}>
           <p class="index"><span>{copy.apres.index}</span></p>
           <h2 id="titre-apres" class="title">{copy.apres.title}</h2>
+          <p class="quote quote--tight">{copy.apres.reflets}</p>
           <p class="text">
             <strong>{service('finition').title.value}</strong>
             {service('finition').details.value.join(' · ')}
           </p>
         </div>
-        <div class="panel" style={win('transformation', 'reflets')}>
-          <p class="quote">{copy.apres.reflets}</p>
+        <div class="panel" style={win('transformation', 'interieur')}>
+          <p class="quote">{copy.apres.interieur}</p>
+          <p class="text">
+            <strong>{service('interieur').title.value}</strong>
+            {service('interieur').details.value.join(' · ')}
+          </p>
         </div>
       </Chapter>
 
@@ -289,6 +293,12 @@ const description =
         </div>
       </Chapter>
 
+      <Chapter id="rendezvous" universe="action" span={chapter('rendezvous').span} labelledby="titre-rendezvous">
+        <div class="panel panel--form" style={win('rendezvous', 'agenda')}>
+          <Rendezvous />
+        </div>
+      </Chapter>
+
       <Chapter id="contact" universe="action" span={chapter('contact').span} labelledby="titre-contact">
         <div class="panel panel--cta" style={win('contact', 'action')}>
           <p class="index"><span>{copy.contact.index}</span></p>
@@ -312,7 +322,10 @@ const description =
   <footer class="site-footer">
     <p>© {property.name.value}</p>
     <p>Maquette de démonstration : informations commerciales à confirmer avant publication.</p>
-    <p>Toyota et C-HR sont des marques de leurs propriétaires ; aucune affiliation. Vidéo : story Snapchat Car-service06. Cartes : IGN Admin Express. Ciel et matière de la chaussée : Poly Haven (CC0).</p>
+    <p>
+      Toyota et C-HR sont des marques de leurs propriétaires ; aucune affiliation. Modèles 3D des véhicules : fournis
+      par l’entreprise. Cartes : IGN Admin Express. Ciel et matière de la chaussée : Poly Haven (CC0).
+    </p>
   </footer>
 
   <MobileBar />
@@ -320,5 +333,7 @@ const description =
 
 <script>
   import { boot } from '../experience/boot';
+  import { initRendezvous } from '../experience/rendezvous';
   boot();
+  initRendezvous();
 </script>

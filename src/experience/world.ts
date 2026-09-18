@@ -6,8 +6,8 @@ import type { CloudField } from '../scenes/clouds/cloud-layer';
  * l'autre du récit. Tout le voyage est tourné vers le nord, vers le cœur de la Voie lactée.
  * - le 06 : le contour IGN à l'échelle 1 m par unité de carte (≈ 1 km × 1,1 km), plateau affleurant à y = 0,
  *   falaises d'or de 40 m sur la mer de nuit ;
- * - le monolithe de preuve à l'origine, face au sud (la côte est à 120 m derrière la caméra), sur un point sans nom ;
- * - la route de la location part vers le nord derrière le monolithe : son point de fuite tombe sous la galaxie ;
+ * - le véhicule de la démonstration à l'origine, capot vers l'est, sur un point sans nom ;
+ * - la route de la location part vers le nord derrière lui : son point de fuite tombe sous la galaxie ;
  * - une mer de nuages à 1 500 m (percée d'une trouée pour la plongée vers le 06) et des bancs bas vers 400 m.
  */
 const NORTH = -Math.PI / 2;
@@ -26,7 +26,7 @@ export const WORLD = {
   skyYaw: 1.32,
   north: NORTH,
   map: {
-    /** Point de la carte (viewBox de map-06.json) posé à l'origine du monde : l'emplacement du monolithe. */
+    /** Point de la carte (viewBox de map-06.json) posé à l'origine du monde : l'emplacement du véhicule. */
     anchor,
     scale: 1,
     depth: 40,
@@ -34,10 +34,22 @@ export const WORLD = {
     numberAt: [640, 470] as const,
     seaAt: [520, 1205] as const,
   },
+  /**
+   * Les deux véhicules (modèles 3D fournis, tools/3d). Longueurs réelles des modèles concernés : le modèle est mis à
+   * cette échelle, roues au sol. `heading` : azimut du capot. La location roule dans la voie de la caméra (x = 0).
+   */
+  vehicles: {
+    cleaning: { length: 4.99, at: [0, 0] as const, heading: 0 },
+    rental: { length: 4.36, at: [0, -240] as const, heading: NORTH },
+  },
+  /** Hauteur de la colonne de la balise (m) : visible depuis l'orbite de la France. */
+  beaconHeight: 2600,
   road: {
     /** Origine de la route (x, z) : la voie de la caméra passe en x = 0. */
     origin: [1.7, -240] as const,
     heading: NORTH,
+    /** Longueur de chaussée (m) : elle s'arrête au bord du plateau du 06. */
+    length: 420,
   },
   cloudFar: 8000,
   clouds: {

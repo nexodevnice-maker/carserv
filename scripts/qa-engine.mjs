@@ -394,7 +394,7 @@ for (const profile of ['desktop', 'mobile']) {
     overflowX: document.documentElement.scrollWidth > innerWidth,
   }));
   check(G, 'un seul h1, hiérarchie sans saut', structure.h1 === 1 && structure.headings.every((h, k) => k === 0 || Number(h[1]) <= Number(structure.headings[k - 1][1]) + 1), structure.headings.join(' '));
-  check(G, 'chapitres dans l’ordre du registre', structure.chapters.join() === 'arrivee,zone,avant,intervention,transformation,prestations,univers,bascule,location,contact', structure.chapters.join());
+  check(G, 'chapitres dans l’ordre du registre', structure.chapters.join() === 'arrivee,zone,avant,intervention,transformation,prestations,univers,bascule,location,rendezvous,contact', structure.chapters.join());
   check(G, 'titre, description, langue', structure.title.length > 20 && structure.description.length > 50 && structure.lang === 'fr');
   check(G, 'aucun débordement horizontal', !structure.overflowX);
   // Les éléments fixes (en-tête) n'agrandissent pas la page : chaque lien doit être vérifié dans la vue.

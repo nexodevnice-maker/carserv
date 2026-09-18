@@ -8,6 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "typecheck": "astro sync && tsc --noEmit",
+    "media:3d": "node scripts/media-3d.mjs",
     "media:setup": "npm install --prefix scripts/media-tools",
     "media:inspect": "node scripts/media-inspect.mjs",
     "media:video": "node scripts/media-video.mjs",

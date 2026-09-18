@@ -1,20 +1,16 @@
 import { installQaHooks } from '../engine/debug/qa-hooks';
 import { createDomWriter } from '../engine/dom/dom-writer';
 import { createExperience } from '../engine/experience';
-import { FrameSequence } from '../engine/media/frame-sequence';
-import { createPackSource } from '../engine/media/frame-source';
 import { createMediaRegistry } from '../engine/media/media-registry';
-import { VideoScrub } from '../engine/media/video-scrub';
-import { loadVideoBlob, type VideoBlob } from '../engine/media/video-source';
 import { createGuide } from '../engine/scroll/guide';
 import type { WebGLStage } from '../engine/webgl/webgl-stage';
-import type { EvidenceLayer } from '../scenes/evidence/evidence-layer';
+import type { VehicleLayer } from '../scenes/vehicle/vehicle-layer';
+import type { VehicleLightLayer } from '../scenes/vehicle/vehicle-light';
 import { chapters, definition } from './chapters';
-import { ENGINE, MEDIA_POLICY, SEQUENCE_BUDGET, STAGE } from './config';
+import { ENGINE, ENVIRONMENT, MEDIA_POLICY, STAGE } from './config';
 import { copy } from './copy';
 import france from './map-france.json';
 import map from './map-06.json';
-import generated from './media.generated.json';
 import { media } from './media';
 import { WORLD } from './world';
 
@@ -23,17 +19,17 @@ import { WORLD } from './world';
  * Entrée (technique MECA RIVIERA) : l'écran d'entrée couvre la préparation de la première scène et se lève à la
  * première image WebGL (au plus tôt 1,2 s, au plus tard 4,5 s ; sans WebGL : sur l'affiche). Pendant l'entrée, la page
  * reste en haut et aucun pas n'est pris. Page restaurée ou rechargée : toujours au début, sur l'univers.
- * Puis : moteur (scroll → progression → état), pas guidés, registre média et liaisons (vidéo en mémoire au bureau,
- * séquence au téléphone), scène WebGL chargée en différé — un seul monde : l'univers (ciel et sol mouillé), les nuages,
- * la preuve, le 06 en volume, la route —, repli statique à tout moment.
+ * Puis : moteur (scroll → progression → état), pas guidés, registre média (les deux modèles 3D et l'environnement de
+ * nuit, chargés à l'approche de leur chapitre), scène WebGL chargée en différé — un seul monde : l'univers (ciel et
+ * sol mouillé), les nuages, la France et le 06 en volume, la balise, le véhicule de la démonstration, la route et le
+ * véhicule de location —, repli statique à tout moment.
  */
 export function boot() {
   const html = document.documentElement;
   const track = document.querySelector<HTMLElement>('[data-track]');
   const stageEl = track?.querySelector<HTMLElement>('[data-stage]');
   const canvas = document.querySelector<HTMLCanvasElement>('[data-stage-canvas]');
-  const video = document.querySelector<HTMLVideoElement>('[data-stage-video]');
-  if (!track || !stageEl || !canvas || !video) return null;
+  if (!track || !stageEl || !canvas) return null;
   html.classList.add('has-experience');
   const posterMode = new URLSearchParams(location.search).has('poster');
   if (posterMode) html.classList.add('is-poster');
@@ -80,7 +76,9 @@ export function boot() {
         scrollBehavior: () => (ENGINE.follow[state.format].mode === 'glide' ? 'instant' : 'smooth'),
       });
 
-  // — Médias.
+  // — Médias : les modèles 3D et l'environnement de nuit sont les seuls téléchargements lourds. Ils appartiennent à
+  // des couches de la scène : le registre décide QUAND, la couche sait COMMENT (`ensure`). Tant que la scène n'existe
+  // pas (WebGL en préparation, ou repli statique), la demande attend sans bloquer le reste.
   const registry = createMediaRegistry(media, {
     capabilities,
     chapterIndex: (id) => timeline.indexOf(id),
@@ -88,68 +86,26 @@ export function boot() {
     wake: experience.invalidate,
   });
 
-  let evidence: EvidenceLayer | null = null;
-  let scrub: VideoScrub | null = null;
-  let videoBlob: VideoBlob | null = null;
-  let videoAbort: AbortController | null = null;
-  registry.bind('transformation-scrub', {
-    async load(rendition, descriptor) {
-      videoAbort = new AbortController();
-      const loaded = await loadVideoBlob(rendition.src, videoAbort.signal);
-      videoBlob = loaded;
-      await new Promise<void>((resolve, reject) => {
-        scrub = new VideoScrub(video, {
-          fps: descriptor.scrub?.fps ?? 30,
-          wake: experience.invalidate,
-          onFrame: () => evidence?.frame(),
-        });
-        video.addEventListener(
-          'loadeddata',
-          () => {
-            evidence?.setVideo(video);
-            resolve();
-          },
-          { once: true },
-        );
-        video.addEventListener('error', () => reject(new Error(`vidéo illisible : ${rendition.src}`)), { once: true });
-        video.src = loaded.url;
-        video.load();
-      });
-    },
-    release() {
-      videoAbort?.abort();
-      scrub?.dispose();
-      scrub = null;
-      evidence?.setVideo(null);
-      videoBlob?.revoke();
-      videoBlob = null;
-    },
+  let cleaningCar: VehicleLayer | null = null;
+  let rentalCar: VehicleLayer | null = null;
+  let vehicleLight: VehicleLightLayer | null = null;
+  let sceneReady: () => void = () => undefined;
+  const scene = new Promise<void>((resolve) => {
+    sceneReady = resolve;
   });
-
-  let sequence: FrameSequence | null = null;
-  let lastBitmap: ImageBitmap | null = null;
-  registry.bind('transformation-sequence', {
-    async load(rendition, descriptor) {
-      const info = descriptor.sequence;
-      if (!info?.offsets) throw new Error('séquence sans table des positions');
-      sequence = new FrameSequence({
-        source: createPackSource(rendition.src, info.offsets, info.type),
-        fps: info.fps,
-        ...SEQUENCE_BUDGET[state.format],
-        wake: experience.invalidate,
-        onFrame: (bitmap) => {
-          lastBitmap = bitmap;
-          evidence?.setBitmap(bitmap);
-        },
-      });
-    },
-    release() {
-      sequence?.dispose();
-      sequence = null;
-      lastBitmap = null;
-      evidence?.setBitmap(null);
-    },
-  });
+  const bindLayer = (id: string, layer: () => { ensure(): Promise<void> } | null) =>
+    registry.bind(id, {
+      async load() {
+        await scene;
+        await layer()?.ensure();
+      },
+      // Un modèle chargé reste en mémoire : il est revu plus loin (prestations, location) et le libérer coûterait une
+      // recompilation de shaders au pire moment.
+      release() {},
+    });
+  bindLayer('vehicle-cleaning', () => cleaningCar);
+  bindLayer('vehicle-rental', () => rentalCar);
+  bindLayer('env-night', () => vehicleLight);
 
   // Jauge Avant / Après : deux variables CSS sur la vue épinglée, réécrites seulement si elles changent.
   const dom = createDomWriter();
@@ -158,19 +114,13 @@ export function boot() {
     dom.setVar(stageEl, '--clean', (s.channels.clean ?? 0).toFixed(4));
     dom.setVar(stageEl, '--gauge', (s.channels.gauge ?? 0).toFixed(3));
     dom.setData(html, 'universe', universes.get(s.chapter.id) ?? 'cleaning');
+    // Le chapitre affiché (`data-chapter` reste réservé aux sections mesurées) : certaines parties de l'interface
+    // s'effacent quand l'écran appartient à l'une d'elles (rendez-vous).
+    dom.setData(html, 'scene', s.chapter.id);
   });
 
   experience.use('media', (s) => {
     registry.update(s.chapter.index, s.format);
-    const time = s.channels.videoTime ?? 0;
-    if (scrub) {
-      scrub.set(time);
-      scrub.update();
-    }
-    if (sequence) {
-      sequence.set(time);
-      sequence.update();
-    }
   });
 
   // — Scène WebGL, en différé.
@@ -180,81 +130,119 @@ export function boot() {
     if (!capabilities.webgl2 || capabilities.saveData) {
       stageStatus = 'static';
       fallback(capabilities.saveData ? 'économie de données' : 'WebGL 2 indisponible');
+      sceneReady();
       return;
     }
     setIntroProgress(0.3);
     Promise.all([
       import('../engine/webgl/webgl-stage'),
-      import('../scenes/evidence/evidence-layer'),
-      import('../scenes/road/road-layer'),
       import('../scenes/sky/sky-layer'),
       import('../scenes/map/map-layer'),
       import('../scenes/clouds/cloud-layer'),
+      import('../scenes/beacon/beacon-layer'),
+      import('../scenes/vehicle/vehicle-layer'),
+      import('../scenes/vehicle/vehicle-light'),
+      import('../scenes/road/road-layer'),
     ])
-      .then(async ([{ createWebGLStage }, { createEvidenceLayer }, { createRoadLayer }, { createSkyLayer }, { createMapLayer }, { createCloudLayer }]) => {
-        setIntroProgress(0.55);
-        const portrait = state.format !== 'desktop';
-        const stills = generated.passage;
-        evidence = createEvidenceLayer({
-          align: [generated.passage.align.dx, generated.passage.align.dy, generated.passage.align.scale],
-          stills: {
-            before: portrait ? stills.before.mobile.src : stills.before.desktop.src,
-            after: portrait ? stills.after.mobile.src : stills.after.desktop.src,
-          },
-        });
-        if (video.readyState >= 2 && scrub) evidence.setVideo(video);
-        if (lastBitmap) evidence.setBitmap(lastBitmap);
-        const desktop = state.format === 'desktop';
-        // L'univers (HDRI fourni), partout : 2048 px d'abord ; 4096 px ensuite sur grand écran.
-        const sky = createSkyLayer({
-          low: '/env/sky-2048.webp',
-          high: desktop ? '/env/sky-4096.webp' : undefined,
-          groundY: -WORLD.map.depth,
-          streakTaps: desktop ? 10 : 6,
-        });
-        const territory = createMapLayer(
-          {
-            data: map,
-            france,
-            anchor: WORLD.map.anchor,
-            scale: WORLD.map.scale,
-            depth: WORLD.map.depth,
-            bevel: WORLD.map.bevel,
-            labels: { number: '06', numberAt: WORLD.map.numberAt, sea: copy.zone.sea, seaAt: WORLD.map.seaAt },
-            font: '"Barlow Condensed", "Arial Narrow", sans-serif',
-          },
-          sky.uniforms,
-        );
-        const road = createRoadLayer({ placement: WORLD.road, night: sky.uniforms });
-        const clouds = createCloudLayer({
-          fields: WORLD.clouds[desktop ? 'desktop' : 'mobile'],
-          noise: sky.uniforms.uNoise.value,
-          far: WORLD.cloudFar,
-        });
-        const created = await createWebGLStage({
-          experience,
-          canvas,
-          host: stageEl,
-          layers: [sky, territory, evidence, road, clouds],
-          config: STAGE,
-          onReady: () => {
-            stageStatus = 'ready';
-            html.classList.add('is-3d');
-            setIntroProgress(1);
-            liftIntro();
-          },
-          onFallback: (reason) => {
-            stageStatus = `fallback:${reason}`;
-            fallback(reason);
-          },
-        });
-        if (!created) return;
-        stage = created;
-        setIntroProgress(0.85);
-      })
+      .then(
+        async ([
+          { createWebGLStage },
+          { createSkyLayer },
+          { createMapLayer },
+          { createCloudLayer },
+          { createBeaconLayer },
+          { createVehicleLayer },
+          { createVehicleLightLayer },
+          { createRoadLayer },
+        ]) => {
+          setIntroProgress(0.55);
+          const desktop = state.format === 'desktop';
+          // L'univers (HDRI fourni), partout : 2048 px d'abord ; 4096 px ensuite sur grand écran.
+          const sky = createSkyLayer({
+            low: '/env/sky-2048.webp',
+            high: desktop ? '/env/sky-4096.webp' : undefined,
+            groundY: -WORLD.map.depth,
+            streakTaps: desktop ? 10 : 6,
+          });
+          const territory = createMapLayer(
+            {
+              data: map,
+              france,
+              anchor: WORLD.map.anchor,
+              scale: WORLD.map.scale,
+              depth: WORLD.map.depth,
+              bevel: WORLD.map.bevel,
+              labels: { number: '06', numberAt: WORLD.map.numberAt, sea: copy.zone.sea, seaAt: WORLD.map.seaAt },
+              font: '"Barlow Condensed", "Arial Narrow", sans-serif',
+            },
+            sky.uniforms,
+          );
+          const beacon = createBeaconLayer({ at: WORLD.vehicles.cleaning.at, height: WORLD.beaconHeight });
+          // Le véhicule de la démonstration : sali, scanné, verni, visité de l'intérieur. Il ne quitte jamais sa place.
+          cleaningCar = createVehicleLayer({
+            ...WORLD.vehicles.cleaning,
+            url: '/models/rs6.glb',
+            channels: { dirt: 'dirt', scan: 'scan', polish: 'polish', light: 'carLight' },
+            noise: sky.uniforms.uNoise.value,
+            chapters: ['avant', 'intervention', 'transformation', 'prestations'],
+          });
+          // Le véhicule de location : il roule sur la route du 06 (`chrTravel` : son avance en mètres).
+          rentalCar = createVehicleLayer({
+            ...WORLD.vehicles.rental,
+            url: '/models/chr.glb',
+            channels: { light: 'chrLight' },
+            travel: 'chrTravel',
+            noise: sky.uniforms.uNoise.value,
+            chapters: ['bascule', 'location', 'rendezvous'],
+          });
+          vehicleLight = createVehicleLightLayer({
+            url: desktop ? ENVIRONMENT.sharpUrl : ENVIRONMENT.url[state.format],
+            intensity: ENVIRONMENT.intensity,
+            yaw: WORLD.skyYaw,
+            channels: ['carLight', 'chrLight'],
+          });
+          const road = createRoadLayer({
+            placement: WORLD.road,
+            night: sky.uniforms,
+            // Les feux arrière appartiennent au C-HR : posés sur son pare-chocs, c'est la chaussée qui en fait le reflet.
+            tail: { travel: 'chrTravel', light: 'chrLight', offset: -WORLD.vehicles.rental.length / 2 + 0.1 },
+          });
+          const clouds = createCloudLayer({
+            fields: WORLD.clouds[desktop ? 'desktop' : 'mobile'],
+            noise: sky.uniforms.uNoise.value,
+            far: WORLD.cloudFar,
+          });
+          const created = await createWebGLStage({
+            experience,
+            canvas,
+            host: stageEl,
+            layers: [sky, territory, beacon, vehicleLight, cleaningCar, road, rentalCar, clouds],
+            config: STAGE,
+            onReady: () => {
+              stageStatus = 'ready';
+              html.classList.add('is-3d');
+              setIntroProgress(1);
+              liftIntro();
+            },
+            onFallback: (reason) => {
+              stageStatus = `fallback:${reason}`;
+              fallback(reason);
+            },
+          });
+          if (!created) {
+            sceneReady();
+            return;
+          }
+          stage = created;
+          setIntroProgress(0.85);
+          // Les couches ont reçu leur contexte : les demandes du registre peuvent partir.
+          sceneReady();
+        },
+      )
       .catch((error: unknown) => {
         stageStatus = `error:${error instanceof Error ? error.message : String(error)}`;
         fallback(stageStatus);
+        sceneReady();
       });
   };
   if (document.readyState === 'complete' || !introDone) startStage();
@@ -264,15 +252,6 @@ export function boot() {
     stage: () => (stage ? stage.info() : stageStatus),
     stageStatus: () => stageStatus,
     media: () => registry.snapshot(),
-    video: () =>
-      scrub && {
-        desired: Number(scrub.time.toFixed(3)),
-        current: Number(video.currentTime.toFixed(3)),
-        seeking: video.seeking,
-        readyState: video.readyState,
-        ...scrub.health,
-      },
-    sequence: () => sequence?.stats ?? null,
     guide: () => guide?.points.length ?? 0,
     intro: () => !introDone,
   });

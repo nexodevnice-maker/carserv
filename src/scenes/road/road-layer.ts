@@ -1,6 +1,5 @@
 import {
   AdditiveBlending,
-  BoxGeometry,
   CanvasTexture,
   FogExp2,
   Group,
@@ -20,19 +19,21 @@ import {
 } from 'three';
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
+import { WORLD } from '../../experience/world';
 import type { SharedNight } from '../map/map-layer';
 import { GROUND_GLSL, SKY_GLSL } from '../shared/night-glsl';
 import { FOG_DENSITY } from '../sky/sky-layer';
 
 /**
  * Couche « route » : la location comme mobilité. Une route mouillée dans la nuit, la durée peinte sur la chaussée
- * comme un marquage (1 JOUR, 7 JOURS, 15 JOURS — libellés du flyer), et devant la caméra un véhicule réduit à ses
- * feux arrière (optique rouge, halo, et leur reflet étiré sur la chaussée mouillée).
+ * comme un marquage (1 JOUR, 7 JOURS, 15 JOURS — libellés du flyer), et les feux arrière du véhicule de location
+ * (optique rouge, halo, et leur reflet étiré sur la chaussée mouillée). Le véhicule lui-même est le modèle 3D fourni
+ * (scenes/vehicle) : la route ne porte que ses feux, posés sur son pare-chocs, car c'est la chaussée qui en calcule le
+ * reflet.
  * La chaussée partage la lumière du monde (shared/night-glsl) : elle reflète le ciel étalonné, plus nettement là où
  * elle est mouillée. Elle est posée sur le sol mouillé de l'univers (bords
  * fondus, même brouillard) : on la voit depuis le ciel pendant le piqué, elle s'allume en arrivant (`roadLight`), les
  * feux battent avant de tenir — une ampoule qui s'amorce, fonction de la progression.
- * Aucune voiture 3D : aucune image réelle du véhicule loué n'existe.
  * Repère local : la route part de x = 0 vers +x ; `placement` la pose dans le monde (origine, cap). Vue du ciel, un
  * tracé rouge se dessine le long de la voie (`roadTrail` : longueur tracée et intensité) — la route de la location
  * traverse le 06 vers la Voie lactée.
@@ -42,7 +43,7 @@ import { FOG_DENSITY } from '../sky/sky-layer';
  */
 export const ROAD = {
   start: 0,
-  length: 420,
+  length: WORLD.road.length,
   center: -3.4,
   halfWidth: 6.8,
   lane: -1.7,
@@ -300,7 +301,12 @@ const roadFragment = /* glsl */ `
   }
 `;
 
-export function createRoadLayer(options: { placement: { origin: readonly [number, number]; heading: number }; night: SharedNight }) {
+export function createRoadLayer(options: {
+  placement: { origin: readonly [number, number]; heading: number };
+  night: SharedNight;
+  /** Feux arrière : ceux du véhicule de location (canal d'avance sur la route, canal de présence, recul du pare-chocs). */
+  tail: { travel: string; light: string; offset: number };
+}) {
   const root = new Group();
   root.name = 'road';
   const { origin, heading } = options.placement;
@@ -309,7 +315,6 @@ export function createRoadLayer(options: { placement: { origin: readonly [number
   frame.rotation.y = -heading;
   frame.position.set(origin[0], 0, origin[1]);
   root.add(frame);
-  const along = [Math.cos(heading), Math.sin(heading)] as const;
   const textures: Texture[] = [];
 
   const roadUniforms = {
@@ -360,23 +365,20 @@ export function createRoadLayer(options: { placement: { origin: readonly [number
 
   // Feux arrière : optiques et halos ; leur reflet est calculé par la chaussée.
   const tail = new Group();
-  const lensMaterial = new MeshBasicMaterial({ color: 0xff2a1f, toneMapped: false });
-  const lensGeometry = new BoxGeometry(0.05, 0.07, 0.26);
   const halo = haloTexture();
   textures.push(halo);
-  const lenses: Mesh[] = [];
+  const lenses: Sprite[] = [];
   for (const side of [-1, 1]) {
-    const lens = new Mesh(lensGeometry, lensMaterial);
-    lens.position.set(0, 0.86, side * 0.66);
+    // Pas d'optique en dur : le modèle a la sienne. Seulement la lueur, et le point d'où la chaussée tire son reflet.
     const glow = new Sprite(new SpriteMaterial({ map: halo, blending: AdditiveBlending, depthWrite: false, transparent: true }));
-    glow.position.copy(lens.position);
-    glow.scale.setScalar(0.9);
-    lenses.push(lens);
-    tail.add(lens, glow);
+    glow.position.set(0, 0.95, side * 0.68);
+    glow.scale.setScalar(0.34);
+    lenses.push(glow);
+    tail.add(glow);
   }
   frame.add(tail);
 
-  const last = { light: -1, tailX: NaN, fog: NaN, draw: -1, trail: -1 };
+  const last = { light: -1, lamp: -1, tailX: NaN, fog: NaN, draw: -1, trail: -1 };
   const world = new Vector3();
 
   const layer: WebGLLayer = {
@@ -432,16 +434,16 @@ export function createRoadLayer(options: { placement: { origin: readonly [number
     },
     update(state: Readonly<ExperienceState>, ctx: StageContext): LayerUpdate {
       const light = state.channels.roadLight ?? 0;
-      const lamp = ignite(light);
-      const eye = state.camera?.position;
-      // Position de la caméra le long de la route (repère local).
-      const camX = eye ? (eye[0] - origin[0]) * along[0] + (eye[2] - origin[1]) * along[1] : 0;
-      const tailX = Math.min(ROAD.start + ROAD.length - 20, Math.max(camX, ROAD.start) + (state.channels.tailDistance ?? 18));
+      // Les feux sont ceux du C-HR : ils s'amorcent avec la chaussée, puis suivent le véhicule réel.
+      const present = state.channels[options.tail.light] ?? 0;
+      const lamp = ignite(light) * present;
+      // Position du pare-chocs arrière le long de la route (repère local).
+      const tailX = (state.channels[options.tail.travel] ?? 0) + options.tail.offset;
       const fog = state.channels.fog ?? FOG_DENSITY;
       const draw = state.channels.roadDraw ?? 0;
       const trailLight = state.channels.roadTrail ?? 0;
-      if (light === last.light && tailX === last.tailX && fog === last.fog && draw === last.draw && trailLight === last.trail) return false;
-      Object.assign(last, { light, tailX, fog, draw, trail: trailLight });
+      if (light === last.light && lamp === last.lamp && tailX === last.tailX && fog === last.fog && draw === last.draw && trailLight === last.trail) return false;
+      Object.assign(last, { light, lamp, tailX, fog, draw, trail: trailLight });
       if (ctx.scene.fog instanceof FogExp2) ctx.scene.fog.density = fog;
       trailUniforms.uDraw.value = draw;
       trailUniforms.uIntensity.value = trailLight;
@@ -450,12 +452,12 @@ export function createRoadLayer(options: { placement: { origin: readonly [number
       roadUniforms.uRoad.value = light;
       roadUniforms.uLamp.value = lamp;
       for (const material of markingMaterials) material.opacity = 0.9 * Math.max(0, light * 1.4 - 0.4);
+      tail.visible = lamp > 0.001;
       tail.position.set(tailX, 0, ROAD.lane);
       tail.updateMatrixWorld(true);
       roadUniforms.uTailA.value.copy(lenses[0]!.getWorldPosition(world));
       roadUniforms.uTailB.value.copy(lenses[1]!.getWorldPosition(world));
-      lensMaterial.color.setRGB(1 * lamp, 0.16 * lamp, 0.12 * lamp);
-      for (const child of tail.children) if ((child as Sprite).isSprite) ((child as Sprite).material as SpriteMaterial).opacity = lamp;
+      for (const glow of lenses) (glow.material as SpriteMaterial).opacity = lamp;
       return true;
     },
     dispose() {

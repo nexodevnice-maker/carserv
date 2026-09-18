@@ -4,7 +4,7 @@ import type { Format } from '../responsive/formats';
  * Description d'un média, séparée de son usage : le registre décide quand le charger, quelle déclinaison servir et
  * quand le libérer ; la scène décide comment le montrer.
  */
-export type MediaKind = 'video' | 'sequence' | 'image' | 'environment';
+export type MediaKind = 'video' | 'sequence' | 'image' | 'environment' | 'model';
 
 /**
  * - `critical` : premier écran, chargé au démarrage ;
@@ -17,8 +17,9 @@ export interface Rendition {
   formats: readonly Format[];
   src: string;
   type?: string;
-  width: number;
-  height: number;
+  /** Dimensions en pixels ; absentes pour un modèle 3D. */
+  width?: number;
+  height?: number;
   bytes?: number;
 }
 

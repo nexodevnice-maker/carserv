@@ -1,0 +1,115 @@
+---
+import { CONTACT } from '../experience/config';
+import { copy } from '../experience/copy';
+import { cleaningOffers, cleaningServices } from '../domain/services';
+import { rentalFleet } from '../domain/rental';
+import BrandIcon from './BrandIcon.astro';
+
+/**
+ * Prise de rendez-vous : la seule partie du site sans 3D. Structure d'un vrai module de réservation (date, créneau,
+ * véhicule, besoin), direction artistique des flyers (noir, jaune, filets, capitales condensées).
+ * La demande part par courriel préparé : aucun serveur, aucun compte, aucune donnée stockée — le client garde la main,
+ * il voit et envoie le message depuis sa propre messagerie. Sans script, la même demande reste possible : le lien
+ * courriel est écrit dans la page.
+ * Les créneaux sont ceux que DEMANDE le client, jamais des disponibilités annoncées (aucun horaire n'est confirmé,
+ * BUSINESS_TRUTH) : l'entreprise confirme.
+ */
+const vehicle = rentalFleet[0]!;
+const offer = cleaningOffers[0]!;
+/** Besoins proposés : les prestations du flyer, la formule, et la location. */
+const needs = [
+  offer.label.value,
+  ...cleaningServices.map((s) => s.title.value),
+  `Location ${vehicle.model.value}`,
+];
+const slots = [
+  { id: 'matin', label: 'Matin' },
+  { id: 'midi', label: 'Midi' },
+  { id: 'apres-midi', label: 'Après-midi' },
+  { id: 'soir', label: 'Soir' },
+];
+/** Quatorze jours à partir de la construction du site ; avec script, la bande est régénérée à partir d'aujourd'hui. */
+const days = Array.from({ length: 14 }, (_, k) => {
+  const date = new Date();
+  date.setDate(date.getDate() + k + 1);
+  return {
+    iso: date.toISOString().slice(0, 10),
+    weekday: date.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', ''),
+    day: String(date.getDate()),
+    month: date.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', ''),
+  };
+});
+---
+
+<div class="rdv" data-rdv data-inbox={CONTACT.inbox}>
+  <p class="index"><span>{copy.rendezvous.index}</span></p>
+  <h2 id="titre-rendezvous" class="title title--small">{copy.rendezvous.title}</h2>
+  <p class="rdv__lede">{copy.rendezvous.text}</p>
+
+  <fieldset class="rdv__block">
+    <legend class="rdv__legend"><BrandIcon name="calendar" />{copy.rendezvous.date}</legend>
+    <div class="rdv__days" data-rdv-days role="radiogroup" aria-label={copy.rendezvous.date}>
+      {
+        days.map((d, k) => (
+          <label class="day">
+            <input type="radio" name="rdv-date" value={d.iso} checked={k === 0} />
+            <span class="day__weekday">{d.weekday}</span>
+            <span class="day__num">{d.day}</span>
+            <span class="day__month">{d.month}</span>
+          </label>
+        ))
+      }
+    </div>
+  </fieldset>
+
+  <fieldset class="rdv__block">
+    <legend class="rdv__legend"><BrandIcon name="gauge" />{copy.rendezvous.slot}</legend>
+    <div class="rdv__slots" role="radiogroup" aria-label={copy.rendezvous.slot}>
+      {
+        slots.map((s, k) => (
+          <label class="slot">
+            <input type="radio" name="rdv-slot" value={s.label} checked={k === 0} />
+            <span>{s.label}</span>
+          </label>
+        ))
+      }
+    </div>
+  </fieldset>
+
+  <div class="rdv__grid">
+    <label class="field">
+      <span class="field__label">Nom</span>
+      <input type="text" name="rdv-nom" autocomplete="name" placeholder="Prénom et nom" required />
+    </label>
+    <label class="field">
+      <span class="field__label">Téléphone</span>
+      <input type="tel" name="rdv-tel" autocomplete="tel" placeholder="06 00 00 00 00" required />
+    </label>
+    <label class="field">
+      <span class="field__label">Commune (06)</span>
+      <input type="text" name="rdv-commune" autocomplete="address-level2" placeholder="Où intervenir" required />
+    </label>
+    <label class="field">
+      <span class="field__label">Véhicule</span>
+      <input type="text" name="rdv-vehicule" placeholder="Marque et modèle" />
+    </label>
+    <label class="field field--wide">
+      <span class="field__label">Besoin</span>
+      <select name="rdv-besoin">
+        {needs.map((n) => <option value={n}>{n}</option>)}
+      </select>
+    </label>
+    <label class="field field--wide">
+      <span class="field__label">Précisions</span>
+      <textarea name="rdv-message" rows="2" placeholder="État du véhicule, contraintes d’accès, horaire précis…"></textarea>
+    </label>
+  </div>
+
+  <a class="cta cta--send" data-rdv-send href={`mailto:${CONTACT.inbox}`}>
+    {copy.rendezvous.send}
+    <span aria-hidden="true">→</span>
+  </a>
+  <p class="rdv__note">
+    {copy.rendezvous.note} {copy.rendezvous.fallback} <a href={`mailto:${CONTACT.inbox}`}>{CONTACT.inbox}</a>
+  </p>
+</div>

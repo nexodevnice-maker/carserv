@@ -57,7 +57,10 @@ export const MEDIA_POLICY: Record<Format, MediaPolicy> = {
   mobile: { ahead: 1, behind: 1, release: 2 },
 };
 
-/** Séquences d'images : mémoire bornée (images décodées ≈ 3 Mo chacune en 540 × 854). */
+/**
+ * Séquences d'images : mémoire bornée (images décodées ≈ 3 Mo chacune en 540 × 854).
+ * Le site n'affiche plus de séquence ; seul le laboratoire (src/pages/lab) s'en sert pour éprouver le moteur.
+ */
 export const SEQUENCE_BUDGET: Record<Format, { window: number; decoded: number; concurrency: number }> = {
   desktop: { window: 24, decoded: 12, concurrency: 6 },
   tablet: { window: 18, decoded: 8, concurrency: 4 },
@@ -65,12 +68,21 @@ export const SEQUENCE_BUDGET: Record<Format, { window: number; decoded: number; 
 };
 
 /**
- * Environnement de nuit pré-calculé (HDRI fourni) — conditionnel : aucune scène ne l'utilise encore.
- * Cube 128 partout par défaut (447 Ko) ; le cube 256 (1,7 Mo, étoiles incompressibles) seulement si un reflet net est
- * validé sur ordinateur.
+ * Destination des demandes de rendez-vous. Ce n'est PAS une adresse de l'entreprise (aucune n'est connue,
+ * BUSINESS_TRUTH) : c'est la boîte de la maquette, qui relaie les demandes. Le courriel est préparé dans la messagerie
+ * du visiteur : rien ne transite par un serveur.
+ */
+export const CONTACT = { inbox: 'nexodevnice@gmail.com' };
+
+/**
+ * Environnement de nuit pré-calculé (HDRI fourni) : la seule chose qui fasse lire une carrosserie dans le noir (les
+ * reflets). Utilisé par les véhicules 3D et par eux seuls (scenes/vehicle/vehicle-light).
+ * Cube 128 au téléphone et sur tablette (447 Ko) ; cube 256 sur ordinateur (1,7 Mo, étoiles incompressibles), où le
+ * reflet est assez grand pour qu'on y distingue la Voie lactée.
  */
 export const ENVIRONMENT = {
   url: { desktop: '/env/night-128.hdr', tablet: '/env/night-128.hdr', mobile: '/env/night-128.hdr' } satisfies Record<Format, string>,
   sharpUrl: '/env/night-256.hdr',
-  intensity: 1,
+  /** Les valeurs du HDRI sont celles d'une nuit : il faut les pousser pour que la laque existe. */
+  intensity: 2.6,
 };
