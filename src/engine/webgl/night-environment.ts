@@ -24,9 +24,9 @@ export function createNightEnvironment(renderer: WebGLRenderer, size = 64): Text
       const i = (y * width + x) * 4;
       // Le ciel, puis la lueur de la ville sur l'horizon (plus forte d'un côté : une ville n'éclaire pas en rond).
       const side = 0.6 + 0.4 * Math.cos((x / width) * Math.PI * 2 + 1.1);
-      data[i] = 0.05 + 0.10 * up + 0.42 * horizon * side;
-      data[i + 1] = 0.055 + 0.11 * up + 0.30 * horizon * side;
-      data[i + 2] = 0.08 + 0.17 * up + 0.19 * horizon * side;
+      data[i] = 0.012 + 0.030 * up + 0.62 * horizon * side;
+      data[i + 1] = 0.013 + 0.033 * up + 0.42 * horizon * side;
+      data[i + 2] = 0.019 + 0.051 * up + 0.26 * horizon * side;
       data[i + 3] = 1;
       // Quelques étoiles, seulement au-dessus de l'horizon.
       if (elevation > 0.05 && Math.random() < 0.004) {

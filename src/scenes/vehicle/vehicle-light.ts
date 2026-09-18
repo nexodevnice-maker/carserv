@@ -81,10 +81,12 @@ export function createVehicleLightLayer(options: {
       const level = presence * boost;
       if (level === last) return false;
       last = level;
-      key.intensity = presence * 0.7;
-      rim.intensity = presence * 1.25;
+      key.intensity = presence * 1.7;
+      rim.intensity = presence * 3.4;
       const lampLevel = (options.lampChannel ? (state.channels[options.lampChannel] ?? 0) : 0) * presence;
-      for (const lamp of lamps) lamp.intensity = lampLevel * 190;
+      // 190 aplatissait tout : une carrosserie mate prenait la lampe de plein fouet et virait au kaki. Les
+      // candélabres font une flaque de lumière, ils n'éclairent pas un plateau de studio.
+      for (const lamp of lamps) lamp.intensity = lampLevel * 62;
       root.visible = presence > 0.001;
       if (env) context.scene.environmentIntensity = level * options.intensity;
       return true;

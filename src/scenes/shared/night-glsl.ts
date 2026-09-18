@@ -44,9 +44,13 @@ export const SKY_GLSL = /* glsl */ `
    */
   vec3 skyLod(vec3 d, float bias) {
     float up = clamp(d.y * 0.5 + 0.5, 0.0, 1.0);
-    vec3 col = mix(vec3(0.004, 0.006, 0.012), vec3(0.011, 0.013, 0.024), up);
-    // La lueur de la ville, très bas sur l'horizon : c'est elle qui sauve le sol du noir absolu.
-    col += vec3(0.020, 0.014, 0.009) * exp(-abs(d.y) * 22.0);
+    vec3 col = mix(vec3(0.006, 0.008, 0.016), vec3(0.014, 0.017, 0.032), up);
+    // LE DÔME DE LUMIÈRE DE LA VILLE. C'est la seule source de la nuit : un quartier de sodium renvoie sa lueur dans
+    // le ciel bien au-dessus de l'horizon, et c'est elle que le sol mouillé, la chaussée et les carrosseries
+    // réfléchissent. Elle était dix fois trop faible : hors du halo des candélabres, tout tombait dans le noir absolu
+    // et le monde ressemblait à un radeau posé sur du vide.
+    col += vec3(0.048, 0.030, 0.015) * exp(-abs(d.y) * 13.0);
+    col += vec3(0.009, 0.006, 0.003) * exp(-abs(d.y) * 3.0);
     // Aucune étoile semée ici : une grille de points produit un moiré visible dès qu'on bouge, et les vraies étoiles
     // du site sont la galaxie 3D (scenes/galaxy). Ce ciel-ci ne sert qu'à donner sa lumière aux reflets.
     return col;

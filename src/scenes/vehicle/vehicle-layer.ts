@@ -51,7 +51,7 @@ export interface VehicleOptions {
    * jaune) demandent une laque sombre — c'est elle qui rend le reflet lisible. On ne touche qu'aux matériaux de
    * carrosserie, jamais aux optiques ni à l'habitacle.
    */
-  tint?: { match: RegExp; scale: number };
+  tint?: { match: RegExp; color: readonly [number, number, number] };
   /** Bruit précalculé partagé (poussière). */
   noise: Texture;
   chapters?: readonly string[];
@@ -109,7 +109,9 @@ const PATCH_FRAGMENT_HEAD = /* glsl */ `
     float up = smoothstep(-0.1, 0.85, n.y);
     float low = smoothstep(1.35, 0.15, vCarWorld.y - uCarOrigin.y);
     float grain = texture2D(uNoise, vCarWorld.xz * 0.55).r * 0.6 + texture2D(uNoise, vCarWorld.xy * 1.6 + 0.37).r * 0.4;
-    return uDirt * (1.0 - cleaned) * clamp(0.34 + 0.78 * up + 0.5 * low, 0.0, 1.0) * (0.55 + 0.8 * grain);
+    // Borné à 1 : au-delà, le mélange EXTRAPOLE et la poussière dépasse sa propre couleur — la caisse devenait plus
+    // claire que la poussière elle-même.
+    return clamp(uDirt * (1.0 - cleaned) * clamp(0.34 + 0.78 * up + 0.5 * low, 0.0, 1.0) * (0.55 + 0.8 * grain), 0.0, 1.0);
   }
 `;
 
@@ -176,7 +178,15 @@ export function createVehicleLayer(options: VehicleOptions) {
   /** Poussière, scan et vernis dans tous les matériaux du modèle : aucune texture ajoutée, seuls les paramètres bougent. */
   const patch = (material: Material) => {
     const standard = material as MeshStandardMaterial & MeshPhysicalMaterial;
-    if (options.tint && options.tint.match.test(standard.name)) standard.color?.multiplyScalar(options.tint.scale);
+    // LA LAQUE. On IMPOSE la couleur de carrosserie au lieu d'atténuer celle du modèle : les modèles fournis sont
+    // peints en gris clair, et un gris clair sous une lumière chaude devient kaki — la voiture n'était plus noire,
+    // elle était beige. Une laque sombre, elle, n'existe que par ce qu'elle reflète : c'est tout le sujet du récit
+    // (elle est terne quand elle est sale, c'est un miroir quand elle est vernie).
+    if (options.tint && options.tint.match.test(standard.name)) {
+      standard.color?.setRGB(...(options.tint.color as [number, number, number]));
+      standard.metalness = 0.92;
+      standard.roughness = Math.min(standard.roughness ?? 0.3, 0.22);
+    }
     // Les vitres en transmission imposent une passe de rendu supplémentaire à chaque image : au téléphone, c'est
     // rédhibitoire. Verre sombre translucide à la place — la nuit, c'est ce qu'on voit.
     if (standard.transmission !== undefined && standard.transmission > 0) {
@@ -203,7 +213,9 @@ export function createVehicleLayer(options: VehicleOptions) {
           float dust = uDirt > 0.001 ? carDust(cleaned) : 0.0;
           // La poussière ternit la couleur et l'éclaircit à peine (elle diffuse la lumière des étoiles).
           // La poussière dépose un voile clair et sans vie par-dessus la couleur : c'est ce voile qu'on vient enlever.
-          diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.15, 0.135, 0.115), diffuseColor.rgb * 0.6, 0.45), dust);
+          // Une laque noire sous la poussière reste SOMBRE : ce qu'on voit, c'est un voile terne, pas un véhicule
+          // repeint en beige. La couleur de la poussière est donc basse, et la laque transparaît encore dessous.
+          diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.075, 0.068, 0.058), diffuseColor.rgb * 0.8, 0.4), dust);
         `,
         )
         .replace(

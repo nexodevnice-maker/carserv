@@ -184,20 +184,6 @@ export const definition: ExperienceDefinition = {
       { chapter: 'descente', at: 0.5, value: 0.35, pace: smooth },
       { chapter: 'ville', at: 0.45, value: 1, pace: smooth },
     ],
-    // — LA VILLE : elle apparaît par ses fenêtres, d'abord une lueur, puis un lieu.
-    city: [
-      { chapter: 'galaxie', at: 0.6, value: 0 },
-      { chapter: 'descente', at: 0.5, value: 1, pace: smooth },
-      { chapter: 'location', at: 0.93, value: 1 },
-      { chapter: 'rendezvous', at: 0.3, value: 0, pace: smooth },
-    ],
-    cityWindow: [
-      { chapter: 'galaxie', at: 0.55, value: 0 },
-      { chapter: 'descente', at: 0.5, value: 0.85, pace: smooth },
-      { chapter: 'ville', at: 0.45, value: 1, pace: smooth },
-      { chapter: 'location', at: 0.93, value: 1 },
-      { chapter: 'rendezvous', at: 0.3, value: 0, pace: smooth },
-    ],
     // — La place : elle apparaît quand on descend sous les nuages et ne repart qu'avec la bascule vers la route.
     place: [
       { chapter: 'descente', at: 0.2, value: 0 },
@@ -305,9 +291,9 @@ export const definition: ExperienceDefinition = {
       { chapter: 'galaxie', at: 0, value: 0.00005 },
       { chapter: 'descente', at: 0.5, value: 0.00022, pace: smooth },
       { chapter: 'ville', at: 0.45, value: 0.0004, pace: smooth },
-      { chapter: 'arrivee', at: 0.45, value: 0.0009, pace: smooth },
-      { chapter: 'arrivee', at: 0.9, value: 0.0016, pace: smooth },
-      { chapter: 'prestations', at: 0.85, value: 0.0015 },
+      { chapter: 'arrivee', at: 0.45, value: 0.00032, pace: smooth },
+      { chapter: 'arrivee', at: 0.9, value: 0.0005, pace: smooth },
+      { chapter: 'prestations', at: 0.85, value: 0.0005 },
       { chapter: 'bascule', at: 0.5, value: 0.0002, pace: smooth },
       { chapter: 'bascule', at: 0.9, value: 0.0075, pace: { window: [0.35, 1], ease: 'in' } },
       { chapter: 'location', at: 0.93, value: 0.0075 },

@@ -14,21 +14,27 @@ export const WORLD = {
   /** Rotation du ciel, constante sur tout le site : regarder au nord, c'est regarder le cœur de la Voie lactée. */
   skyYaw: 1.32,
   north: NORTH,
-  /** Profondeur de la mer de nuit sous le sol du monde (m) : le sol de l'univers, hors de la place. */
-  seaDepth: 40,
+  /**
+   * Le sol du monde est au MÊME niveau que la place et que la ville (0 m). Il était 40 m plus bas : le parking
+   * flottait alors comme un radeau au-dessus du vide, et un trou noir séparait la voiture des immeubles.
+   */
+  seaDepth: 0,
   /**
    * LA GALAXIE (modèle fourni, nuage de 50 000 points) : l'univers du site, et un vrai volume qu'on traverse.
    * Diamètre en mètres — c'est l'échelle du voyage ; la caméra part de l'intérieur et en sort par le bas.
    */
   galaxy: { diameter: 30000, at: [0, 12000, -4000] as const, starSize: 52, tilt: 0.42 },
-  /** LA VILLE (modèle fourni) : posée à l'ouest de la place, elle ferme l'horizon derrière le véhicule. */
-  city: { height: 270, at: [-430, -330] as const, heading: 0.25 },
   /**
    * LA PLACE : l'aire de stationnement où le véhicule est garé, centrée sur l'origine du monde. Le véhicule occupe la
    * place centrale du côté droit ; l'allée passe devant lui, c'est par là que la caméra arrive.
    */
   place: {
     size: [70, 48] as const,
+    /**
+     * Le mur d'enceinte, juste derrière la rangée où le véhicule est garé : c'est le FOND de tous les plans du
+     * nettoyage. Sans lui la voiture se découpait sur du vide, et aucun décor lointain ne remplaçait ça.
+     */
+    wall: { at: -5.2, height: 3.0, length: 46 },
     bay: { width: 2.6, length: 5.4, count: 5 },
     lamps: [
       [7.6, -9.1],
@@ -60,10 +66,11 @@ export const WORLD = {
    * qui manque aux plans bas — ils passent devant l'objectif.
    */
   relief: {
+    // Les crêtes commencent APRÈS le quartier (3,2 km) : un massif qui traverserait les immeubles se voit
+    // immédiatement. Elles ferment le fond de la vallée, la ville occupe le premier et le deuxième plan.
     ridges: [
-      { radius: 1250, height: 190, segments: 220 },
-      { radius: 3100, height: 430, segments: 200 },
-      { radius: 7600, height: 900, segments: 180 },
+      { radius: 4200, height: 520, segments: 200 },
+      { radius: 8200, height: 980, segments: 180 },
       { radius: 17000, height: 1750, segments: 150 },
     ],
     rocks: { count: 54, inner: 46, outer: 140, small: 0.6, large: 3.2 },

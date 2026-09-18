@@ -102,7 +102,6 @@ export function boot() {
   });
 
   let galaxyLayer: { ensure(): Promise<void> } | null = null;
-  let cityLayer: { ensure(): Promise<void> } | null = null;
   let cleaningCar: VehicleLayer | null = null;
   let rentalCar: VehicleLayer | null = null;
   let vehicleLight: VehicleLightLayer | null = null;
@@ -121,7 +120,6 @@ export function boot() {
       release() {},
     });
   bindLayer('galaxy', () => galaxyLayer);
-  bindLayer('city', () => cityLayer);
   bindLayer('vehicle-cleaning', () => cleaningCar);
   bindLayer('vehicle-rental', () => rentalCar);
 
@@ -157,7 +155,6 @@ export function boot() {
       import('../scenes/sky/sky-layer'),
       import('../scenes/place/place-layer'),
       import('../scenes/galaxy/galaxy-layer'),
-      import('../scenes/city/city-layer'),
       import('../scenes/clouds/cloud-layer'),
       import('../scenes/beacon/beacon-layer'),
       import('../scenes/relief/relief-layer'),
@@ -171,7 +168,6 @@ export function boot() {
           { createSkyLayer },
           { createPlaceLayer },
           { createGalaxyLayer },
-          { createCityLayer },
           { createCloudLayer },
           { createBeaconLayer },
           { createReliefLayer },
@@ -193,8 +189,6 @@ export function boot() {
           const place = createPlaceLayer({ night: sky.uniforms, ...WORLD.place, asphalt: ROAD_ASPHALT });
           // L'univers : le nuage de points fourni. C'est LUI qu'on traverse — une image 360° ne peut pas l'être.
           const galaxy = createGalaxyLayer({ url: '/models/galaxy.glb', buffer: galaxyFile, ...WORLD.galaxy });
-          // La ville de nuit : le lieu d'arrivée, et l'horizon derrière le véhicule.
-          const city = createCityLayer({ url: '/models/city.glb', night: sky.uniforms, ...WORLD.city });
           const beacon = createBeaconLayer({ at: WORLD.vehicles.cleaning.at, height: WORLD.beaconHeight });
           // Le relief : ce qui donne un CORPS au lieu photographié. Sans lui, la caméra peut voler des kilomètres
           // sans que rien ne bouge derrière — une image 360° n'a pas de profondeur.
@@ -205,7 +199,7 @@ export function boot() {
             url: '/models/rs6.glb',
             buffer: carFile,
             channels: { dirt: 'dirt', scan: 'scan', polish: 'polish', light: 'carLight' },
-            tint: { match: /Coloured|Paint/i, scale: 0.42 },
+            tint: { match: /Coloured|Paint/i, color: [0.035, 0.037, 0.046] },
             noise: sky.uniforms.uNoise.value,
             chapters: ['territoire', 'avant', 'intervention', 'transformation', 'prestations'],
           });
@@ -214,7 +208,7 @@ export function boot() {
             ...WORLD.vehicles.rental,
             url: '/models/chr.glb',
             channels: { light: 'chrLight' },
-            tint: { match: /Paint/i, scale: 0.6 },
+            tint: { match: /Paint/i, color: [0.055, 0.058, 0.068] },
             travel: 'chrTravel',
             noise: sky.uniforms.uNoise.value,
             chapters: ['bascule', 'location', 'rendezvous'],
@@ -240,14 +234,13 @@ export function boot() {
             far: WORLD.cloudFar,
           });
           galaxyLayer = galaxy;
-          cityLayer = city;
           // L'environnement des véhicules est calculé (aucun fichier) : on le prépare dès que la scène existe.
           void Promise.resolve().then(() => vehicleLight?.ensure());
           const created = await createWebGLStage({
             experience,
             canvas,
             host: stageEl,
-            layers: [sky, galaxy, relief, city, place, beacon, vehicleLight, cleaningCar, road, rentalCar, clouds],
+            layers: [sky, galaxy, relief, place, beacon, vehicleLight, cleaningCar, road, rentalCar, clouds],
             config: { ...STAGE, busy: () => registry.busy },
             onReady: () => {
               stageStatus = 'ready';
@@ -300,7 +293,6 @@ export function boot() {
     stageStatus: () => stageStatus,
     media: () => registry.snapshot(),
     vehicle: () => cleaningCar?.debug() ?? null,
-    city: () => (cityLayer as { debug?(): unknown } | null)?.debug?.() ?? null,
     guide: () => guide?.points.length ?? 0,
     intro: () => !introDone,
   });

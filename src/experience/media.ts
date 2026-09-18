@@ -26,17 +26,6 @@ export const media: readonly MediaDescriptor[] = [
     license: 'TO_CONFIRM — origine et licence du modèle à confirmer auprès du porteur',
   },
   {
-    id: 'city',
-    kind: 'model',
-    role: 'La ville de nuit : le lieu d’arrivée, entre les tours duquel on descend jusqu’au véhicule.',
-    chapters: ['descente', 'ville', 'arrivee', 'intervention', 'transformation', 'prestations'],
-    priority: 'idle',
-    renditions: [{ formats: ['desktop', 'tablet', 'mobile'], src: '/models/city.glb', type: 'model/gltf-binary', bytes: 827384 }],
-    alt: 'Une ville de nuit en basse définition : des gratte-ciel aux fenêtres allumées.',
-    source: 'Modèle 3D fourni par le porteur du projet (tools/3d/CITY), converti et allégé par scripts/media-3d.mjs',
-    license: 'TO_CONFIRM — origine et licence du modèle à confirmer auprès du porteur',
-  },
-  {
     id: 'vehicle-cleaning',
     kind: 'model',
     role: 'Le véhicule du récit : sa laque EST la première image du site (unité 1), puis il est sali, parcouru par la ligne de lumière, verni, et visité de l’intérieur.',

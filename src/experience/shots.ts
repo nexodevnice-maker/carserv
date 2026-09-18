@@ -65,8 +65,8 @@ export const shots: readonly ShotDefinition[] = [
     at: 0.5,
     intent:
       'UNITÉ 3 — Le regard bascule vers le bas et la caméra tombe : sous la galaxie, une lueur grandit. Ce n’est pas une étoile, c’est une ville. Aucun texte.',
-    framing: { position: [120, 760, 520], target: [-430, 170, -330], fov: 62, shift: [0, 0] },
-    ...portrait({ position: [140, 800, 560], target: [-430, 170, -330], fov: 76 }),
+    framing: { position: [120, 760, 520], target: [-1180, 210, -1080], fov: 62, shift: [0, 0] },
+    ...portrait({ position: [140, 800, 560], target: [-1180, 210, -1080], fov: 76 }),
     via: [[-600, 8600, -2200], [-120, 3000, -600]] as Vec3[],
     pace: { window: [0.02, 0.98], ease: 'inOut' },
     lead: 0.14,
@@ -78,8 +78,8 @@ export const shots: readonly ShotDefinition[] = [
     at: 0.45,
     intent:
       'UNITÉ 4 — La ville de nuit : les tours allumées, les avenues, et la galaxie encore au-dessus. On descend entre les immeubles.',
-    framing: { position: [80, 34, 66], target: [-430, 140, -330], fov: 46, shift: [0.12, 0] },
-    ...portrait({ position: [92, 38, 74], target: [-430, 150, -330], fov: 58, shift: [0, 0.14] }),
+    framing: { position: [80, 34, 66], target: [-1180, 150, -1080], fov: 46, shift: [0.12, 0] },
+    ...portrait({ position: [92, 38, 74], target: [-1180, 160, -1080], fov: 58, shift: [0, 0.14] }),
     via: [[130, 260, 240]] as Vec3[],
     pace: { window: [0.02, 0.98], ease: 'inOut' },
     lead: 0.12,

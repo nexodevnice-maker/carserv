@@ -97,7 +97,11 @@ export const ENVIRONMENT = {
   // (la laque est le premier plan du récit) — 1,3 Mo de moins, c'est une seconde de rideau en moins.
   url: { desktop: '/env/night-256.hdr', tablet: '/env/night-128.hdr', mobile: '/env/night-128.hdr' } satisfies Record<Format, string>,
   sharpUrl: '/env/night-256.hdr',
-  /** Les valeurs du HDRI sont celles d'une nuit : il faut les pousser pour que la laque existe. Le canal `gloss`
-   * module ce niveau autour de 1 (plans de matière : un vrai miroir ; le reste du récit : une nuit polie). */
-  intensity: 3.4,
+  /**
+   * Ce que l'environnement ÉCLAIRE, pas ce qu'il reflète. Il était à 3,4 : la laque noire virait au kaki, les
+   * façades au beige, et la nuit n'avait plus de noir — tout l'écran tombait dans le même sépia. La forme du
+   * véhicule vient désormais de ses deux sources dirigées (scenes/vehicle/vehicle-light), l'environnement ne fait
+   * plus que le reflet. Le canal `gloss` module ce niveau autour de 1.
+   */
+  intensity: 1.15,
 };

@@ -12,8 +12,8 @@ export const copy = {
   /** Unité 4 : la ville de nuit, lieu d'arrivée. */
   ville: {
     index: '01',
-    title: 'La nuit, en ville',
-    text: 'On descend entre les tours. C’est ici que le véhicule attend — et c’est ici qu’on se déplace.',
+    title: 'La place, la nuit',
+    text: 'On se pose sur l’aire, entre deux lignes jaunes. C’est ici que le véhicule attend — et c’est ici qu’on se déplace.',
   },
   /** Unité 3 : aucun texte à l'écran, seulement pour qui ne voit pas la scène. */
   ciel: {
