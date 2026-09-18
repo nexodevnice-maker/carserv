@@ -1,28 +1,30 @@
-// Véhicules 3D fournis (tools/3d) → modèles publiés, allégés pour le téléphone.
-// Chaîne : gltf-transform (dédoublonnage, élagage, textures WebP 1024, quantification + compression meshopt) — la
-// géométrie et les matériaux restent ceux du modèle fourni, seul le poids change. Décodage à l'exécution par
-// MeshoptDecoder (three/addons), comme sur MECA RIVIERA.
-// Usage : npm run media:3d   (après npm run media:setup)
+// Véhicules 3D fournis (tools/3d) → modèles publiés, taillés pour le téléphone.
+// Ce script n'est qu'un lanceur : la chaîne vit dans scripts/media-tools/build-3d.mjs, là où sont installés les outils
+// lourds (`npm run media:setup`). Ce qui compte n'est pas le poids du fichier mais le coût par image : appels de
+// dessin et triangles (voir le commentaire de build-3d.mjs).
+// Usage : npm run media:3d
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const CLI = join('scripts', 'media-tools', 'node_modules', '.bin', process.platform === 'win32' ? 'gltf-transform.cmd' : 'gltf-transform');
-if (!existsSync(CLI)) {
-  console.error('Outils manquants : npm run media:setup (puis npm i -D @gltf-transform/cli dans scripts/media-tools)');
+const TOOLS = join('scripts', 'media-tools');
+if (!existsSync(join(TOOLS, 'node_modules', '@gltf-transform', 'functions'))) {
+  console.error('Outils manquants : npm run media:setup');
   process.exit(1);
 }
 
 const OUT = 'public/models';
 mkdirSync(OUT, { recursive: true });
 
-/** Modèles fournis par le porteur. Aucune retouche de forme : on ne fait que compresser. */
+/**
+ * Modèles fournis par le porteur. `ratio` : part des triangles conservée par la simplification.
+ * Le budget vise ≤ 90 000 triangles et ≤ 40 appels de dessin par véhicule — un téléphone tient alors la définition
+ * maximale (DPR 2) au lieu de retomber à 1,25, ce qui rendait tout le site flou.
+ */
 const MODELS = [
-  { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', textures: 1024 },
-  { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', textures: 1024 },
+  { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', ratio: 0.4, textures: 1024 },
+  { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', ratio: 0.4, textures: 1024 },
 ];
-
-const mo = (file) => `${(statSync(file).size / 1024 / 1024).toFixed(2)} Mo`;
 
 for (const model of MODELS) {
   if (!existsSync(model.src)) {
@@ -31,28 +33,8 @@ for (const model of MODELS) {
   }
   const out = join(OUT, `${model.id}.glb`);
   execFileSync(
-    CLI,
-    [
-      'optimize',
-      model.src,
-      out,
-      '--compress',
-      'meshopt',
-      '--texture-compress',
-      'webp',
-      '--texture-size',
-      String(model.textures),
-      '--simplify',
-      'false',
-      '--join',
-      'true',
-      '--flatten',
-      'true',
-      '--instance',
-      'false',
-    ],
-    // Windows : le lanceur est un .cmd, il faut passer par le shell.
-    { stdio: ['ignore', 'ignore', 'inherit'], shell: process.platform === 'win32' },
+    process.execPath,
+    ['build-3d.mjs', join('..', '..', model.src), join('..', '..', out), String(model.ratio), String(model.textures)],
+    { cwd: TOOLS, stdio: 'inherit' },
   );
-  console.log(`${out}  ${mo(model.src)} → ${mo(out)}`);
 }

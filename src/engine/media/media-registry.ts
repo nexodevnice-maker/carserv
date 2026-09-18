@@ -101,6 +101,11 @@ export function createMediaRegistry(
 
   return {
     entries,
+    /** Un média lourd est en cours de décodage : la fluidité ne doit pas être jugée pendant ce temps. */
+    get busy() {
+      for (const entry of entries.values()) if (entry.status === 'loading') return true;
+      return false;
+    },
     get(id: string) {
       return entries.get(id);
     },

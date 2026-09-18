@@ -394,8 +394,9 @@ export function createRoadLayer(options: {
       textures.push(map, roughness);
       roadUniforms.uLines.value = map;
       roadUniforms.uRough.value = roughness;
-      // Matière photographique : trois relevés libres (CC0), chargés en différé — la route existe déjà sans eux.
-      await Promise.all(
+      // Matière photographique : trois relevés libres (CC0). AUCUNE attente : la route n'apparaît qu'au neuvième
+      // chapitre, et retarder la première image du site pour elle serait absurde. Elle existe déjà sans eux.
+      void Promise.all(
         (
           [
             ['uAlbedo', '/media/road/asphalt-albedo.webp'],

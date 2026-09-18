@@ -29,10 +29,11 @@ export const STAGE: StageConfig = {
   pixelRatios: {
     // MECA : 1,75 sur ordinateur, un cran de moins si les images ralentissent.
     desktop: [1.75, 1.25, 1, 0.75],
-    // MECA : jamais sous 1,25 (au-delà, l'image devient floue). Téléphone plafonné à 1,75 : le ciel, la mer et le 06 sont
-    // calculés par pixel.
-    tablet: [2, 1.75, 1.5, 1.25],
-    mobile: [2, 1.75, 1.5, 1.25],
+    // Au téléphone, la netteté EST la qualité : le plancher est remonté à 1,5 (1,25 se voyait immédiatement). Le coût
+    // par image a été ramené sous les 16 ms (modèles taillés à 25 appels de dessin) : le cran 2 est un filet, pas un
+    // régime de croisière.
+    tablet: [2, 1.75, 1.5],
+    mobile: [2, 1.75, 1.5],
   },
   layerMargin: 0.02,
   near: 0.1,
@@ -41,8 +42,10 @@ export const STAGE: StageConfig = {
   range: { nearScale: 0.0009, nearMax: 12, farScale: 8, farMax: 90000 },
   exposure: 1,
   background: 0x000000,
-  // La caméra la plus basse du récit roule à 1,3 m.
-  floor: 1.1,
+  // Garde au sol : une trajectoire lisse peut creuser entre deux points, jamais traverser le sol. 0,32 m — la caméra
+  // du récit descend à hauteur de moyeu (0,5 m) et frôle le capot (macro) : à 1,1 m, TOUS les plans rasants étaient
+  // silencieusement remontés à hauteur d'homme, et l'image devenait celle d'un site, pas d'un film.
+  floor: 0.32,
   // Focales écrites pour ces rapports d'écran : plus étroit, la focale s'ouvre (le sujet reste dans le cadre).
   referenceAspect: { desktop: 1.6, tablet: 0.75, mobile: 0.46 },
   // Objectif : turbulence des vols (0,0035 rad ≈ 0,2° par unité, shots.ts) ; au bureau, le regard suit la souris
@@ -81,8 +84,11 @@ export const CONTACT = { inbox: 'nexodevnice@gmail.com' };
  * reflet est assez grand pour qu'on y distingue la Voie lactée.
  */
 export const ENVIRONMENT = {
-  url: { desktop: '/env/night-128.hdr', tablet: '/env/night-128.hdr', mobile: '/env/night-128.hdr' } satisfies Record<Format, string>,
+  // Cube 256 sur ordinateur (reflet net), cube 128 au téléphone : l'environnement est chargé AVANT la première image
+  // (la laque est le premier plan du récit) — 1,3 Mo de moins, c'est une seconde de rideau en moins.
+  url: { desktop: '/env/night-256.hdr', tablet: '/env/night-128.hdr', mobile: '/env/night-128.hdr' } satisfies Record<Format, string>,
   sharpUrl: '/env/night-256.hdr',
-  /** Les valeurs du HDRI sont celles d'une nuit : il faut les pousser pour que la laque existe. */
-  intensity: 2.6,
+  /** Les valeurs du HDRI sont celles d'une nuit : il faut les pousser pour que la laque existe. Le canal `gloss`
+   * module ce niveau autour de 1 (plans de matière : un vrai miroir ; le reste du récit : une nuit polie). */
+  intensity: 2.2,
 };

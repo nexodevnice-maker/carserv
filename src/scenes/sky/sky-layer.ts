@@ -94,6 +94,14 @@ export function createSkyLayer(options: SkyOptions) {
     uSkySize: { value: new Vector2(2048, 1024) },
     uPixelAngle: { value: 0.001 },
     uZenith: { value: new Vector3() },
+    /**
+     * Hauteur du centre de projection du sol (m) : c'est elle qui décide de l'échelle apparente du terrain de
+     * l'image 360°. Basse, les roches sont énormes ; haute, le terrain s'aplatit vers l'horizon. 9 m place les
+     * pierres du premier plan à quelques mètres de la voiture — l'échelle du lieu photographié.
+     */
+    uGroundH: { value: 9 },
+    /** Présence du terrain photographié au sol (canal `terrain`). */
+    uTerrain: { value: 1 },
   };
   const material = new ShaderMaterial({
     uniforms: { ...shared, uGroundY: { value: options.groundY }, uMotion: { value: new Vector3() } },

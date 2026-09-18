@@ -39,6 +39,12 @@ export interface VehicleOptions {
   channels: { light: string; dirt?: string; scan?: string; polish?: string };
   /** Avance le long du cap (m), pour la route de la location. */
   travel?: string;
+  /**
+   * Assombrissement de la carrosserie : les modèles fournis sont en gris clair. La nuit du 06 et la charte (noir,
+   * jaune) demandent une laque sombre — c'est elle qui rend le reflet lisible. On ne touche qu'aux matériaux de
+   * carrosserie, jamais aux optiques ni à l'habitacle.
+   */
+  tint?: { match: RegExp; scale: number };
   /** Bruit précalculé partagé (poussière). */
   noise: Texture;
   chapters?: readonly string[];
@@ -47,6 +53,8 @@ export interface VehicleOptions {
 /** Uniformes injectés dans TOUS les matériaux du modèle. */
 interface VehicleUniforms {
   uDirt: { value: number };
+  /** 1 : la caisse entière est propre et vernie (l'ouverture du récit, avant tout relevé). */
+  uCleanBase: { value: number };
   uScanFront: { value: number };
   uScanOn: { value: number };
   uPolish: { value: number };
@@ -69,6 +77,7 @@ const PATCH_HEAD = /* glsl */ `
 
 const PATCH_FRAGMENT_HEAD = /* glsl */ `
   uniform float uDirt;
+  uniform float uCleanBase;
   uniform float uScanFront;
   uniform float uScanOn;
   uniform float uPolish;
@@ -83,9 +92,9 @@ const PATCH_FRAGMENT_HEAD = /* glsl */ `
   float carAxis() {
     return dot(vCarWorld.xz - uCarOrigin.xz, uCarForward);
   }
-  /** 1 là où la ligne de lumière est déjà passée. */
+  /** 1 là où la ligne de lumière est déjà passée — ou partout quand la caisse est propre d'origine. */
   float carCleaned(float axis) {
-    return smoothstep(uScanFront - 0.05, uScanFront + 0.05, axis);
+    return max(uCleanBase, smoothstep(uScanFront - 0.05, uScanFront + 0.05, axis));
   }
   /** Poussière : plus épaisse sur les surfaces tournées vers le ciel et dans le bas de caisse. */
   float carDust(float cleaned) {
@@ -93,7 +102,7 @@ const PATCH_FRAGMENT_HEAD = /* glsl */ `
     float up = smoothstep(-0.1, 0.85, n.y);
     float low = smoothstep(1.35, 0.15, vCarWorld.y - uCarOrigin.y);
     float grain = texture2D(uNoise, vCarWorld.xz * 0.55).r * 0.6 + texture2D(uNoise, vCarWorld.xy * 1.6 + 0.37).r * 0.4;
-    return uDirt * (1.0 - cleaned) * clamp(0.22 + 0.78 * up + 0.45 * low, 0.0, 1.0) * (0.45 + 0.75 * grain);
+    return uDirt * (1.0 - cleaned) * clamp(0.34 + 0.78 * up + 0.5 * low, 0.0, 1.0) * (0.55 + 0.8 * grain);
   }
 `;
 
@@ -143,6 +152,7 @@ export function createVehicleLayer(options: VehicleOptions) {
   const forward = new Vector2(Math.cos(options.heading), Math.sin(options.heading));
   const uniforms: VehicleUniforms = {
     uDirt: { value: 0 },
+    uCleanBase: { value: 1 },
     uScanFront: { value: 99 },
     uScanOn: { value: 0 },
     uPolish: { value: 0 },
@@ -159,6 +169,7 @@ export function createVehicleLayer(options: VehicleOptions) {
   /** Poussière, scan et vernis dans tous les matériaux du modèle : aucune texture ajoutée, seuls les paramètres bougent. */
   const patch = (material: Material) => {
     const standard = material as MeshStandardMaterial & MeshPhysicalMaterial;
+    if (options.tint && options.tint.match.test(standard.name)) standard.color?.multiplyScalar(options.tint.scale);
     // Les vitres en transmission imposent une passe de rendu supplémentaire à chaque image : au téléphone, c'est
     // rédhibitoire. Verre sombre translucide à la place — la nuit, c'est ce qu'on voit.
     if (standard.transmission !== undefined && standard.transmission > 0) {
@@ -180,37 +191,43 @@ export function createVehicleLayer(options: VehicleOptions) {
           #include <map_fragment>
           float carX = carAxis();
           float cleaned = carCleaned(carX);
-          float dust = carDust(cleaned);
+          // Branchement sur un uniforme (donc uniforme pour tout le groupe) : caisse propre = deux lectures de bruit
+          // économisées par pixel. Le véhicule remplit l'écran sur les macros : c'est là que ça compte.
+          float dust = uDirt > 0.001 ? carDust(cleaned) : 0.0;
           // La poussière ternit la couleur et l'éclaircit à peine (elle diffuse la lumière des étoiles).
-          diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.17, 0.15, 0.12), diffuseColor.rgb * 0.5, 0.45), dust);
+          // La poussière dépose un voile clair et sans vie par-dessus la couleur : c'est ce voile qu'on vient enlever.
+          diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.15, 0.135, 0.115), diffuseColor.rgb * 0.6, 0.45), dust);
         `,
         )
         .replace(
           '#include <roughnessmap_fragment>',
           /* glsl */ `
           #include <roughnessmap_fragment>
-          // Sale : mat. Nettoyé et verni : la laque reprend son miroir.
+          // Sale : mat. Nettoyé et verni : la laque reprend son miroir — et un vrai miroir, pas une surface polie
+          // (c'est ce reflet qui fait exister une carrosserie noire dans la nuit).
           roughnessFactor = mix(roughnessFactor, 0.93, dust);
-          roughnessFactor = mix(roughnessFactor, roughnessFactor * 0.35, cleaned * uPolish);
+          roughnessFactor = mix(roughnessFactor, min(roughnessFactor * 0.3, 0.07), cleaned * uPolish);
         `,
         )
         .replace(
           '#include <metalnessmap_fragment>',
           /* glsl */ `
           #include <metalnessmap_fragment>
-          metalnessFactor *= 1.0 - 0.75 * dust;
+          metalnessFactor *= 1.0 - 0.9 * dust;
         `,
         )
         .replace(
           '#include <emissivemap_fragment>',
           /* glsl */ `
           #include <emissivemap_fragment>
-          // Ligne de lumière : un trait d'or net qui traverse le véhicule, son halo serré, et la lueur qui meurt
-          // juste derrière lui sur la surface déjà relevée.
-          float line = exp(-pow((carX - uScanFront) / 0.022, 2.0));
-          float glow = exp(-pow((carX - uScanFront) / 0.11, 2.0)) * 0.5;
-          float wake = exp(-pow((carX - uScanFront - 0.5) / 0.55, 2.0)) * 0.08;
-          totalEmissiveRadiance += vec3(1.0, 0.8, 0.3) * (line * 5.0 + glow + wake) * uScanOn;
+          // Ligne de lumière : un trait d'or net, son halo serré, et la lueur qui meurt juste derrière lui.
+          // Hors du relevé, rien n'est calculé du tout.
+          if (uScanOn > 0.001) {
+            float line = exp(-pow((carX - uScanFront) / 0.022, 2.0));
+            float glow = exp(-pow((carX - uScanFront) / 0.11, 2.0)) * 0.5;
+            float wake = exp(-pow((carX - uScanFront - 0.5) / 0.55, 2.0)) * 0.08;
+            totalEmissiveRadiance += vec3(1.0, 0.8, 0.3) * (line * 5.0 + glow + wake) * uScanOn;
+          }
         `,
         );
     };
@@ -259,18 +276,53 @@ export function createVehicleLayer(options: VehicleOptions) {
     place(gltf.scene);
     loaded = true;
     if (!stage) return;
-    // Shaders compilés avant la première image du chapitre : aucun accroc au moment où le véhicule apparaît.
+    // Shaders compilés ET textures envoyées au GPU avant la première image du chapitre. Il faut rendre l'objet
+    // visible le temps de la compilation : un objet masqué est ignoré, et le coût réapparaîtrait en plein scroll.
+    const hiddenRoot = root.visible;
+    const hiddenBody = body.visible;
+    root.visible = true;
+    body.visible = true;
     await stage.renderer.compileAsync(body, stage.camera, stage.scene).catch(() => undefined);
+    root.visible = hiddenRoot;
+    body.visible = hiddenBody;
     stage.invalidate();
   };
 
-  const layer: WebGLLayer & { ensure(): Promise<void> } = {
+  /** Relevé de contrôle (crochets QA) : ce que valent réellement les matériaux du modèle fourni. */
+  const debug = () => {
+    const seen = new Map<string, Record<string, unknown>>();
+    body.traverse((node) => {
+      const mesh = node as Mesh;
+      if (!mesh.isMesh || !mesh.visible) return;
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        const m = material as MeshStandardMaterial & MeshPhysicalMaterial;
+        if (seen.has(m.name)) continue;
+        seen.set(m.name, {
+          type: m.type,
+          roughness: Number((m.roughness ?? -1).toFixed(3)),
+          metalness: Number((m.metalness ?? -1).toFixed(3)),
+          clearcoat: Number((m.clearcoat ?? 0).toFixed(3)),
+          envMapIntensity: m.envMapIntensity,
+          hasRoughnessMap: Boolean(m.roughnessMap),
+          color: m.color?.getHexString(),
+        });
+      }
+    });
+    return {
+      environmentIntensity: stage?.scene.environmentIntensity,
+      environment: Boolean(stage?.scene.environment),
+      materials: Object.fromEntries([...seen].slice(0, 12)),
+    };
+  };
+
+  const layer: WebGLLayer & { ensure(): Promise<void>; debug(): unknown } = {
     id: root.name,
     chapters: options.chapters,
     root,
     init(ctx: StageContext) {
       stage = ctx;
     },
+    debug,
     /** Chargement à la demande (registre média) : le modèle n'arrive que quand son chapitre approche. */
     ensure() {
       loading ??= load().catch((error: unknown) => {
@@ -290,6 +342,8 @@ export function createVehicleLayer(options: VehicleOptions) {
       if (dirt === last.dirt && scan === last.scan && polish === last.polish && light === last.light && travel === last.travel) return false;
       Object.assign(last, { dirt, scan, polish, light, travel });
       uniforms.uDirt.value = dirt;
+      // Avant tout relevé, une caisse sans poussière est propre PARTOUT : sinon le vernis de l'ouverture n'existe pas.
+      uniforms.uCleanBase.value = scan <= 0.001 && dirt <= 0.001 ? 1 : 0;
       // Le scan descend de l'avant vers l'arrière ; hors de [0, 1], la ligne est absente.
       const half = options.length / 2;
       uniforms.uScanFront.value = scan <= 0 ? half + 0.6 : scan >= 1 ? -half - 0.6 : half + 0.5 - scan * (options.length + 1);

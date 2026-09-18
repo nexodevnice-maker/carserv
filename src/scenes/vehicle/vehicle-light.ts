@@ -19,6 +19,8 @@ export function createVehicleLightLayer(options: {
   /** Rotation du ciel (rad) : les reflets doivent montrer la même nuit que celle qu'on voit. */
   yaw: number;
   channels: readonly string[];
+  /** Canal multiplicateur du reflet : les plans de matière (unités 1 à 3) veulent un vrai miroir, pas une nuit polie. */
+  boost?: string;
   chapters?: readonly string[];
 }) {
   const root = new Group();
@@ -50,7 +52,9 @@ export function createVehicleLightLayer(options: {
         ctx.scene.environment = texture;
         // Même rotation que le ciel visible : les reflets montrent la Voie lactée là où elle est vraiment.
         ctx.scene.environmentRotation = new Euler(0, options.yaw, 0);
-        ctx.scene.environmentIntensity = 0;
+        // L'environnement arrive APRÈS la première mise à jour : sans cette remise à zéro du dernier état, la couche
+        // croirait n'avoir rien à faire et le niveau de reflet resterait à zéro — une carrosserie noire dans le noir.
+        last = -1;
         ctx.invalidate();
       })().catch((error: unknown) => {
         loading = null;
@@ -61,12 +65,14 @@ export function createVehicleLightLayer(options: {
     update(state: Readonly<ExperienceState>, context: StageContext): LayerUpdate {
       let presence = 0;
       for (const channel of options.channels) presence = Math.max(presence, state.channels[channel] ?? 0);
-      if (presence === last) return false;
-      last = presence;
+      const boost = options.boost ? (state.channels[options.boost] ?? 1) : 1;
+      const level = presence * boost;
+      if (level === last) return false;
+      last = level;
       key.intensity = presence * 0.55;
       rim.intensity = presence * 1.05;
       root.visible = presence > 0.001;
-      if (env) context.scene.environmentIntensity = presence * options.intensity;
+      if (env) context.scene.environmentIntensity = level * options.intensity;
       return true;
     },
     dispose() {

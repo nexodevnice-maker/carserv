@@ -94,6 +94,12 @@ export interface StageConfig {
   };
   background?: number;
   /**
+   * « Un chargement lourd est en cours » : décoder un modèle ou envoyer ses textures au GPU produit des images
+   * longues qui ne disent rien du rythme réel. Pendant ce temps, la définition adaptative ne juge pas — sinon un seul
+   * chargement fait retomber d'un cran toute la suite du récit.
+   */
+  busy?: () => boolean;
+  /**
    * Garde au sol (m) : la caméra ne descend jamais sous cette hauteur. Une trajectoire lisse qui passe par des points
    * au ras du sol puis s'élève peut creuser légèrement entre deux points ; la garde l'aplatit au lieu de traverser le sol.
    */
@@ -350,7 +356,7 @@ export async function createWebGLStage(options: {
       if (result) changed = true;
       if (result === 'continue') again = true;
     }
-    quality.tick(info.dt, changed, info.now);
+    if (!config.busy?.()) quality.tick(info.dt, changed, info.now);
     if (!changed) return false;
     renderer.render(scene, camera);
     renders++;

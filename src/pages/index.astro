@@ -62,6 +62,15 @@ const description =
   }}
 >
   <Fragment slot="head">
+    <!--
+      La première image du récit est la laque d'un véhicule 3D : son modèle et la nuit qui s'y reflète doivent
+      descendre AVEC le document, pas après la création de la scène. Sans ces deux lignes, le rideau d'entrée reste
+      levé trois secondes de plus pour rien.
+    -->
+    <link rel="preload" href="/models/rs6.glb" as="fetch" />
+    <link rel="preload" href="/env/night-128.hdr" as="fetch" media="(max-width: 1099px)" />
+    <link rel="preload" href="/env/night-256.hdr" as="fetch" media="(min-width: 1100px)" />
+    <link rel="preload" href="/env/sky-2048.webp" as="image" type="image/webp" />
     <script is:inline>
       // Avant tout rendu : mise en page de l'expérience (.js) et entrée. On arrive TOUJOURS sur l'univers : ancre
       // retirée de l'adresse, position de défilement jamais restaurée. Si le module ne démarre pas (erreur, blocage),
@@ -74,9 +83,12 @@ const description =
         if (!q.has('poster')) h.classList.add('has-intro', 'is-intro');
         if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
         window.scrollTo(0, 0);
+        // Garde-fou : si le module ne démarre pas du tout (erreur, blocage, réseau coupé), le document redevient
+        // lisible. 12 s et non 6 : le premier plan du récit est un modèle 3D, et un téléphone lent met du temps à
+        // préparer la scène — reprendre la main trop tôt casserait une expérience qui allait s'afficher.
         setTimeout(function () {
           if (!h.classList.contains('has-experience')) h.classList.remove('js', 'has-intro', 'is-intro');
-        }, 6000);
+        }, 12000);
       })();
     </script>
   </Fragment>
@@ -109,25 +121,36 @@ const description =
         <div class="stage__progress"><span></span></div>
       </Fragment>
 
-      <Chapter id="arrivee" universe="territory" span={chapter('arrivee').span} labelledby="titre-marque">
-        <div class="panel panel--hero" style={win('arrivee', 'marque')}>
-          <p class="kicker">{property.name.value} <span aria-hidden="true">·</span> {property.descriptors.cleaning.value}</p>
-          <h1 id="titre-marque" class="display">{property.taglines[0]!.value}</h1>
+      <Chapter id="matiere" universe="cleaning" span={chapter('matiere').span} labelledby="titre-marque">
+        <div class="panel panel--note" style={win('matiere', 'marque')}>
+          <p class="kicker" id="titre-marque">{property.name.value} <span aria-hidden="true">·</span> {property.descriptors.cleaning.value}</p>
+          <p class="note">{copy.matiere.note}</p>
+          <p class="hint" aria-hidden="true"><span></span>{copy.scroll}</p>
+        </div>
+        <p class="sr-only">{copy.matiere.alt}</p>
+      </Chapter>
+
+      <Chapter id="revelation" universe="cleaning" span={chapter('revelation').span} labelledby="titre-promesse">
+        <div class="panel panel--hero" style={win('revelation', 'promesse')}>
+          <h1 id="titre-promesse" class="display">{property.taglines[0]!.value}</h1>
           <ul class="badges" aria-label="Ce que comprend la prestation">
             <li class="badge"><BrandIcon name="seat" />{offer.label.value}</li>
             <li class="badge"><BrandIcon name="van" />{property.coverage.value}</li>
           </ul>
           <p class="script">{copy.hero.script}</p>
-          <p class="hint" aria-hidden="true"><span></span>{copy.scroll}</p>
         </div>
-        <p class="sr-only">{copy.arrivee}</p>
       </Chapter>
 
-      <Chapter id="zone" universe="territory" span={chapter('zone').span} labelledby="titre-zone">
-        <div class="panel panel--locator" style={win('zone', 'france')}>
+      <Chapter id="ciel" universe="bridge" span={chapter('ciel').span} labelledby="titre-ciel">
+        <h2 id="titre-ciel" class="sr-only">{copy.ciel.title}</h2>
+        <p class="sr-only">{copy.ciel.text}</p>
+      </Chapter>
+
+      <Chapter id="territoire" universe="territory" span={chapter('territoire').span} labelledby="titre-zone">
+        <div class="panel panel--locator" style={win('territoire', 'france')}>
           <p class="locator"><span>France</span><i aria-hidden="true"></i><span>Alpes-Maritimes</span></p>
         </div>
-        <div class="panel" style={win('zone', 'deplacement')}>
+        <div class="panel" style={win('territoire', 'deplacement')}>
           <p class="index"><span>{copy.zone.index}</span></p>
           <h2 id="titre-zone" class="title">{copy.zone.title}</h2>
           <p class="text"><strong>{property.coverage.value}.</strong> {offer.label.value}, chez vous.</p>
@@ -136,7 +159,7 @@ const description =
           </ul>
           <p class="script">{property.servicePromise.value}</p>
         </div>
-        <figure class="map" style={win('zone', 'deplacement')}>
+        <figure class="map" style={win('territoire', 'deplacement')}>
           <svg viewBox={map.viewBox} role="img" aria-label="Carte des Alpes-Maritimes (06)">
             {map.paths.map((d, k) => <path class={k === 0 ? 'map__land' : 'map__island'} d={d} pathLength="1" />)}
             <text class="map__num" x="560" y="520">06</text>
@@ -234,11 +257,6 @@ const description =
           </ul>
           <p class="script">{copy.prestations.script}</p>
         </div>
-      </Chapter>
-
-      <Chapter id="univers" universe="bridge" span={chapter('univers').span} labelledby="titre-univers">
-        <h2 id="titre-univers" class="sr-only">{copy.univers.title}</h2>
-        <p class="sr-only">{copy.univers.text}</p>
       </Chapter>
 
       <Chapter id="bascule" universe="bridge" span={chapter('bascule').span} labelledby="titre-bascule">

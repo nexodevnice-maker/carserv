@@ -360,3 +360,61 @@ ceux que DEMANDE le client : aucun horaire d'ouverture n'est confirmé (BUSINESS
 Limite connue : les emblèmes de marque restent visibles sur les modèles fournis quand un matériau ne les isole pas (le
 C-HR n'en a qu'un seul pour toute la caisse). Ils ne sont jamais mis en avant par un plan ; le pied de page rappelle
 qu'aucune affiliation n'existe. À trancher avec le porteur avant publication.
+
+## 2026-09-18 — Reconstruction cinématique mobile (demandes du porteur : « la qualité visuelle sur mobile doit être 10000 fois supérieure, similaire aux 120 fps sur ordinateur », « un scroll = une unité cinématographique », « reconstruis, ne répare pas », « prends mon modèle et conserve entièrement ce qui s'y trouve : les montagnes, les roches, la voie lactée — je veux que le site vive dans cet univers »)
+
+**La cause du « flou » était mesurable, pas subjective.** Sonde `scripts/qa-perf.mjs` (nouvelle) au format téléphone :
+les modèles fournis, exportés avec une armature, produisaient **748 appels de dessin et 333 000 triangles** par image.
+Le téléphone ne tenait pas le rythme, la définition adaptative retombait à **DPR 1,25** — et n'en remontait plus :
+tout le reste de la visite était flou.
+
+Trois corrections, dans l'ordre d'importance :
+
+1. **Chaîne 3D refaite** (`scripts/media-tools/build-3d.mjs`, programmatique et non plus en ligne de commande) :
+   suppression des peaux et animations (ce sont elles qui interdisaient la fusion), déquantification, élagage,
+   aplatissement, fusion par matériau, soudure, simplification à 40 %, textures WebP, meshopt.
+   → **25 maillages au lieu de 746**, 96 000 triangles au lieu de 234 000, **1,39 Mo au lieu de 3,0**.
+2. **Ne jamais juger la fluidité pendant un chargement** : `StageConfig.busy` (le registre média dit quand il
+   décode) et, dans `quality.ts`, tout blocage de plus de 120 ms n'est plus compté ET remet la fenêtre à zéro. Un
+   décodage n'est pas un problème de rythme.
+3. **Payer le coût au bon moment** : préchargement du modèle et de l'environnement dans l'en-tête du document
+   (`<link rel="preload">`), compilation des shaders avec l'objet rendu visible (un objet masqué est ignoré par
+   `compileAsync`, et le coût réapparaissait en plein scroll), et la route ne bloque plus la première image pour
+   télécharger son asphalte.
+
+Résultat mesuré : **16,7 ms par image (60 i/s, le plafond de l'écran) sur 20 unités sur 24**, DPR 2 tenu, plancher
+remonté à 1,5. Première image 3D en production : **3,7 s** (contre 14 s avec le modèle en ouverture non préchargé).
+
+**Le garde au sol était à 1,1 m** : tous les plans rasants écrits dans `shots.ts` (0,4 à 0,9 m) étaient silencieusement
+remontés à hauteur d'homme. C'est ce qui donnait l'impression d'un « WebGL posé sur une page » plutôt que d'un film.
+Descendu à 0,32 m.
+
+**Le récit est reconstruit en 24 unités cinématographiques** (`docs/MOBILE_CINEMATIC_GRAMMAR.md`) : un scroll = une
+action, une idée, une conséquence. La chaîne remplace les sections : une laque trop proche pour être comprise → des
+étoiles apparaissent dedans → recul, c'est une voiture → on sort par le reflet et on est dans le ciel → ce ciel couvre
+un pays → le pays devient le 06 → le même véhicule, sale → la lumière le traverse → **la rime** (le plan de l'unité 3,
+à l'identique, mais gagné) → l'habitacle → le métier → la route → le C-HR → le prix → le rendez-vous.
+Le commercial n'arrive qu'après l'unité 14. Les unités 2, 4, 5, 12 et 20 n'ont aucun texte.
+
+Deux bogues trouvés en chemin, qui expliquaient beaucoup :
+- le **vernis ne s'appliquait jamais avant le relevé** (`cleaned` valait 0 partout tant que le scan n'avait pas
+  commencé) : l'ouverture montrait donc une laque mate. Corrigé par `uCleanBase` (propre d'origine = propre partout) ;
+- **le niveau de reflet restait à zéro** : l'environnement arrive après la première mise à jour de la couche, qui
+  croyait alors n'avoir rien à faire. Une carrosserie noire dans le noir n'était qu'une silhouette.
+
+**Le sol est désormais le terrain de l'image 360° fournie** (`groundTerrain`, shared/night-glsl.ts). La moitié basse du
+panorama — roches, sol, végétation — est projetée sur le plan du monde depuis un centre placé à 9 m (technique dite
+*grounded skybox*), au même azimut que le ciel : les collines du ciel se prolongent dans le sol sans couture. L'eau
+(flaques, mer) recouvre le terrain là où elle est. Le site vit dans le lieu photographié, et plus sur un sol abstrait.
+
+Carrosseries assombries (facteur 0,42 sur les matériaux de peinture du modèle) : les modèles fournis sont en gris
+clair ; la nuit du 06 et la charte (noir, jaune) demandent une laque sombre — c'est elle qui rend le reflet lisible.
+
+Typographie mobile : plus de grand titre à chaque écran. Une annotation (`.note`), un repère, un titre court ;
+`--step` du titre mobile ramené de 11 vw à 8,6 vw.
+
+Vérifié : typecheck, build, **60/60 `qa:engine`**, 24 captures mobile + planche-contact, sonde de fluidité, déployé,
+parcouru en production sans erreur console, première image 3D en 3,7 s.
+
+Reste à faire : reflet du véhicule sur la chaussée mouillée, passe de post-traitement (bloom doux) si le porteur en
+veut plus, et trois unités encore à 19–24 ms (les macros où le véhicule remplit l'écran).

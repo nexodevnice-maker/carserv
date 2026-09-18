@@ -5,25 +5,30 @@
 export const copy = {
   scroll: 'Faites défiler',
   hero: { script: 'Un véhicule propre, c’est un plaisir au quotidien !' },
+  /** Unité 1 : on ne nomme pas ce qu'on regarde. Une annotation, pas un titre. */
+  matiere: {
+    note: 'Regardez de près.',
+    alt: 'Très gros plan sur la carrosserie noire et vernie d’un véhicule, la nuit : la Voie lactée s’y reflète.',
+  },
+  /** Unité 4 et 5 : aucun texte à l'écran, seulement pour qui ne voit pas la scène. */
+  ciel: {
+    title: 'Le ciel de la Côte d’Azur',
+    text: 'On quitte la carrosserie par son reflet : la caméra s’élève, traverse une mer de nuages et se retrouve face au cœur de la Voie lactée — le ciel de nuit réel (image 360° HDRI).',
+  },
   zone: { index: '01', title: 'Dans tout le 06', sea: 'Mer Méditerranée' },
   avant: {
     index: '02',
     title: 'Avant',
-    text: 'Poussière sur la laque, reflets éteints, chromes ternis. L’état dans lequel on prend un véhicule.',
+    text: 'La même laque, éteinte par la poussière : elle ne renvoie plus rien. C’est l’état dans lequel on prend un véhicule.',
   },
   passage: { index: '03', title: 'Le passage', after: 'Derrière la ligne : plus une trace.' },
   apres: {
     index: '04',
     title: 'Après',
-    reflets: 'La laque reprend le ciel : c’est à ça qu’on voit un nettoyage fini.',
+    reflets: 'La laque reprend le ciel. C’est exactement l’image du début — sauf qu’on sait maintenant ce qu’il a fallu pour l’obtenir.',
     interieur: 'Et dedans : sièges, tableau de bord, plastiques, vitres.',
   },
   prestations: { index: '05', title: 'Prestations', offer: 'La formule', script: 'À votre service dans tout le 06 !' },
-  univers: {
-    title: 'Vers la location',
-    text: 'Ciel de nuit en image de synthèse 360° (HDRI) : on monte à travers les nuages jusqu’à la Voie lactée, puis on redescend face à elle jusqu’à la route.',
-  },
-  arrivee: 'Ciel de nuit en image de synthèse 360° (HDRI) : la Voie lactée au-dessus d’une mer de nuages ; en dessous, le contour des Alpes-Maritimes.',
   bascule: { index: '06', title: 'Une autre route', text: 'CAR SERVICE 06 propose aussi un véhicule à la location.' },
   location: { index: '07', terms: 'Conditions' },
   rendezvous: {

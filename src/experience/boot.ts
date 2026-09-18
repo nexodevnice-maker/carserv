@@ -183,14 +183,16 @@ export function boot() {
             ...WORLD.vehicles.cleaning,
             url: '/models/rs6.glb',
             channels: { dirt: 'dirt', scan: 'scan', polish: 'polish', light: 'carLight' },
+            tint: { match: /Coloured|Paint/i, scale: 0.42 },
             noise: sky.uniforms.uNoise.value,
-            chapters: ['avant', 'intervention', 'transformation', 'prestations'],
+            chapters: ['matiere', 'revelation', 'ciel', 'avant', 'intervention', 'transformation', 'prestations'],
           });
           // Le véhicule de location : il roule sur la route du 06 (`chrTravel` : son avance en mètres).
           rentalCar = createVehicleLayer({
             ...WORLD.vehicles.rental,
             url: '/models/chr.glb',
             channels: { light: 'chrLight' },
+            tint: { match: /Paint/i, scale: 0.6 },
             travel: 'chrTravel',
             noise: sky.uniforms.uNoise.value,
             chapters: ['bascule', 'location', 'rendezvous'],
@@ -200,6 +202,7 @@ export function boot() {
             intensity: ENVIRONMENT.intensity,
             yaw: WORLD.skyYaw,
             channels: ['carLight', 'chrLight'],
+            boost: 'gloss',
           });
           const road = createRoadLayer({
             placement: WORLD.road,
@@ -217,12 +220,28 @@ export function boot() {
             canvas,
             host: stageEl,
             layers: [sky, territory, beacon, vehicleLight, cleaningCar, road, rentalCar, clouds],
-            config: STAGE,
+            config: { ...STAGE, busy: () => registry.busy },
             onReady: () => {
               stageStatus = 'ready';
               html.classList.add('is-3d');
               setIntroProgress(1);
-              liftIntro();
+              // L'écran d'entrée couvre la préparation de la PREMIÈRE IMAGE : or la première image du récit est la
+              // laque du véhicule (unité 1). On ne lève donc pas le rideau sur un cadre vide — on attend le modèle,
+              // au plus 3 s (le garde-fou général lève l'entrée à 4,5 s quoi qu'il arrive).
+              const subject = registry.get('vehicle-cleaning');
+              if (!subject || subject.status === 'ready' || subject.status === 'error' || subject.status === 'poster') {
+                liftIntro();
+                return;
+              }
+              const stop = registry.onChange((entry) => {
+                if (entry.descriptor.id !== 'vehicle-cleaning' || entry.status === 'loading') return;
+                stop();
+                liftIntro();
+              });
+              window.setTimeout(() => {
+                stop();
+                liftIntro();
+              }, 3000);
             },
             onFallback: (reason) => {
               stageStatus = `fallback:${reason}`;
@@ -252,6 +271,7 @@ export function boot() {
     stage: () => (stage ? stage.info() : stageStatus),
     stageStatus: () => stageStatus,
     media: () => registry.snapshot(),
+    vehicle: () => cleaningCar?.debug() ?? null,
     guide: () => guide?.points.length ?? 0,
     intro: () => !introDone,
   });

@@ -8,7 +8,9 @@ et sans casser ce qui marche.
 Ordre de lecture conseillé : §1 (le projet) → §2 (règles non négociables) → §3 (où vit quoi) → §12 (recettes de
 correction). Le reste est de la référence à consulter au besoin.
 
-Dernière mise à jour : **18/09/2026** — commit `20f9479`.
+Dernière mise à jour : **18/09/2026** — reconstruction cinématique mobile (24 unités, sol = terrain du panorama
+fourni, 60 i/s au téléphone). La mise en scène mobile a désormais son propre document, à lire avec celui-ci :
+**`docs/MOBILE_CINEMATIC_GRAMMAR.md`**.
 
 ---
 
@@ -71,8 +73,8 @@ src/
 │   └── debug/qa-hooks.ts      window.__experience (DÉVELOPPEMENT SEULEMENT)
 │
 ├── experience/      LA RÉALISATION (données, pas de logique moteur)
-│   ├── chapters.ts            les 11 chapitres + TOUS les canaux (le cœur du récit)
-│   ├── shots.ts               les 22 plans caméra (positions en mètres)
+│   ├── chapters.ts            les 12 chapitres + TOUS les canaux (le cœur du récit)
+│   ├── shots.ts               les 24 unités cinématiques (un repos = un plan, positions en mètres)
 │   ├── world.ts               la composition du monde : échelles, nord, route, véhicules
 │   ├── config.ts              réglages techniques + CONTACT.inbox (destination des demandes)
 │   ├── copy.ts                textes de narration (jamais un fait commercial)
@@ -81,8 +83,8 @@ src/
 │   └── boot.ts                câblage : crée les couches, branche les médias, lance la scène
 │
 ├── scenes/          LES COUCHES WebGL (chacune possède ses objets et les libère)
-│   ├── sky/sky-layer.ts       l'univers : HDRI, sol mouillé infini, brume — fournit les uniformes partagés
-│   ├── shared/night-glsl.ts   SKY_GLSL + GROUND_GLSL : la lumière commune à toutes les couches
+│   ├── sky/sky-layer.ts       l'univers : HDRI fourni, sol (terrain projeté + eau), brume — uniformes partagés
+│   ├── shared/night-glsl.ts   SKY_GLSL + GROUND_GLSL : la nuit commune, et la projection du terrain au sol
 │   ├── map/map-layer.ts       la France (96 départements) et le 06 en volume, falaises, miroir
 │   ├── clouds/cloud-layer.ts  mer de nuages + bancs bas
 │   ├── beacon/beacon-layer.ts la colonne de lumière (« chez vous »)
@@ -116,7 +118,7 @@ src/
 
 ---
 
-## 4. Le récit : 11 chapitres
+## 4. Le récit : 12 chapitres, 24 unités
 
 Un chapitre a une **longueur de scroll** (`span`, en centièmes de hauteur d'écran, par format), des **repos**
 (`rests`, positions locales 0→1 où la caméra se pose et où un pas guidé s'arrête) et des **fenêtres de légende**
@@ -124,17 +126,20 @@ Un chapitre a une **longueur de scroll** (`span`, en centièmes de hauteur d'éc
 
 | # | Chapitre | Univers | span (bureau / mobile) | Repos | Ce qu'on voit |
 |---|---|---|---|---|---|
-| 1 | `arrivee` | territory | 110 / 110 | 0 | L'univers, au-dessus d'une mer de nuages, face au cœur de la Voie lactée |
-| 2 | `zone` | territory | 280 / 260 | 0,45 · 0,88 | La France entière en volume, puis la descente sur le 06 allumé |
-| 3 | `avant` | cleaning | 250 / 260 | 0,42 · 0,86 | La balise, puis le véhicule sali au ras du sol |
-| 4 | `intervention` | cleaning | 300 / 320 | 0,18 · 0,55 · 0,9 | Le capot, la ligne d'or qui traverse, la laque vernie |
-| 5 | `transformation` | cleaning | 250 / 270 | 0,35 · 0,85 | Les reflets revenus, puis **l'habitacle vu de l'intérieur** |
-| 6 | `prestations` | cleaning | 260 / 280 | 0,25 · 0,55 · 0,85 | Le tour du véhicule propre, les 4 prestations, la formule |
-| 7 | `univers` | bridge | 280 / 260 | 0,42 · 0,85 | Ascension verticale jusqu'aux étoiles, puis cap au nord |
-| 8 | `bascule` | bridge | 240 / 220 | 0,9 | Descente verrouillée sur la galaxie, la route monte à notre rencontre |
-| 9 | `location` | rental | 440 / 460 | 0,18 · 0,44 · 0,7 · 0,93 | Le C-HR : on le rattrape, on le double, il s'éloigne, il s'arrête |
-| 10 | `rendezvous` | action | 240 / 280 | 0,5 | **Le seul écran sans 3D** : calendrier et demande |
-| 11 | `contact` | action | 160 / 170 | 0,6 | Le bord du 06, la galaxie, un seul geste |
+| 1 | `matiere` | cleaning | 170 / 180 | 0 · 0,55 | Trop près pour comprendre : une laque noire, puis des étoiles dedans |
+| 2 | `revelation` | cleaning | 150 / 150 | 0,5 | Le recul : c'était une voiture, et elle tient le ciel |
+| 3 | `ciel` | bridge | 240 / 240 | 0,45 · 0,9 | On sort par le reflet : l'univers, au-dessus d'une mer de nuages |
+| 4 | `territoire` | territory | 280 / 280 | 0,4 · 0,88 | La France en volume, un seul point allumé, puis le 06 |
+| 5 | `avant` | cleaning | 240 / 250 | 0,42 · 0,88 | La balise, puis la même laque éteinte par la poussière |
+| 6 | `intervention` | cleaning | 300 / 310 | 0,18 · 0,56 · 0,9 | L'optique, la ligne d'or qui traverse, le flanc verni |
+| 7 | `transformation` | cleaning | 250 / 260 | 0,35 · 0,85 | **La rime** (le plan de l'unité 3, gagné), puis l'habitacle |
+| 8 | `prestations` | cleaning | 260 / 280 | 0,25 · 0,55 · 0,85 | Le tour du véhicule, le métier, la formule |
+| 9 | `bascule` | bridge | 220 / 220 | 0,9 | Chute verrouillée : la route monte à notre rencontre |
+| 10 | `location` | rental | 440 / 460 | 0,18 · 0,44 · 0,7 · 0,93 | On rattrape, on double, il s'éloigne, il s'arrête |
+| 11 | `rendezvous` | action | 240 / 280 | 0,5 | **Le seul écran sans 3D** : calendrier et demande |
+| 12 | `contact` | action | 160 / 170 | 0,6 | Le bord du 06, la galaxie, un seul geste |
+
+Le détail des 24 unités (intention, sujet, conséquence) est dans `docs/MOBILE_CINEMATIC_GRAMMAR.md` § 4.
 
 L'`universe` d'un chapitre pilote l'accent de couleur (`html[data-universe]`) : jaune pour le nettoyage et le
 territoire, **rouge** pour `rental` et `bridge`. Le chapitre affiché est aussi écrit sur `<html data-scene>` (utilisé

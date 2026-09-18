@@ -452,6 +452,36 @@
   color: var(--night-0);
 }
 
+/*
+ * Annotation (unité 1) : le texte n'est pas le protagoniste quand la matière doit l'être. Un repère de marque, une
+ * ligne, rien de plus — et un filet d'or qui l'accroche au bord du cadre.
+ */
+.note {
+  position: relative;
+  margin-top: 0.9rem;
+  padding-left: 0.9rem;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.note::before {
+  position: absolute;
+  top: 0.55em;
+  left: 0;
+  width: 0.5rem;
+  height: 1px;
+  background: var(--gold);
+  content: '';
+}
+
+.js .panel--note {
+  width: min(22rem, 34vw);
+}
+
 /* — Carte du 06 ——————————————————————————————————————————————————————————————— */
 .map {
   margin: 2rem var(--gutter);
@@ -653,6 +683,11 @@ html.is-guided {
     transform: translate3d(0, calc((1 - var(--vis)) * 14px), 0);
   }
 
+  .js .panel--note {
+    width: auto;
+    max-width: 20rem;
+  }
+
   .is-reduced-motion .panel {
     transform: none;
   }
@@ -661,8 +696,9 @@ html.is-guided {
     font-size: clamp(2.3rem, 11vw, 4rem);
   }
 
+  /* Au téléphone, un titre ne remplit pas l'écran : il annote le plan. */
   .title {
-    font-size: clamp(2.2rem, 11vw, 3.6rem);
+    font-size: clamp(1.9rem, 8.6vw, 2.8rem);
   }
 
   .title--small {

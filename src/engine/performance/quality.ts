@@ -39,6 +39,14 @@ export function createQuality(steps: readonly number[], onChange: () => void) {
     },
     /** `dt` (s) depuis l'image précédente ; `drawn` : cette image a été rendue ; `now` : horloge (ms). */
     tick(dt: number, drawn: boolean, now: number) {
+      // Un blocage (décodage d'image, envoi d'une texture au GPU, compilation) n'est pas un problème de rythme : il
+      // arrive une fois et ne se reproduit pas. On ne le compte pas, ET on repart d'une fenêtre propre — sinon une
+      // seule secousse fait retomber la définition pour tout le reste de la visite.
+      if (dt > 0.12) {
+        slow.fill(0);
+        since = 0;
+        return;
+      }
       if (!(dt > 0 && dt < 0.25)) return;
       gaps[gapAt++ % gaps.length] = dt;
       if (!drawn) return;
