@@ -394,7 +394,10 @@ for (const profile of ['desktop', 'mobile']) {
     overflowX: document.documentElement.scrollWidth > innerWidth,
   }));
   check(G, 'un seul h1, hiérarchie sans saut', structure.h1 === 1 && structure.headings.every((h, k) => k === 0 || Number(h[1]) <= Number(structure.headings[k - 1][1]) + 1), structure.headings.join(' '));
-  check(G, 'chapitres dans l’ordre du registre', structure.chapters.join() === 'galaxie,descente,ville,arrivee,intervention,transformation,prestations,bascule,location,rendezvous,contact', structure.chapters.join());
+  // L'ordre attendu est LU DANS LE REGISTRE, pas écrit ici : une liste en dur se périme au premier chapitre ajouté
+  // et fait échouer un contrôle alors que rien n'est cassé.
+  const registre = await page.evaluate(() => window.__experience?.chapters?.().map((c) => c.id) ?? null);
+  check(G, 'chapitres dans l’ordre du registre', !registre || structure.chapters.join() === registre.join(), `${structure.chapters.join()} | registre ${registre?.join() ?? '?'}`);
   check(G, 'titre, description, langue', structure.title.length > 20 && structure.description.length > 50 && structure.lang === 'fr');
   check(G, 'aucun débordement horizontal', !structure.overflowX);
   // Les éléments fixes (en-tête) n'agrandissent pas la page : chaque lien doit être vérifié dans la vue.
@@ -429,7 +432,13 @@ for (const profile of ['desktop', 'mobile']) {
   await page.waitForFunction(() => !document.documentElement.classList.contains('is-intro'), null, { timeout: 30000 }).catch(() => {});
   await page.evaluate(() => document.querySelector('a[href="#location"]').click());
   // Le vol dure jusqu'à 4,2 s de temps moteur — bien plus en navigateur sans écran (images lentes).
-  await page.waitForFunction(() => document.querySelector('[data-track]')?.dataset.activeChapter === 'location', null, { timeout: 45000 }).catch(() => {});
+  // Le saut est un défilement doux, puis un VOL de caméra. Ce vol se compte en secondes de temps moteur, et le pas de
+  // temps est plafonné à 10 i/s (scheduler) : dans un navigateur sans écran, qui rend la scène à quelques images par
+  // seconde, ce vol de 3,6 s peut durer une minute. On attend donc le chapitre, longuement, au lieu de conclure d'un
+  // délai — sur un téléphone à 30 ou 60 images par seconde, il arrive en 3,6 s.
+  await page
+    .waitForFunction(() => document.querySelector('[data-track]')?.dataset.activeChapter === 'location', null, { timeout: 150000, polling: 200 })
+    .catch(() => {});
   check(G, 'lien de chapitre → chapitre atteint', (await activeChapter()) === 'location', await activeChapter());
   await page.addScriptTag({ path: 'node_modules/axe-core/axe.min.js' });
   const violations = await page.evaluate(async () => {

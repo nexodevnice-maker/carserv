@@ -23,7 +23,14 @@ export const WORLD = {
    * LA GALAXIE (modèle fourni, nuage de 50 000 points) : l'univers du site, et un vrai volume qu'on traverse.
    * Diamètre en mètres — c'est l'échelle du voyage ; la caméra part de l'intérieur et en sort par le bas.
    */
-  galaxy: { diameter: 30000, at: [0, 12000, -4000] as const, starSize: 52, tilt: 0.42 },
+  galaxy: {
+    diameter: 30000,
+    at: [0, 12000, -4000] as const,
+    starSize: 66,
+    tilt: 0.42,
+    /** L'étoile filante du premier défilement : elle traverse le cadre du héros en diagonale, et vite. */
+    meteor: { from: [-9000, 11500, 7000] as const, to: [11000, 1200, -2000] as const, length: 3400, width: 34 },
+  },
   /**
    * LA PLACE : l'aire de stationnement où le véhicule est garé, centrée sur l'origine du monde. Le véhicule occupe la
    * place centrale du côté droit ; l'allée passe devant lui, c'est par là que la caméra arrive.
@@ -73,7 +80,9 @@ export const WORLD = {
       { radius: 8200, height: 980, segments: 180 },
       { radius: 17000, height: 1750, segments: 150 },
     ],
-    rocks: { count: 54, inner: 46, outer: 140, small: 0.6, large: 3.2 },
+    // Les rochers commencent LOIN de la place (150 m) : à 46 m ils tombaient dans le champ des plans du parking, sur
+    // un sol trop sombre pour qu'on voie leur contact — ils avaient l'air de flotter en l'air.
+    rocks: { count: 54, inner: 150, outer: 520, small: 1.4, large: 6.5 },
     corridor: { lane: 0, width: 11, from: -230, to: -680 },
   },
   cloudFar: 8000,

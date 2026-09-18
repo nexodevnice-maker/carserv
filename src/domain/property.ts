@@ -29,8 +29,12 @@ export const property = {
     snapchat: fact('Car-service06', 'TO_CONFIRM', 'flyer-main', 'Nom de compte visible dans l’interface Snapchat ; identifiant exact à confirmer.'),
     facebook: fact(null as string | null, 'UNKNOWN', 'flyer-main', 'Icône Facebook présente, sans identifiant.'),
     phone: fact(null as string | null, 'UNKNOWN', 'none'),
+    whatsapp: fact('07 46 56 49 15', 'CONFIRMED', 'price-list', 'Écrit « WhatsApp 0746564915 » sur la grille tarifaire.'),
     email: fact(null as string | null, 'UNKNOWN', 'none'),
   },
-  legal: fact(null as string | null, 'UNKNOWN', 'none', 'Forme juridique, SIREN, adresse : à fournir avant publication.'),
+  /** L'adresse apparaît sur la grille tarifaire. Elle ne contredit pas le déplacement : c'est le point de rattachement. */
+  address: fact('62 boulevard Paul Montel, 06200 Nice', 'CONFIRMED', 'price-list', 'Écrit « 62 boulevard Paul montel 06200 ». Ville déduite du code postal.'),
+  payment: fact(['Espèces', 'Carte bancaire'] as readonly string[], 'CONFIRMED', 'price-list'),
+  legal: fact(null as string | null, 'UNKNOWN', 'none', 'Forme juridique et SIREN : à fournir avant publication.'),
   hours: fact(null as string | null, 'UNKNOWN', 'none', '« Disponible 7J/7 » concerne la location (flyer LOC), pas le nettoyage.'),
 };

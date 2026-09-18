@@ -34,10 +34,15 @@ export const copy = {
     interieur: 'Et dedans : sièges, tableau de bord, plastiques, vitres.',
   },
   prestations: { index: '05', title: 'Prestations', offer: 'La formule', script: 'À votre service dans tout le 06 !' },
-  bascule: { index: '06', title: 'Une autre route', text: 'CAR SERVICE 06 propose aussi un véhicule à la location.' },
-  location: { index: '07', terms: 'Conditions' },
+  tarifs: {
+    index: '06',
+    title: 'La grille',
+    lead: 'Quatre formules. Le prix varie selon la taille du véhicule.',
+  },
+  bascule: { index: '07', title: 'Une autre route', text: 'CAR SERVICE 06 propose aussi un véhicule à la location.' },
+  location: { index: '08', terms: 'Conditions' },
   rendezvous: {
-    index: '08',
+    index: '09',
     title: 'Prendre rendez-vous',
     text: 'Choisissez une date et un créneau : votre demande part par courriel, tout est déjà rempli.',
     date: 'Date souhaitée',
@@ -46,7 +51,7 @@ export const copy = {
     note: 'Demande sans engagement. Disponibilités confirmées par l’entreprise.',
     fallback: 'Pas de messagerie sur cet appareil ?',
   },
-  contact: { index: '09', title: 'Réserver ou demander un nettoyage', channel: 'Écrire sur Instagram' },
+  contact: { index: '10', title: 'Réserver ou demander un nettoyage', channel: 'Écrire sur Instagram' },
   /** Ce que montre la scène 3D, pour qui ne la voit pas. */
   scene:
     'Modèle 3D d’un véhicule posé dans la nuit : d’abord couvert de poussière, puis parcouru par une ligne de lumière qui le laisse propre et verni, reflets rendus à la carrosserie ; enfin son habitacle, vu de la place du conducteur.',

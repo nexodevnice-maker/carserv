@@ -42,8 +42,10 @@ export const shots: readonly ShotDefinition[] = [
     at: 0,
     intent:
       'UNITÉ 1 — LE HÉROS : on est DANS la galaxie. Pas devant une image : dedans. Le cœur est droit devant, les bras s’ouvrent de part et d’autre, et les étoiles proches passent à côté de nous.',
-    framing: { position: [1500, 15100, 4300], target: [-200, 12000, -1400], fov: 58, shift: [0.08, 0] },
-    ...portrait({ position: [1400, 15400, 4600], target: [-200, 12000, -1400], fov: 72, shift: [0, -0.04] }),
+    // Cadrage RELEVÉ, pas deviné (scripts/qa-frame.mjs) : d'ici, le cœur de la galaxie occupe le haut du cadre, les
+    // étoiles se détachent une à une, et le tiers bas reste un ciel noir — c'est là que le titre se lit.
+    framing: { position: [2050, 9400, 3900], target: [-180, 10190, -3850], fov: 56, shift: [0.08, 0] },
+    ...portrait({ position: [1810, 9560, 3460], target: [-180, 10190, -3850], fov: 63, shift: [0, 0.10] }),
     pace: { window: [0, 1], ease: 'inOut' },
   },
   {
@@ -196,6 +198,49 @@ export const shots: readonly ShotDefinition[] = [
     ...portrait({ position: [-12, 6.2, 20], target: [0.8, 1.5, 0], fov: 44, shift: [0, 0.24] }),
     pace: { window: [0.08, 0.92], ease: 'inOut' },
     flight: { fov: 6, roll: 0.04 },
+  },
+  // — LA GRILLE : quatre plans qui font le tour du véhicule propre, un par formule. La caméra monte en même temps
+  // que la gamme : au ras du sol sur la formule la plus simple, au-dessus de l'épaule sur la plus complète.
+  {
+    id: 'tarif-basic',
+    chapter: 'tarifs',
+    at: 0.12,
+    intent: 'PACK BASIC — trois quarts avant, à hauteur de phare : la voiture entière, propre, et rien d’autre.',
+    framing: { position: [7.4, 1.05, 5.6], target: [0.2, 0.85, 0], fov: 42, shift: [0.16, 0] },
+    ...portrait({ position: [8.2, 1.1, 6.2], target: [0.2, 0.9, 0], fov: 52, shift: [0, 0.2] }),
+    pace: { window: [0.02, 0.98], ease: 'inOut' },
+    flight: { fov: 5 },
+  },
+  {
+    id: 'tarif-standard',
+    chapter: 'tarifs',
+    at: 0.37,
+    intent: 'PACK STANDARD — le flanc, la portière conducteur : c’est l’habitacle qu’on achète ici.',
+    framing: { position: [1.2, 1.25, 8.4], target: [0.1, 0.95, 0], fov: 42, shift: [0.16, 0] },
+    ...portrait({ position: [1.4, 1.3, 9.0], target: [0.1, 1.0, 0], fov: 52, shift: [0, 0.2] }),
+    pace: { window: [0.02, 0.98], ease: 'inOut' },
+    flight: { fov: 6, roll: 0.03 },
+  },
+  {
+    id: 'tarif-full',
+    chapter: 'tarifs',
+    at: 0.62,
+    intent: 'PACK FULL INTÉRIEUR — trois quarts arrière, portes et coffre dans le cadre : tout l’intérieur.',
+    // Jamais au-delà de x = -4,6 : le mur d'enceinte est à -5,2, la caméra passerait à travers le béton.
+    framing: { position: [-3.4, 1.5, 7.8], target: [-0.2, 1.0, 0], fov: 42, shift: [0.16, 0] },
+    ...portrait({ position: [-3.8, 1.55, 8.6], target: [-0.2, 1.05, 0], fov: 52, shift: [0, 0.2] }),
+    pace: { window: [0.02, 0.98], ease: 'inOut' },
+    flight: { fov: 6, roll: -0.03 },
+  },
+  {
+    id: 'tarif-concession',
+    chapter: 'tarifs',
+    at: 0.88,
+    intent: 'PACK CONCESSION — plan haut, la voiture entière et son reflet sur l’enrobé : l’état de sortie de concession.',
+    framing: { position: [5.6, 3.9, -8.2], target: [0, 0.9, 0], fov: 40, shift: [0.16, 0] },
+    ...portrait({ position: [6.2, 4.2, -9.0], target: [0, 0.95, 0], fov: 50, shift: [0, 0.18] }),
+    pace: { window: [0.02, 0.98], ease: 'inOut' },
+    flight: { fov: 6, pitch: 0.04 },
   },
   {
     id: 'route',

@@ -598,18 +598,27 @@ html.is-intro {
 }
 
 /* — Pas guidés ——————————————————————————————————————————————————————————————————— */
-html.is-guided {
-  scroll-snap-type: y mandatory;
-}
-
 .guide-point {
   position: absolute;
   left: 0;
   width: 1px;
   height: 1px;
   pointer-events: none;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+}
+
+/* AU DOIGT, AUCUN POINT D'ACCROCHE. Un accrochage obligatoire happe la page à chaque relâchement du doigt : le
+   récit semblait défiler tout seul, et un geste un peu long se faisait ramener en arrière. Le repos est tenu par
+   l'amorti de la caméra, pas par le navigateur. À la molette et au clavier (pointeur fin), les pas guidés restent :
+   là, c'est un cran par geste, et c'est ce qu'on veut. */
+@media (pointer: fine) {
+  html.is-guided {
+    scroll-snap-type: y mandatory;
+  }
+
+  .guide-point {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
 }
 
 /* — Pied de page ———————————————————————————————————————————————————————————————— */
@@ -1257,4 +1266,94 @@ html.is-guided {
 
 .locator span:last-child {
   color: var(--accent);
+}
+
+/* — La grille tarifaire ——————————————————————————————————————————————————————————— */
+/* UNE FORMULE PAR ÉCRAN, jamais quatre cartes côte à côte : au téléphone, quatre colonnes de six lignes ne se
+   lisent pas, et une grille de cartes n'est pas une expérience. Le prix est l'objet principal du panneau ; la
+   liste est sous lui, alignée sur un filet ; la condition de taille ne quitte jamais le prix. */
+.panel--tarif {
+  align-content: end;
+}
+
+.pack {
+  border-left: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  padding-left: clamp(0.9rem, 4vw, 1.4rem);
+}
+
+.pack__rank {
+  margin: 0 0 0.35rem;
+  font: var(--font-label);
+  letter-spacing: 0.22em;
+  color: var(--text-3);
+}
+
+.pack__name {
+  margin: 0;
+  font: var(--font-title-small);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-1);
+}
+
+.pack__price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.15em;
+  margin: 0.1rem 0 0.7rem;
+  color: var(--accent);
+  line-height: 0.92;
+}
+
+.pack__price span {
+  font-family: var(--font-display);
+  font-size: clamp(3.4rem, 17vw, 5.6rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.pack__price i {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 6vw, 2.2rem);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.pack__lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.pack__lines li {
+  font: var(--font-body);
+  color: var(--text-2);
+}
+
+.pack__lines li::before {
+  content: '·';
+  margin-right: 0.5em;
+  color: var(--accent);
+}
+
+.pack__note {
+  margin: 0.85rem 0 0;
+  font: var(--font-label);
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+}
+
+.pack__extra {
+  margin: 0.35rem 0 0;
+  font: var(--font-label);
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+/* Le dernier palier : celui qui couvre l'intérieur ET l'extérieur. Un filet plein, pas un fond ni une ombre. */
+.panel--tarif-fort .pack {
+  border-left-color: var(--accent);
+  border-left-width: 3px;
 }

@@ -20,6 +20,7 @@ export const SOURCES = {
   'flyer-main': 'tools/flyers/MAIN.png — story Snapchat « Car-service06 », flyer nettoyage (relevé du 17/09/2026)',
   'flyer-loc': 'tools/flyers/LOC.png — story Snapchat « Car-service06 », flyer location (relevé du 17/09/2026)',
   'video-story': 'tools/3d/ScreenRecording_09-16-2026 22-57-08_1.mp4 — story Snapchat « Car-service06 » enregistrée',
+  'price-list': 'tools/flyers/PRICE.png — grille tarifaire « CAR SERVICE 06 · PRICE LIST » transmise par le porteur (18/09/2026)',
   none: 'aucune source',
 } as const;
 

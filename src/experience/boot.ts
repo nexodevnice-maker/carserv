@@ -201,7 +201,9 @@ export function boot() {
             channels: { dirt: 'dirt', scan: 'scan', polish: 'polish', light: 'carLight' },
             tint: { match: /Coloured|Paint/i, color: [0.035, 0.037, 0.046] },
             noise: sky.uniforms.uNoise.value,
-            chapters: ['territoire', 'avant', 'intervention', 'transformation', 'prestations'],
+            // Les chapitres où la couche est active. 'ville', 'arrivee' et 'tarifs' manquaient : le véhicule
+            // disparaissait pendant qu'on lisait la grille tarifaire, alors qu'il est le sujet de ces quatre plans.
+            chapters: ['ville', 'arrivee', 'intervention', 'transformation', 'prestations', 'tarifs'],
           });
           // Le véhicule de location : il roule sur la route du 06 (`chrTravel` : son avance en mètres).
           rentalCar = createVehicleLayer({

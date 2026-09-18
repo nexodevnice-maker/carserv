@@ -39,6 +39,80 @@ export const cleaningServices: readonly CleaningService[] = [
   },
 ];
 
+/**
+ * LES FORMULES DE LA GRILLE TARIFAIRE (tools/flyers/PRICE.png, transmise par le porteur le 18/09/2026).
+ * Quatre paliers, du plus simple au plus complet. L'ordre est celui de la grille : il dit la montée en gamme, et
+ * c'est lui que la section reprend.
+ *
+ * Une seule mention accompagne obligatoirement les prix : « Les prix varient selon la taille du véhicule ». Elle est
+ * dans la grille, elle est donc affichée partout où un prix l'est — un prix sans sa condition serait un prix inventé.
+ */
+export interface CleaningPack {
+  id: string;
+  name: Fact<string>;
+  price: Fact<{ amount: number; currency: 'EUR' }>;
+  lines: Fact<readonly string[]>;
+  /** Le palier mis en avant : celui qui couvre intérieur ET extérieur. */
+  highlight?: boolean;
+}
+
+export const cleaningPacks: readonly CleaningPack[] = [
+  {
+    id: 'basic',
+    name: fact('Pack Basic', 'CONFIRMED', 'price-list'),
+    price: fact({ amount: 40, currency: 'EUR' }, 'CONFIRMED', 'price-list'),
+    lines: fact(
+      ['Nettoyage intérieur', 'Aspiration habitacle', 'Nettoyage plastique', 'Passage de portes', 'Coffre · vitres'],
+      'CONFIRMED',
+      'price-list',
+    ),
+  },
+  {
+    id: 'standard',
+    name: fact('Pack Standard', 'CONFIRMED', 'price-list'),
+    price: fact({ amount: 75, currency: 'EUR' }, 'CONFIRMED', 'price-list'),
+    lines: fact(
+      ['Nettoyage intérieur', 'Shampoing des sièges', 'Aspiration habitacle', 'Nettoyage plastique', 'Passage de portes', 'Coffre · vitres'],
+      'CONFIRMED',
+      'price-list',
+    ),
+  },
+  {
+    id: 'full-interieur',
+    name: fact('Pack Full Intérieur', 'CONFIRMED', 'price-list'),
+    price: fact({ amount: 90, currency: 'EUR' }, 'CONFIRMED', 'price-list'),
+    lines: fact(
+      ['Nettoyage intérieur', 'Shampoing des sièges', 'Aspiration habitacle', 'Shampoing moquette', 'Passage de portes', 'Coffre · vitres'],
+      'CONFIRMED',
+      'price-list',
+    ),
+  },
+  {
+    id: 'concession',
+    name: fact('Pack Concession', 'CONFIRMED', 'price-list'),
+    price: fact({ amount: 110, currency: 'EUR' }, 'CONFIRMED', 'price-list'),
+    lines: fact(
+      [
+        'Nettoyage intérieur / extérieur',
+        'Shampoing des sièges',
+        'Shampoing des tapis / moquette',
+        'Plastique',
+        'Passage de portes',
+        'Coffre · vitres',
+      ],
+      'CONFIRMED',
+      'price-list',
+    ),
+    highlight: true,
+  },
+];
+
+/** La condition qui accompagne TOUS les prix. Elle est dans la grille : elle ne se détache jamais d'eux. */
+export const priceCondition = fact('Les prix varient selon la taille du véhicule', 'CONFIRMED', 'price-list');
+
+/** L'argument technique de la grille : l'intervention ne demande rien au client. */
+export const autonomy = fact('100 % autonome en eau et en électricité', 'CONFIRMED', 'price-list');
+
 export interface CleaningOffer {
   id: string;
   label: Fact<string>;

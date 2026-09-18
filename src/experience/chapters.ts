@@ -109,6 +109,20 @@ export const chapters: readonly Chapter[] = [
     intent: 'Le tour du véhicule propre : tout ce que fait l’entreprise, puis la formule et le déplacement.',
   },
   {
+    id: 'tarifs',
+    universe: 'cleaning',
+    span: { desktop: 420, mobile: 470 },
+    rests: [0.12, 0.37, 0.62, 0.88],
+    panels: [
+      { id: 'basic', in: 0.02, out: 0.24 },
+      { id: 'standard', in: 0.27, out: 0.49 },
+      { id: 'full-interieur', in: 0.52, out: 0.74 },
+      { id: 'concession', in: 0.77, out: 0.99 },
+    ],
+    intent:
+      'LA GRILLE — une formule par défilement, et la caméra tourne d’un quart autour du véhicule à chaque palier : on monte en gamme et on fait le tour de la voiture en même temps. Jamais quatre cartes côte à côte.',
+  },
+  {
     id: 'bascule',
     universe: 'bridge',
     span: { desktop: 220, mobile: 220 },
@@ -172,6 +186,13 @@ export const definition: ExperienceDefinition = {
       { chapter: 'arrivee', at: 0.45, value: 0.5, pace: smooth },
       { chapter: 'contact', at: 0.6, value: 0.5 },
     ],
+    // — L'ÉTOILE FILANTE : elle traverse pendant le PREMIER défilement, et elle est déjà partie ensuite. Le canal
+    // court vite (course terminée à 35 % du premier chapitre) parce qu'une étoile filante qu'on a le temps de
+    // regarder n'en est pas une.
+    meteor: [
+      { chapter: 'galaxie', at: 0, value: 0 },
+      { chapter: 'galaxie', at: 0.35, value: 1, pace: { window: [0, 1], ease: 'out' } },
+    ],
     // Une galaxie n'est jamais figée : elle tourne, très lentement, pendant tout le récit.
     galaxySpin: [
       { chapter: 'galaxie', at: 0, value: 0 },
@@ -188,21 +209,21 @@ export const definition: ExperienceDefinition = {
     place: [
       { chapter: 'descente', at: 0.2, value: 0 },
       { chapter: 'ville', at: 0.3, value: 1, pace: smooth },
-      { chapter: 'prestations', at: 1, value: 1 },
+      { chapter: 'tarifs', at: 1, value: 1 },
       { chapter: 'bascule', at: 0.35, value: 0, pace: { window: [0, 1], ease: 'in' } },
     ],
     // Les candélabres s'allument juste avant qu'on arrive : c'est eux qui font exister le lieu.
     placeLamp: [
       { chapter: 'descente', at: 0.4, value: 0 },
       { chapter: 'arrivee', at: 0.45, value: 1, pace: smooth },
-      { chapter: 'prestations', at: 1, value: 1 },
+      { chapter: 'tarifs', at: 1, value: 1 },
       { chapter: 'bascule', at: 0.3, value: 0, pace: smooth },
     ],
     // — Le véhicule de la démonstration : il nous attend en bas, sale.
     carLight: [
       { chapter: 'descente', at: 0.3, value: 0 },
       { chapter: 'arrivee', at: 0.45, value: 1, pace: smooth },
-      { chapter: 'prestations', at: 1, value: 1 },
+      { chapter: 'tarifs', at: 1, value: 1 },
       { chapter: 'bascule', at: 0.3, value: 0, pace: { window: [0, 1], ease: 'in' } },
     ],
     dirt: [
@@ -219,7 +240,7 @@ export const definition: ExperienceDefinition = {
       { chapter: 'galaxie', at: 0, value: 0 },
       { chapter: 'intervention', at: 0.12, value: 0 },
       { chapter: 'intervention', at: 0.9, value: 1, pace: linear },
-      { chapter: 'prestations', at: 1, value: 1 },
+      { chapter: 'tarifs', at: 1, value: 1 },
     ],
     // Niveau de reflet des véhicules : sale, une carrosserie ne renvoie rien ; vernie, elle rend le ciel entier.
     gloss: [
@@ -273,7 +294,7 @@ export const definition: ExperienceDefinition = {
       { chapter: 'arrivee', at: 0.9, value: 0.7, pace: smooth },
       { chapter: 'intervention', at: 0.18, value: 0.55, pace: smooth },
       { chapter: 'transformation', at: 0.35, value: 0.9, pace: smooth },
-      { chapter: 'prestations', at: 0.85, value: 0.85 },
+      { chapter: 'tarifs', at: 0.85, value: 0.85 },
       { chapter: 'bascule', at: 0.5, value: 1, pace: smooth },
       { chapter: 'bascule', at: 0.9, value: 0.9, pace: smooth },
       { chapter: 'location', at: 0.93, value: 0.9 },
@@ -293,7 +314,7 @@ export const definition: ExperienceDefinition = {
       { chapter: 'ville', at: 0.45, value: 0.0004, pace: smooth },
       { chapter: 'arrivee', at: 0.45, value: 0.00032, pace: smooth },
       { chapter: 'arrivee', at: 0.9, value: 0.0005, pace: smooth },
-      { chapter: 'prestations', at: 0.85, value: 0.0005 },
+      { chapter: 'tarifs', at: 0.85, value: 0.0005 },
       { chapter: 'bascule', at: 0.5, value: 0.0002, pace: smooth },
       { chapter: 'bascule', at: 0.9, value: 0.0075, pace: { window: [0.35, 1], ease: 'in' } },
       { chapter: 'location', at: 0.93, value: 0.0075 },

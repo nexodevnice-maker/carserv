@@ -408,7 +408,9 @@ export function createPlaceLayer(options: PlaceOptions) {
   const materials: ShaderMaterial[] = [];
   const pixelsPerMeter = 26;
   const lines = markingsTexture(options, pixelsPerMeter);
-  const pool = lampPoolTexture(options, pixelsPerMeter);
+  // Un dégradé lisse n'a pas besoin de la définition du marquage : 4 px/m au lieu de 26, soit 12 Mo de mémoire
+  // vidéo en moins sur une seule image — c'est autant de marge avant que le téléphone ne perde son contexte 3D.
+  const pool = lampPoolTexture(options, 4);
   textures.push(lines, pool);
 
   const uniforms = {

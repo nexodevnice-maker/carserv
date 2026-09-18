@@ -1,4 +1,5 @@
-import { AdditiveBlending, Box3, Group, Points, ShaderMaterial, Vector3, type BufferGeometry, type Object3D } from 'three';
+import { AdditiveBlending, Box3, Group, Mesh, PlaneGeometry, Points, ShaderMaterial, Vector3, type BufferGeometry, type Object3D } from 'three';
+import { smoothstep } from '../../engine/math/scalar';
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
 
@@ -48,6 +49,50 @@ const galaxyFragment = /* glsl */ `
   }
 `;
 
+/**
+ * L'ÉTOILE FILANTE du premier défilement. Un seul quadrilatère : sa longueur suit la trajectoire, sa largeur est
+ * toujours tournée vers la caméra (panneau cylindrique). La tête est nette, la traînée meurt derrière — c'est le
+ * dégradé qui fait la vitesse, pas le déplacement.
+ * Elle passe VITE : visible sur le premier tiers du canal, puis plus rien. Une étoile filante qu'on a le temps de
+ * regarder n'en est pas une.
+ */
+const meteorVertex = /* glsl */ `
+  uniform vec3 uFrom;
+  uniform vec3 uTo;
+  uniform float uT;
+  uniform float uLength;
+  uniform float uWidth;
+  varying float vTail;
+  varying float vSide;
+  void main() {
+    vec3 dir = normalize(uTo - uFrom);
+    vec3 head = mix(uFrom, uTo, uT);
+    // position.x va de -0.5 (tête) à +0.5 (queue) ; position.y traverse la traînée.
+    float tail = position.x + 0.5;
+    vec3 p = head - dir * uLength * tail;
+    vec3 toCam = normalize(cameraPosition - p);
+    vec3 side = normalize(cross(dir, toCam));
+    p += side * position.y * uWidth;
+    vTail = tail;
+    vSide = position.y * 2.0;
+    gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
+  }
+`;
+
+const meteorFragment = /* glsl */ `
+  uniform float uFade;
+  varying float vTail;
+  varying float vSide;
+  void main() {
+    float along = pow(1.0 - vTail, 2.4);
+    float across = 1.0 - smoothstep(0.0, 1.0, abs(vSide));
+    // Le noyau de la tête : un point net qui laisse une traînée, pas un trait uniforme.
+    float core = exp(-vTail * 26.0) * exp(-abs(vSide) * 5.0);
+    float a = (along * across * 0.55 + core) * uFade;
+    gl_FragColor = vec4(vec3(1.0, 0.95, 0.86) * a, 1.0);
+  }
+`;
+
 export interface GalaxyOptions {
   url: string;
   /** Fichier déjà en cours de téléchargement (boot.ts). */
@@ -59,6 +104,8 @@ export interface GalaxyOptions {
   /** Taille apparente d'une étoile (m à un mètre) et inclinaison du disque (rad). */
   starSize: number;
   tilt: number;
+  /** L'étoile filante du premier défilement : d'où à où (m), longueur de traînée et largeur. */
+  meteor: { from: readonly [number, number, number]; to: readonly [number, number, number]; length: number; width: number };
   chapters?: readonly string[];
 }
 
@@ -85,10 +132,34 @@ export function createGalaxyLayer(options: GalaxyOptions) {
     blending: AdditiveBlending,
     vertexColors: true,
   });
+  // — L'étoile filante. Elle vit hors du modèle : c'est notre ajout, et elle ne dépend pas du chargement du nuage.
+  const meteorUniforms = {
+    uFrom: { value: new Vector3(...options.meteor.from) },
+    uTo: { value: new Vector3(...options.meteor.to) },
+    uT: { value: 0 },
+    uLength: { value: options.meteor.length },
+    uWidth: { value: options.meteor.width },
+    uFade: { value: 0 },
+  };
+  const meteorMaterial = new ShaderMaterial({
+    uniforms: meteorUniforms,
+    vertexShader: meteorVertex,
+    fragmentShader: meteorFragment,
+    transparent: true,
+    depthWrite: false,
+    depthTest: false,
+    blending: AdditiveBlending,
+  });
+  const meteor = new Mesh(new PlaneGeometry(1, 1), meteorMaterial);
+  meteor.frustumCulled = false;
+  meteor.visible = false;
+  meteor.renderOrder = 2;
+  root.add(meteor);
+
   let stage: StageContext | null = null;
   let loading: Promise<void> | null = null;
   let loaded = false;
-  const last = { bright: -1, spin: NaN };
+  const last = { bright: -1, spin: NaN, meteor: -1 };
 
   /** Mise à l'échelle : le nuage est ramené au diamètre voulu, centré sur son propre barycentre. */
   const place = (scene: Object3D) => {
@@ -149,17 +220,26 @@ export function createGalaxyLayer(options: GalaxyOptions) {
     update(state: Readonly<ExperienceState>): LayerUpdate {
       const bright = state.channels.galaxy ?? 0;
       const spin = state.channels.galaxySpin ?? 0;
+      const shooting = state.channels.meteor ?? 0;
       body.visible = loaded && bright > 0.001;
-      if (!body.visible) return false;
-      if (bright === last.bright && spin === last.spin) return false;
+      // Elle entre d'un coup et s'éteint avant la fin de la course : on ne la voit qu'une seconde.
+      const fade = smoothstep(0.0, 0.06, shooting) * (1 - smoothstep(0.52, 0.78, shooting)) * bright;
+      meteor.visible = fade > 0.002;
+      if (!body.visible && !meteor.visible) return false;
+      if (bright === last.bright && spin === last.spin && shooting === last.meteor) return false;
       last.bright = bright;
       last.spin = spin;
+      last.meteor = shooting;
       uniforms.uBright.value = bright;
+      meteorUniforms.uT.value = shooting;
+      meteorUniforms.uFade.value = fade;
       body.rotation.y = spin;
       return true;
     },
     dispose() {
       material.dispose();
+      meteorMaterial.dispose();
+      meteor.geometry.dispose();
     },
   };
   return layer;

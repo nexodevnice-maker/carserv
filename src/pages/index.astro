@@ -2,7 +2,7 @@
 import { shown } from '../domain/facts';
 import { property } from '../domain/property';
 import { rentalFleet, rentalTerms } from '../domain/rental';
-import { cleaningOffers, cleaningServices } from '../domain/services';
+import { autonomy, cleaningOffers, cleaningPacks, cleaningServices, priceCondition } from '../domain/services';
 import { chapters } from '../experience/chapters';
 import { copy } from '../experience/copy';
 import Base from '../layouts/Base.astro';
@@ -235,6 +235,36 @@ const description =
           </ul>
           <p class="script">{copy.prestations.script}</p>
         </div>
+      </Chapter>
+
+      <Chapter id="tarifs" universe="cleaning" span={chapter('tarifs').span} labelledby="titre-tarifs">
+        {
+          cleaningPacks.map((pack, k) => (
+            <div class:list={['panel', 'panel--tarif', pack.highlight && 'panel--tarif-fort']} style={win('tarifs', pack.id)}>
+              {k === 0 && (
+                <Fragment>
+                  <p class="index"><span>{copy.tarifs.index}</span></p>
+                  <h2 id="titre-tarifs" class="title">{copy.tarifs.title}</h2>
+                </Fragment>
+              )}
+              <div class="pack">
+                <p class="pack__rank" aria-hidden="true">{`0${k + 1} / 04`}</p>
+                <h3 class="pack__name">{pack.name.value}</h3>
+                <p class="pack__price" data-status={pack.price.status}>
+                  <span>{pack.price.value.amount}</span>
+                  <i aria-hidden="true">€</i>
+                </p>
+                <ul class="pack__lines">
+                  {pack.lines.value.map((line) => (
+                    <li>{line}</li>
+                  ))}
+                </ul>
+                <p class="pack__note">{priceCondition.value}</p>
+                {pack.highlight && <p class="pack__extra">{autonomy.value} · {property.payment.value.join(' · ')}</p>}
+              </div>
+            </div>
+          ))
+        }
       </Chapter>
 
       <Chapter id="bascule" universe="bridge" span={chapter('bascule').span} labelledby="titre-bascule">
