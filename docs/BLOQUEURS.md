@@ -1,148 +1,118 @@
-# CAR SERVICE 06 — CE QUI BLOQUE UN VRAI RENDU CINÉMATOGRAPHIQUE
+# Ce qui bloque un vrai rendu premium
 
-Document demandé par le porteur le 18/09/2026 : « fais-moi parvenir tous les soucis qui t'empêchent de vraiment me
-donner un résultat digne de ce nom avec un vrai rendu premium cinématographique ».
-
-Chaque point dit : **le problème**, **ce que ça coûte de le lever**, **ce que ça rapporte**, et **ma recommandation**.
-Les points 1, 2 et 3 sont, de loin, les plus importants.
+Mis à jour le 18/09/2026, après le passage « la ville disparaît, la place devient un vrai lieu ».
+Document destiné au porteur **et à toute IA qui reprend le projet** : chaque point dit le symptôme, la cause réelle,
+et le geste qui le lève.
 
 ---
 
-## 1. L'image 360° fournie ne peut pas être traversée (le blocage principal)
+## 1. Les modèles 3D fournis ne sont pas des décors
 
-**Ce que j'en fais déjà — tout le temps, partout :**
+**C'est le blocage principal, et c'est lui qui a fait échouer la ville.**
 
-| Usage | Où ça se voit |
-|---|---|
-| Le ciel entier, tel qu'il a été photographié (aucun étalonnage) | toutes les unités |
-| La **lumière** des véhicules (PMREM du même fichier) | c'est votre nuit qui se reflète dans la laque |
-| Le **reflet** du sol mouillé et de la chaussée | le sol renvoie votre ciel |
-| Le **sol** : la moitié basse du panorama projetée au pied de la caméra | les roches et la terre autour du véhicule |
+`city.glb` a été mesuré à la sonde (`scripts/media-tools/probe-glb.mjs`) :
 
-**Le problème.** Un HDR est une photographie prise depuis **un seul point**. Tous ses pixels sont à l'infini. Donc :
+| ce qu'on croyait | ce que c'est réellement |
+| --- | --- |
+| une ville de nuit | **14 immeubles**, 8,5 m × 5,4 m d'emprise |
+| un décor | un **accessoire**, livré avec son propre sol et son propre dôme de ciel |
+| des gratte-ciel | des cubes de 0,6 à 4,8 m, texturés avec des **façades photographiées de JOUR** |
 
-- si la caméra avance de 1 m ou de 10 km, **l'image ne change pas d'un pixel** — aucune parallaxe ;
-- on ne peut pas passer **devant**, **derrière** ou **entre** les montagnes : rien ne masque rien ;
-- on ne peut pas **s'approcher** d'un sommet : il garde exactement la même taille.
+Un accessoire ne devient pas un horizon. Les deux seules issues étaient :
 
-C'est précisément ce qui donne la sensation de « décor peint » et de « je ne vois aucun changement ». Ce n'est pas un
-défaut de votre image : c'est la nature d'une photographie.
+- le **répéter** (fait : 24 exemplaires instanciés, 14 appels de dessin) → on voit la répétition, et le quartier
+  reste une grappe de cubes ;
+- le **grossir** → des tours d'un kilomètre qui passent au-dessus du parking, exactement ce que vous avez vu.
 
-**Votre question : « il aurait fallu l'exporter en GLB ? »** — Non, ça ne changerait rien : un GLB fabriqué à partir de
-l'HDR ne serait que la même image collée sur une sphère. Un HDR ne contient aucune géométrie ; il n'y a rien à
-exporter. Ce qu'il faut, c'est de la **géométrie** :
+→ **Décision prise :** la ville sort du récit. Tout le budget visuel va sur la place.
+→ **Ce qu'il faudrait pour une vraie ville :** soit un modèle de quartier réel (plusieurs milliers d'immeubles,
+  ~50 Mo, hors budget téléphone), soit un générateur procédural de bâtiments écrit pour le projet (2 à 3 jours).
 
-| Option | Ce que ça donne | Coût | Poids |
-|---|---|---|---|
-| **A. Relief procédural** (fait aujourd'hui) | 4 crêtes concentriques (1,2 → 17 km) + 54 rochers autour du véhicule, éclairés par VOTRE ciel. Vraie parallaxe, premier plan qui passe devant l'objectif | déjà fait | 0 Ko (généré) |
-| **B. Le VRAI relief des Alpes-Maritimes** (altitudes IGN / tuiles d'élévation ouvertes) | les montagnes réelles du 06, à l'échelle, sous votre ciel. On survole le vrai territoire, on descend dans la vraie vallée | 1 à 2 jours | ~300 Ko à 1 Mo |
-| **C. Un GLB de paysage** (que vous fournissez ou qu'on achète) | un décor modélisé, très contrôlable ; risque de ne pas coller au ciel fourni | selon le modèle | 5 à 50 Mo |
-
-**Ma recommandation : B.** C'est la seule qui soit à la fois cinématographique ET juste pour l'entreprise : on vole
-au-dessus des Alpes-Maritimes réelles, pas d'un décor. Votre HDR garde son rôle — le ciel et la lumière — et le sol
-devient un vrai relief qu'on traverse. C'est exactement ce que font les cinématiques de jeu : **ciel photographié +
-géométrie réelle**.
+La galaxie (`galaxy.glb`) a le problème inverse : c'est un **nuage de 50 000 points**. On la traverse très bien,
+mais on ne peut rien y poser et elle n'a aucune surface. Elle reste, comme univers de départ.
 
 ---
 
-## 2. Le scroll : aucun ScrollTrigger dans ce projet
+## 2. Aucune ombre portée dans toute la scène
 
-**Ce qui est en place.** Le site n'utilise ni GSAP ni ScrollTrigger. Le moteur est écrit sur mesure
-(`src/engine/`) : le défilement natif est lu une fois par image, converti en progression `p` de 0 à 1, qui alimente des
-canaux (lumière, brume, salissure, position du véhicule…) et la caméra. Un « pas guidé » amène la page exactement d'un
-repos au suivant. Avantages : aucune dépendance, état reconstructible à l'identique à l'aller comme au retour,
-accessibilité et clavier gratuits, 9 Ko de moteur.
+Chaque objet a `castShadow = false`. Conséquence directe : **le véhicule ne touche pas le sol**. C'est le défaut que
+l'œil repère en premier, avant la lumière, avant la matière.
 
-**La limite dure, et elle est réelle.** Sur téléphone, l'**inertie du geste appartient au système** (iOS et Android).
-On ne peut ni la ralentir, ni l'allonger, ni la reprendre. Conséquence : quand vous lancez un grand balayage, c'est
-l'OS qui décide de la vitesse de la « caméra », pas la mise en scène. Un vol pensé pour durer deux secondes peut être
-avalé en trois dixièmes. **C'est ça, « le scroll n'est pas maîtrisé ».**
-
-| Option | Ce que ça donne | Coût | Contrepartie |
-|---|---|---|---|
-| **A. Défilement natif + pas guidés** (aujourd'hui) | rapide, accessible, zéro dépendance | fait | la vitesse reste celle du doigt |
-| **B. Défilement virtuel** (Lenis, MIT, ~3 Ko) : on intercepte le geste et on avance la progression nous-mêmes | **maîtrise totale du tempo** : ralentis, quasi-arrêts, accélérations imposés par la mise en scène. C'est ce que font les sites primés | 0,5 à 1 jour | on remplace le défilement du système (il faut soigner l'accessibilité, le clavier, la barre de défilement) |
-| **C. GSAP ScrollSmoother** | idem B | licence **payante** (GSAP Business) | dépendance + coût |
-
-**Ma recommandation : B (Lenis).** Même résultat que ScrollSmoother, gratuit, et il se branche exactement là où le
-moteur lit déjà le défilement — sans rien réécrire d'autre.
+→ **Geste :** une ombre de contact précalculée sous la caisse (une image, coût nul) + une seule carte d'ombre pour le
+  candélabre le plus proche. Environ 1,5 ms par image au téléphone — mesurable avec `npm run qa:perf`.
+→ **Pourquoi ce n'est pas encore fait :** chaque carte d'ombre est une passe de rendu de plus, et la définition
+  maximale (DPR 2) au téléphone est ce qui a été le plus dur à obtenir. À faire en mesurant, pas à l'aveugle.
 
 ---
 
-## 3. Aucun post-traitement : il manque la couche « pellicule »
+## 3. Aucun traitement d'image (bloom, occlusion, étalonnage)
 
-Aujourd'hui l'image sort brute du rendu. Il n'y a **ni bloom** (les halos autour des lumières vives), **ni
-profondeur de champ**, **ni grain**, **ni vignettage**, **ni flou de mouvement**. C'est, à mon avis, la moitié de
-l'écart qui reste avec une image de film : ce sont ces défauts d'objectif qui font qu'un rendu « existe ».
+Une nuit cinématographique tient sur trois choses qu'on n'a pas :
 
-- Coût : une passe plein écran supplémentaire (~2 à 4 ms au téléphone).
-- Arbitrage honnête : je préfère **DPR 1,75 + post-traitement** que DPR 2 sans. La netteté seule ne fait pas le cinéma.
-- Recommandation : bloom doux + vignettage + grain fin, et profondeur de champ **uniquement** sur les macros.
+1. le **halo** (bloom) autour des sources — c'est lui qui fait qu'une lampe « brûle » ;
+2. l'**occlusion ambiante** — c'est elle qui creuse les jonctions (roue/aile, mur/sol) ;
+3. l'**étalonnage** — actuellement `NeutralToneMapping`, exposition 1, **aucune courbe**. L'image est juste, elle
+   n'est pas *tenue*.
 
----
-
-## 4. Les modèles fournis limitent le rendu du véhicule
-
-- **RS6** : textures cuites (la peinture, les emblèmes et les reflets sont peints dans l'image), 25 matériaux, aucune
-  carte de vernis séparée. À moins de deux mètres, on voit la texture, pas de la laque. J'ai dû assombrir la
-  carrosserie au shader pour qu'elle tienne la nuit.
-- **C-HR** : **un seul matériau pour toute la caisse**. Impossible d'en isoler l'emblème ni la plaque (elle reste
-  visible, blanche), ni de traiter le vitrage à part.
-- Ce qu'il faudrait : des modèles à matériaux séparés (carrosserie / vitrage / optiques / jantes / plaque), ou une
-  vraie peinture PBR (couche de base + vernis). Sinon, on plafonne.
+→ **Geste :** une passe de post-traitement unique (bloom seuillé + courbe + vignette légère). C'est, de loin, le
+  meilleur rapport effet/coût qui reste.
+→ **Coût :** une passe plein écran, ~2 ms au téléphone. C'est le prochain grand levier.
 
 ---
 
-## 5. Aucun son
+## 4. Les matériaux des modèles sont faits pour le jour
 
-Un film sans son n'existe pas. Un souffle de nuit, un passage de lumière, un claquement à la fermeture : trois sons
-suffiraient à doubler la valeur perçue. Contrainte technique : les navigateurs interdisent le son avant un geste — il
-faut donc un bouton « son » discret. **Il me faut votre accord** (et deux ou trois sons libres de droits).
+Les deux véhicules sont des exports Sketchfab : carrosserie **peinte en gris clair**, textures éclairées en plein
+jour, et des faces de caisse sans relief de tôle.
 
----
-
-## 6. Aucune ombre portée
-
-Le monde n'a pas de carte d'ombres : rien ne projette d'ombre sur rien. Le véhicule a une empreinte sombre
-**simulée** sous lui (sinon il flotterait). Des ombres réelles (véhicule sur le sol, rochers entre eux) ancreraient
-tout — coût : une passe d'ombre et un peu de mémoire.
+- Sous une lampe chaude, un gris clair vire au **kaki**. C'est exactement ce que vous avez vu pendant des heures.
+- Corrigé : la laque est désormais **imposée** (noir profond, métallique 0,92) au lieu d'être atténuée.
+- **Reste :** en gros plan, les panneaux de caisse sont plats — il manque le micro-relief qu'a une vraie tôle. Une
+  carte de normales générée corrigerait ça (une demi-journée).
 
 ---
 
-## 7. Il n'y a aucune image réelle de l'entreprise
+## 5. Le coût d'une boucle de vérification
 
-La démonstration entière est en 3D. La « preuve » avant/après est un modèle, pas un chantier de CAR SERVICE 06. Pour
-un site qui doit vendre, une seule vraie séquence d'un vrai véhicule traité par vous vaut plus que n'importe quel
-rendu. Ce qu'il faudrait : 4 à 6 photos ou une courte vidéo verticale, tournées avec un minimum de soin (nuit ou
-lumière douce, voiture mouillée).
+Je ne vois pas l'écran. Pour juger UNE modification :
 
----
+serveur de dev → navigateur sans affichage → 21 captures → lecture des images = **2 à 4 minutes**.
 
-## 8. Ce que je ne peux pas vérifier moi-même
+C'est pour ça que ça avance par à-coups, et c'est aussi pourquoi certaines erreurs ont duré : une erreur de signe
+dans un nuanceur (les candélabres éclairaient **vers le ciel**) ne se voit sur aucune compilation, seulement sur une
+image. `npm run qa:video` permet de juger le mouvement, mais coûte une minute de plus.
 
-- Les crochets de contrôle (`window.__experience`) n'existent **qu'en développement** : je mesure donc en local, et la
-  production peut différer légèrement.
-- Je pilote des défilements **synthétiques** : je ne sens pas l'inertie réelle d'un pouce sur votre téléphone. Depuis
-  aujourd'hui j'enregistre une **vidéo** du parcours (`npm run qa:video`) — c'est le seul contrôle qui montre le
-  mouvement — mais un essai sur votre appareil reste irremplaçable.
-- Aucun accès aux services connectés (Figma, GitHub API, etc.) dans cette session : ils demandent une autorisation de
-  votre part.
+→ **Ce qui aiderait vraiment :** que vous me renvoyiez une capture d'écran de votre téléphone quand quelque chose
+  cloche. Ce que je vois en 780×1688 et ce que vous voyez ne sont pas toujours la même chose.
 
 ---
 
-## 9. Budget d'image au téléphone
+## 6. Pièges techniques déjà rencontrés (à ne pas refaire)
 
-Mesuré (`npm run qa:perf`, 390 × 844 à DPR 2) : **16,7 ms — 60 i/s — sur 20 unités sur 24**, et 19 à 24 ms sur trois
-macros où le véhicule remplit l'écran. Il reste donc de la marge pour le post-traitement, mais pas pour tout : chaque
-ajout (ombres, post, son) se paie. L'ordre de dépense que je propose : **post-traitement > relief réel > ombres**.
+| Symptôme | Cause réelle |
+| --- | --- |
+| La ville mesure « 2 m » quoi qu'on fasse | Géométrie **quantifiée** : `geometry.applyMatrix4()` réécrit les sommets à travers la normalisation et les rabat dans [-1, 1]. **Transformer la boîte, jamais les sommets.** |
+| Une échelle ou une position sans aucun effet | Un nœud glTF peut avoir `matrixAutoUpdate = false` : sa matrice vient du fichier. |
+| Tout l'écran vire au sépia | Environnement à 3,4 + lampes à 190 : plus aucun noir dans l'image. |
+| Le parking flotte au-dessus du vide | Le sol du monde était 40 m plus bas que la place. |
+| Un mur uniformément crème | Les candélabres éclairaient sans cône : autant de lumière en haut du mur qu'à ses pieds. |
+| Une erreur de syntaxe dans un nuanceur | Une **apostrophe inversée** dans un commentaire français ferme le gabarit de chaîne JavaScript. |
 
 ---
 
-## Ce que je propose, dans l'ordre
+## 7. Ce qui n'est pas technique
 
-1. **Relief réel des Alpes-Maritimes** (option 1-B) : on vole au-dessus du vrai territoire sous votre ciel.
-2. **Défilement virtuel** (option 2-B) : le tempo cesse d'appartenir au doigt, chaque unité tient sa durée.
-3. **Post-traitement** (point 3) : bloom, vignettage, grain — la couche pellicule.
-4. Ombres portées, puis son (avec votre accord), puis vos vraies images.
+- **Le calendrier côté serveur n'existe toujours pas.** Il demande une base (KV ou D1) sur le Worker et une clé
+  d'API d'envoi de courriel. **Je ne manipule jamais vos clés** : vous les posez vous-même avec
+  `wrangler secret put`. Tant que ce n'est pas fait, l'écran de rendez-vous reste un envoi par courriel.
+- **Les faits commerciaux manquants** restent marqués `TO_CONFIRM` dans `src/domain/` (horaires, tarifs, zone
+  exacte). Je n'en invente aucun.
 
-Dites-moi lesquels vous voulez et dans quel ordre : les trois premiers se font dans la journée.
+---
+
+## Dans quel ordre je lèverais ça
+
+1. **Post-traitement** (bloom + étalonnage) — le plus gros écart visuel restant.
+2. **Ombre de contact** sous le véhicule — le défaut que l'œil voit en premier.
+3. **Micro-relief de carrosserie** — pour que les gros plans tiennent.
+4. **Calendrier serveur** — dès que vous aurez posé la clé d'envoi.
