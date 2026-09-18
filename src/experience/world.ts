@@ -22,7 +22,7 @@ export const WORLD = {
    */
   galaxy: { diameter: 30000, at: [0, 12000, -4000] as const, starSize: 52, tilt: 0.42 },
   /** LA VILLE (modèle fourni) : posée à l'ouest de la place, elle ferme l'horizon derrière le véhicule. */
-  city: { height: 240, at: [-155, -205] as const, heading: 0.25 },
+  city: { height: 270, at: [-430, -330] as const, heading: 0.25 },
   /**
    * LA PLACE : l'aire de stationnement où le véhicule est garé, centrée sur l'origine du monde. Le véhicule occupe la
    * place centrale du côté droit ; l'allée passe devant lui, c'est par là que la caméra arrive.

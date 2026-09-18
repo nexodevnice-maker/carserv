@@ -16,10 +16,12 @@ export const ENGINE: EngineConfig = {
     // le rejoint en une glissade quintique de durée réglée : 34 s par unité de progression (un pas de preuve ≈ 1,9 s,
     // une traversée de l'univers ≈ 4 s), bornée à [1,5 ; 4,2] s. La barre de défilement est suivie par amorti.
     desktop: { mode: 'glide', rate: 6, maxLag: 0.35, glide: { perUnit: 34, min: 1.5, max: 4.2, jump: 0.004 } },
-    // Au doigt, ressort critique (MECA : 4,8 rad/s) ralenti à 3,6 rad/s : les vols traversent des kilomètres, un pas
-    // se pose en ~1,4 s.
-    tablet: { mode: 'spring', rate: 3.6, maxLag: 0.14 },
-    mobile: { mode: 'spring', rate: 3.6, maxLag: 0.14 },
+    // AU DOIGT AUSSI : glissade, pas ressort. Avec un ressort, la vitesse de la caméra est celle du geste — un grand
+    // balayage avalait un vol pensé pour deux secondes, et on ne voyageait nulle part. En glissade, le pas guidé pose
+    // la page sur le repos suivant et la caméra y va en un vol de durée choisie : un geste = un plan, quelle que soit
+    // la force du doigt. C'est ça, « le scroll maîtrisé ».
+    tablet: { mode: 'glide', rate: 6, maxLag: 0.35, glide: { perUnit: 30, min: 1.4, max: 3.6, jump: 0.004 } },
+    mobile: { mode: 'glide', rate: 6, maxLag: 0.35, glide: { perUnit: 30, min: 1.4, max: 3.6, jump: 0.004 } },
   },
   // L'affichage est posé à moins d'un demi-pixel de défilement de sa cible : plus aucun rendu.
   settlePx: 0.5,
