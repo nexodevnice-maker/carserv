@@ -25,6 +25,13 @@ import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/w
 export interface VehicleOptions {
   /** Modèle publié (public/models/*.glb, compressé meshopt). */
   url: string;
+  /**
+   * Fichier dont le téléchargement a été lancé au démarrage de la page (boot.ts), avant même que la scène existe.
+   * Le premier plan du récit est un véhicule : attendre la création de la scène pour commencer à le télécharger
+   * ajoutait une seconde de rideau. Un `<link rel="preload">` ne suffisait pas (mode d'authentification différent de
+   * celui du chargeur : le fichier descendait DEUX fois).
+   */
+  buffer?: Promise<ArrayBuffer>;
   /** Longueur réelle du véhicule (m) : le modèle est mis à cette échelle. */
   length: number;
   /** Pose : point au sol (x, z) et cap (azimut du capot, radians). */
@@ -259,7 +266,7 @@ export function createVehicleLayer(options: VehicleOptions) {
     ]);
     const loader = new GLTFLoader();
     loader.setMeshoptDecoder(MeshoptDecoder);
-    const gltf = await loader.loadAsync(options.url);
+    const gltf = options.buffer ? await loader.parseAsync(await options.buffer, '') : await loader.loadAsync(options.url);
     gltf.scene.traverse((node) => {
       const mesh = node as Mesh;
       if (!mesh.isMesh) return;

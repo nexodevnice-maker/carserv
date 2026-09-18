@@ -5,15 +5,14 @@
 export const copy = {
   scroll: 'Faites défiler',
   hero: { script: 'Un véhicule propre, c’est un plaisir au quotidien !' },
-  /** Unité 1 : on ne nomme pas ce qu'on regarde. Une annotation, pas un titre. */
-  matiere: {
-    note: 'Regardez de près.',
-    alt: 'Très gros plan sur la carrosserie noire et vernie d’un véhicule, la nuit : la Voie lactée s’y reflète.',
+  /** Unité 1 : le héros. L'image 360° fournie, telle qu'elle a été photographiée. */
+  univers: {
+    alt: 'Ciel de nuit réel photographié en 360° : la Voie lactée au-dessus d’une mer de nuages, les crêtes des montagnes en dessous.',
   },
-  /** Unité 4 et 5 : aucun texte à l'écran, seulement pour qui ne voit pas la scène. */
+  /** Unité 3 : aucun texte à l'écran, seulement pour qui ne voit pas la scène. */
   ciel: {
-    title: 'Le ciel de la Côte d’Azur',
-    text: 'On quitte la carrosserie par son reflet : la caméra s’élève, traverse une mer de nuages et se retrouve face au cœur de la Voie lactée — le ciel de nuit réel (image 360° HDRI).',
+    title: 'Descendre dans le 06',
+    text: 'La caméra traverse la mer de nuages ; les crêtes des montagnes sortent de la nuit l’une derrière l’autre, puis le département apparaît, éclairé d’un seul point.',
   },
   zone: { index: '01', title: 'Dans tout le 06', sea: 'Mer Méditerranée' },
   avant: {

@@ -386,9 +386,11 @@ export function createMapLayer(options: MapOptions, night: SharedNight) {
     },
     update(state: Readonly<ExperienceState>): LayerUpdate {
       const reveal = state.channels.mapReveal ?? 0;
-      // Vue du ciel : le pays ; au sol : rien (le plateau et la mer suffisent).
+      // Vue du ciel : le pays ; au sol : rien (le plateau et la mer suffisent). Mais l'altitude ne suffit pas à
+      // décider : à l'ouverture, la caméra est à 2 400 m dans l'univers, et un pays en or sous les nuages
+      // transformait le héros en infographie. Le récit décide (canal `franceLight`), l'altitude ne fait que nuancer.
       const altitude = state.camera?.position[1] ?? 0;
-      const fade = Math.min(1, Math.max(0, (altitude - 400) / 2000));
+      const fade = Math.min(1, Math.max(0, (altitude - 400) / 2000)) * (state.channels.franceLight ?? 0);
       france.visible = fade > 0.002;
       if (reveal === last.reveal && fade === last.fade) return false;
       last.reveal = reveal;

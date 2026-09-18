@@ -51,6 +51,21 @@ export const WORLD = {
     /** Longueur de chaussée (m) : elle s'arrête au bord du plateau du 06. */
     length: 420,
   },
+  /**
+   * Le relief en volume autour du monde (scenes/relief). Quatre crêtes concentriques : c'est leur décalage les unes
+   * par rapport aux autres qui crée la distance quand la caméra descend. Les rochers, eux, donnent le premier plan
+   * qui manque aux plans bas — ils passent devant l'objectif.
+   */
+  relief: {
+    ridges: [
+      { radius: 1250, height: 190, segments: 220 },
+      { radius: 3100, height: 430, segments: 200 },
+      { radius: 7600, height: 900, segments: 180 },
+      { radius: 17000, height: 1750, segments: 150 },
+    ],
+    rocks: { count: 54, inner: 9, outer: 74, small: 0.5, large: 2.4 },
+    corridor: { lane: 0, width: 11, from: -230, to: -680 },
+  },
   cloudFar: 8000,
   clouds: {
     desktop: [

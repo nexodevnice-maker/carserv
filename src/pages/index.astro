@@ -62,15 +62,6 @@ const description =
   }}
 >
   <Fragment slot="head">
-    <!--
-      La première image du récit est la laque d'un véhicule 3D : son modèle et la nuit qui s'y reflète doivent
-      descendre AVEC le document, pas après la création de la scène. Sans ces deux lignes, le rideau d'entrée reste
-      levé trois secondes de plus pour rien.
-    -->
-    <link rel="preload" href="/models/rs6.glb" as="fetch" />
-    <link rel="preload" href="/env/night-128.hdr" as="fetch" media="(max-width: 1099px)" />
-    <link rel="preload" href="/env/night-256.hdr" as="fetch" media="(min-width: 1100px)" />
-    <link rel="preload" href="/env/sky-2048.webp" as="image" type="image/webp" />
     <script is:inline>
       // Avant tout rendu : mise en page de l'expérience (.js) et entrée. On arrive TOUJOURS sur l'univers : ancre
       // retirée de l'adresse, position de défilement jamais restaurée. Si le module ne démarre pas (erreur, blocage),
@@ -121,24 +112,18 @@ const description =
         <div class="stage__progress"><span></span></div>
       </Fragment>
 
-      <Chapter id="matiere" universe="cleaning" span={chapter('matiere').span} labelledby="titre-marque">
-        <div class="panel panel--note" style={win('matiere', 'marque')}>
-          <p class="kicker" id="titre-marque">{property.name.value} <span aria-hidden="true">·</span> {property.descriptors.cleaning.value}</p>
-          <p class="note">{copy.matiere.note}</p>
-          <p class="hint" aria-hidden="true"><span></span>{copy.scroll}</p>
-        </div>
-        <p class="sr-only">{copy.matiere.alt}</p>
-      </Chapter>
-
-      <Chapter id="revelation" universe="cleaning" span={chapter('revelation').span} labelledby="titre-promesse">
-        <div class="panel panel--hero" style={win('revelation', 'promesse')}>
-          <h1 id="titre-promesse" class="display">{property.taglines[0]!.value}</h1>
+      <Chapter id="univers" universe="territory" span={chapter('univers').span} labelledby="titre-marque">
+        <div class="panel panel--hero" style={win('univers', 'marque')}>
+          <p class="kicker">{property.name.value} <span aria-hidden="true">·</span> {property.descriptors.cleaning.value}</p>
+          <h1 id="titre-marque" class="display">{property.taglines[0]!.value}</h1>
           <ul class="badges" aria-label="Ce que comprend la prestation">
             <li class="badge"><BrandIcon name="seat" />{offer.label.value}</li>
             <li class="badge"><BrandIcon name="van" />{property.coverage.value}</li>
           </ul>
           <p class="script">{copy.hero.script}</p>
+          <p class="hint" aria-hidden="true"><span></span>{copy.scroll}</p>
         </div>
+        <p class="sr-only">{copy.univers.alt}</p>
       </Chapter>
 
       <Chapter id="ciel" universe="bridge" span={chapter('ciel').span} labelledby="titre-ciel">

@@ -14,11 +14,17 @@ import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
  * décodé et utilisé tel quel (quelques centaines de Ko au lieu d'une équirectangulaire 4K de 27 Mo).
  * Retourne null si le fichier manque ou est illisible : la scène garde son éclairage de repli.
  */
-export async function loadBakedEnvironment(url: string, signal?: AbortSignal): Promise<Texture | null> {
+export async function loadBakedEnvironment(url: string, signal?: AbortSignal, prefetched?: Promise<ArrayBuffer>): Promise<Texture | null> {
   try {
-    const response = await fetch(url, { signal });
-    if (!response.ok) return null;
-    const hdr = new HDRLoader().parse(await response.arrayBuffer());
+    // `prefetched` : le téléchargement a pu être lancé dès le démarrage de la page, avant même que la scène existe.
+    let buffer: ArrayBuffer;
+    if (prefetched) buffer = await prefetched;
+    else {
+      const response = await fetch(url, { signal });
+      if (!response.ok) return null;
+      buffer = await response.arrayBuffer();
+    }
+    const hdr = new HDRLoader().parse(buffer);
     const texture = new DataTexture(hdr.data, hdr.width, hdr.height, RGBAFormat, hdr.type);
     texture.mapping = CubeUVReflectionMapping;
     texture.colorSpace = LinearSRGBColorSpace;

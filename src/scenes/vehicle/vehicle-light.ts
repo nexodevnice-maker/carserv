@@ -19,6 +19,8 @@ export function createVehicleLightLayer(options: {
   /** Rotation du ciel (rad) : les reflets doivent montrer la même nuit que celle qu'on voit. */
   yaw: number;
   channels: readonly string[];
+  /** Fichier dont le téléchargement a été lancé au démarrage (boot.ts). */
+  buffer?: Promise<ArrayBuffer>;
   /** Canal multiplicateur du reflet : les plans de matière (unités 1 à 3) veulent un vrai miroir, pas une nuit polie. */
   boost?: string;
   chapters?: readonly string[];
@@ -46,7 +48,7 @@ export function createVehicleLightLayer(options: {
     /** Chargement à la demande : l'environnement n'arrive qu'à l'approche des véhicules. */
     ensure() {
       loading ??= (async () => {
-        const texture = await loadBakedEnvironment(options.url);
+        const texture = await loadBakedEnvironment(options.url, undefined, options.buffer);
         if (!texture || !ctx) return;
         env = texture;
         ctx.scene.environment = texture;

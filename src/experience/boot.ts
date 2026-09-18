@@ -37,6 +37,22 @@ export function boot() {
   const experience = createExperience(definition, ENGINE, { track, viewport: stageEl });
   const { state, timeline, capabilities } = experience;
 
+  // — Les deux fichiers dont dépend la PREMIÈRE image : le modèle du véhicule et la nuit qui s'y reflète. Leur
+  // téléchargement part maintenant, avant même le chargement de Three.js et la création de la scène. Sans cela, la
+  // requête n'était émise qu'une seconde plus tard, rideau levé sur un cadre vide.
+  const heavy = (url: string) =>
+    capabilities.webgl2 && !capabilities.saveData
+      ? fetch(url).then((response) => {
+          if (!response.ok) throw new Error(`${response.status} ${url}`);
+          return response.arrayBuffer();
+        })
+      : undefined;
+  const carFile = heavy('/models/rs6.glb');
+  const nightFile = heavy(state.format === 'desktop' ? ENVIRONMENT.sharpUrl : ENVIRONMENT.url[state.format]);
+  // Une erreur réseau ici n'est pas fatale : la couche retombe sur son propre chargement.
+  carFile?.catch(() => undefined);
+  nightFile?.catch(() => undefined);
+
   // — Entrée.
   const introStart = performance.now();
   let introDone = !html.classList.contains('is-intro');
@@ -140,6 +156,7 @@ export function boot() {
       import('../scenes/map/map-layer'),
       import('../scenes/clouds/cloud-layer'),
       import('../scenes/beacon/beacon-layer'),
+      import('../scenes/relief/relief-layer'),
       import('../scenes/vehicle/vehicle-layer'),
       import('../scenes/vehicle/vehicle-light'),
       import('../scenes/road/road-layer'),
@@ -151,6 +168,7 @@ export function boot() {
           { createMapLayer },
           { createCloudLayer },
           { createBeaconLayer },
+          { createReliefLayer },
           { createVehicleLayer },
           { createVehicleLightLayer },
           { createRoadLayer },
@@ -178,14 +196,18 @@ export function boot() {
             sky.uniforms,
           );
           const beacon = createBeaconLayer({ at: WORLD.vehicles.cleaning.at, height: WORLD.beaconHeight });
+          // Le relief : ce qui donne un CORPS au lieu photographié. Sans lui, la caméra peut voler des kilomètres
+          // sans que rien ne bouge derrière — une image 360° n'a pas de profondeur.
+          const relief = createReliefLayer({ night: sky.uniforms, ...WORLD.relief });
           // Le véhicule de la démonstration : sali, scanné, verni, visité de l'intérieur. Il ne quitte jamais sa place.
           cleaningCar = createVehicleLayer({
             ...WORLD.vehicles.cleaning,
             url: '/models/rs6.glb',
+            buffer: carFile,
             channels: { dirt: 'dirt', scan: 'scan', polish: 'polish', light: 'carLight' },
             tint: { match: /Coloured|Paint/i, scale: 0.42 },
             noise: sky.uniforms.uNoise.value,
-            chapters: ['matiere', 'revelation', 'ciel', 'avant', 'intervention', 'transformation', 'prestations'],
+            chapters: ['territoire', 'avant', 'intervention', 'transformation', 'prestations'],
           });
           // Le véhicule de location : il roule sur la route du 06 (`chrTravel` : son avance en mètres).
           rentalCar = createVehicleLayer({
@@ -199,6 +221,7 @@ export function boot() {
           });
           vehicleLight = createVehicleLightLayer({
             url: desktop ? ENVIRONMENT.sharpUrl : ENVIRONMENT.url[state.format],
+            buffer: nightFile,
             intensity: ENVIRONMENT.intensity,
             yaw: WORLD.skyYaw,
             channels: ['carLight', 'chrLight'],
@@ -219,7 +242,7 @@ export function boot() {
             experience,
             canvas,
             host: stageEl,
-            layers: [sky, territory, beacon, vehicleLight, cleaningCar, road, rentalCar, clouds],
+            layers: [sky, relief, territory, beacon, vehicleLight, cleaningCar, road, rentalCar, clouds],
             config: { ...STAGE, busy: () => registry.busy },
             onReady: () => {
               stageStatus = 'ready';
