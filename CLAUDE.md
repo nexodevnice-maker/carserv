@@ -4,8 +4,13 @@
 
 ## État
 
-Maquette complète en ligne le 17/09/2026 (https://carservice.nexodevnice.workers.dev, 60/60 `npm run qa:engine`). Lire avant tout :
-`docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/MEDIA_INVENTORY.md`, `docs/EXPERIENCE_GRAMMAR.md`.
+Maquette complète en ligne (https://carservice.nexodevnice.workers.dev, 60/60 `npm run qa:engine`). Mise à jour du
+18/09/2026 : les deux véhicules 3D fournis remplacent la preuve vidéo, la location voyage, un écran de rendez-vous
+sans 3D envoie les demandes par courriel.
+
+**Lire d'abord `docs/REFERENTIEL.md`** : la trace complète du projet, où vit chaque réglage, les recettes de
+correction (symptôme → geste), les défauts connus. Ensuite, au besoin : `docs/DECISIONS.md` (pourquoi chaque choix),
+`docs/ARCHITECTURE.md`, `docs/MEDIA_INVENTORY.md`, `docs/EXPERIENCE_GRAMMAR.md`.
 
 ## Règles du code
 
