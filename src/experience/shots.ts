@@ -67,9 +67,11 @@ export const shots: readonly ShotDefinition[] = [
     at: 0.5,
     intent:
       'UNITÉ 3 — Le regard bascule vers le bas et la caméra tombe : sous la galaxie, une lueur grandit. Ce n’est pas une étoile, c’est une ville. Aucun texte.',
-    framing: { position: [120, 760, 520], target: [-1180, 210, -1080], fov: 62, shift: [0, 0] },
-    ...portrait({ position: [140, 800, 560], target: [-1180, 210, -1080], fov: 76 }),
-    via: [[-600, 8600, -2200], [-120, 3000, -600]] as Vec3[],
+    // On regarde LE 06 et la colonne de la balise, pas l'ancien emplacement de la ville : ces deux plans visaient
+    // encore [-1180, -1080], où il n'y a plus rien depuis que la ville est sortie du récit — d'où l'écran noir.
+    framing: { position: [560, 880, 980], target: [20, 90, 40], fov: 62, shift: [0, 0] },
+    ...portrait({ position: [620, 960, 1080], target: [20, 110, 40], fov: 76 }),
+    via: [[900, 7200, 2600], [760, 2600, 1700]] as Vec3[],
     pace: { window: [0.02, 0.98], ease: 'inOut' },
     lead: 0.14,
     flight: { fov: 20, pitch: -0.2, shake: 1 },
@@ -80,9 +82,9 @@ export const shots: readonly ShotDefinition[] = [
     at: 0.45,
     intent:
       'UNITÉ 4 — La ville de nuit : les tours allumées, les avenues, et la galaxie encore au-dessus. On descend entre les immeubles.',
-    framing: { position: [80, 34, 66], target: [-1180, 150, -1080], fov: 46, shift: [0.12, 0] },
-    ...portrait({ position: [92, 38, 74], target: [-1180, 160, -1080], fov: 58, shift: [0, 0.14] }),
-    via: [[130, 260, 240]] as Vec3[],
+    framing: { position: [78, 36, 62], target: [2, 6, 0], fov: 46, shift: [0.12, 0] },
+    ...portrait({ position: [88, 40, 70], target: [2, 7, 0], fov: 58, shift: [0, 0.14] }),
+    via: [[200, 300, 260]] as Vec3[],
     pace: { window: [0.02, 0.98], ease: 'inOut' },
     lead: 0.12,
     flight: { fov: 18, roll: -0.06, shake: 0.8 },
@@ -218,6 +220,9 @@ export const shots: readonly ShotDefinition[] = [
     intent: 'PACK STANDARD — le flanc, la portière conducteur : c’est l’habitacle qu’on achète ici.',
     framing: { position: [1.2, 1.25, 8.4], target: [0.1, 0.95, 0], fov: 42, shift: [0.16, 0] },
     ...portrait({ position: [1.4, 1.3, 9.0], target: [0.1, 1.0, 0], fov: 52, shift: [0, 0.2] }),
+    // Point de passage OBLIGATOIRE : sans lui, la courbe de la caméra coupe au plus court d'un plan à l'autre et
+    // TRAVERSE la carrosserie. Le tour d'une voiture est un arc, jamais une corde.
+    via: [[5.6, 1.2, 8.2]] as Vec3[],
     pace: { window: [0.02, 0.98], ease: 'inOut' },
     flight: { fov: 6, roll: 0.03 },
   },
@@ -229,6 +234,7 @@ export const shots: readonly ShotDefinition[] = [
     // Jamais au-delà de x = -4,6 : le mur d'enceinte est à -5,2, la caméra passerait à travers le béton.
     framing: { position: [-3.4, 1.5, 7.8], target: [-0.2, 1.0, 0], fov: 42, shift: [0.16, 0] },
     ...portrait({ position: [-3.8, 1.55, 8.6], target: [-0.2, 1.05, 0], fov: 52, shift: [0, 0.2] }),
+    via: [[-1.2, 1.4, 9.4]] as Vec3[],
     pace: { window: [0.02, 0.98], ease: 'inOut' },
     flight: { fov: 6, roll: -0.03 },
   },
@@ -239,6 +245,8 @@ export const shots: readonly ShotDefinition[] = [
     intent: 'PACK CONCESSION — plan haut, la voiture entière et son reflet sur l’enrobé : l’état de sortie de concession.',
     framing: { position: [5.6, 3.9, -8.2], target: [0, 0.9, 0], fov: 40, shift: [0.16, 0] },
     ...portrait({ position: [6.2, 4.2, -9.0], target: [0, 0.95, 0], fov: 50, shift: [0, 0.18] }),
+    // Le dernier quart passe DEVANT la voiture, côté allée : jamais derrière elle, où se trouve le mur.
+    via: [[-1.0, 2.6, 10.6], [5.2, 3.6, 4.2]] as Vec3[],
     pace: { window: [0.02, 0.98], ease: 'inOut' },
     flight: { fov: 6, pitch: 0.04 },
   },

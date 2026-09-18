@@ -11,6 +11,8 @@ import { ENGINE, ENVIRONMENT, MEDIA_POLICY, STAGE } from './config';
 import { copy } from './copy';
 import { media } from './media';
 import { ROAD_ASPHALT } from './config';
+import map06 from './map-06.json';
+import france from './map-france.json';
 import { WORLD } from './world';
 
 /**
@@ -154,9 +156,9 @@ export function boot() {
       import('../engine/webgl/webgl-stage'),
       import('../scenes/sky/sky-layer'),
       import('../scenes/place/place-layer'),
+      import('../scenes/map/map-layer'),
       import('../scenes/galaxy/galaxy-layer'),
       import('../scenes/clouds/cloud-layer'),
-      import('../scenes/beacon/beacon-layer'),
       import('../scenes/relief/relief-layer'),
       import('../scenes/vehicle/vehicle-layer'),
       import('../scenes/vehicle/vehicle-light'),
@@ -167,9 +169,9 @@ export function boot() {
           { createWebGLStage },
           { createSkyLayer },
           { createPlaceLayer },
+          { createMapLayer },
           { createGalaxyLayer },
           { createCloudLayer },
-          { createBeaconLayer },
           { createReliefLayer },
           { createVehicleLayer },
           { createVehicleLightLayer },
@@ -187,9 +189,24 @@ export function boot() {
           // La place : l'endroit où le véhicule est garé. Un vrai lieu de nuit (enrobé mouillé, places peintes,
           // candélabres) plutôt qu'un objet posé sur un sol abstrait.
           const place = createPlaceLayer({ night: sky.uniforms, ...WORLD.place, asphalt: ROAD_ASPHALT });
+          // LE 06 : le territoire qu'on traverse avant de se poser. Son plateau est le sol du monde, ses falaises
+          // tombent sur la mer de nuit. Aucune carte de France autour : le canal `franceLight` n'existe pas, donc
+          // le pays reste éteint — c'est le département qu'on veut, pas une infographie.
+          const territory = createMapLayer(
+            {
+              data: map06,
+              france,
+              anchor: WORLD.map.anchor,
+              scale: WORLD.map.scale,
+              depth: WORLD.map.depth,
+              bevel: WORLD.map.bevel,
+              labels: { number: '06', numberAt: WORLD.map.numberAt, sea: copy.zone.sea, seaAt: WORLD.map.seaAt },
+              font: '"Barlow Condensed", "Arial Narrow", sans-serif',
+            },
+            sky.uniforms,
+          );
           // L'univers : le nuage de points fourni. C'est LUI qu'on traverse — une image 360° ne peut pas l'être.
           const galaxy = createGalaxyLayer({ url: '/models/galaxy.glb', buffer: galaxyFile, ...WORLD.galaxy });
-          const beacon = createBeaconLayer({ at: WORLD.vehicles.cleaning.at, height: WORLD.beaconHeight });
           // Le relief : ce qui donne un CORPS au lieu photographié. Sans lui, la caméra peut voler des kilomètres
           // sans que rien ne bouge derrière — une image 360° n'a pas de profondeur.
           const relief = createReliefLayer({ night: sky.uniforms, ...WORLD.relief });
@@ -198,7 +215,7 @@ export function boot() {
             ...WORLD.vehicles.cleaning,
             url: '/models/rs6.glb',
             buffer: carFile,
-            channels: { dirt: 'dirt', scan: 'scan', polish: 'polish', light: 'carLight' },
+            channels: { dirt: 'dirt', scan: 'scan', polish: 'polish', light: 'carLight', beam: 'headlight' },
             tint: { match: /Coloured|Paint/i, color: [0.035, 0.037, 0.046] },
             noise: sky.uniforms.uNoise.value,
             // Les chapitres où la couche est active. 'ville', 'arrivee' et 'tarifs' manquaient : le véhicule
@@ -242,7 +259,7 @@ export function boot() {
             experience,
             canvas,
             host: stageEl,
-            layers: [sky, galaxy, relief, place, beacon, vehicleLight, cleaningCar, road, rentalCar, clouds],
+            layers: [sky, galaxy, territory, relief, place, vehicleLight, cleaningCar, road, rentalCar, clouds],
             config: { ...STAGE, busy: () => registry.busy },
             onReady: () => {
               stageStatus = 'ready';

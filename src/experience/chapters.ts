@@ -48,7 +48,9 @@ export const chapters: readonly Chapter[] = [
   },
   {
     id: 'descente',
-    universe: 'bridge',
+    // On descend vers le NETTOYAGE, pas vers la location : l'univers « bascule » allumait l'onglet LOCATION en rouge
+    // pendant toute la descente, et l'en-tête racontait l'inverse de la scène.
+    universe: 'territory',
     span: { desktop: 220, mobile: 230 },
     rests: [0.5],
     panels: [],
@@ -198,6 +200,13 @@ export const definition: ExperienceDefinition = {
       { chapter: 'galaxie', at: 0, value: 0 },
       { chapter: 'contact', at: 1, value: 0.55, pace: linear },
     ],
+    // — LE 06 : la vague de lumière parcourt le département pendant qu'on le traverse. À l'arrivée sur la place, il
+    // est entièrement allumé — et on est dessus.
+    mapReveal: [
+      { chapter: 'galaxie', at: 0.6, value: 0 },
+      { chapter: 'descente', at: 0.3, value: 0.7, pace: smooth },
+      { chapter: 'descente', at: 0.85, value: 1, pace: smooth },
+    ],
     // — LE MONDE D'EN BAS : il n'existe pas tant qu'on est dans l'espace (ni sol, ni horizon, ni collines).
     world: [
       { chapter: 'galaxie', at: 0, value: 0 },
@@ -250,6 +259,14 @@ export const definition: ExperienceDefinition = {
       { chapter: 'transformation', at: 0.35, value: 1.3, pace: smooth },
       { chapter: 'prestations', at: 0.25, value: 1, pace: smooth },
     ],
+    // — LES PHARES. Ils s'allument quand le relevé a fini de passer : la voiture est propre, elle est prête, elle
+    // s'allume. Avant, rien — une carrosserie sale aux phares allumés ne raconte rien.
+    headlight: [
+      { chapter: 'intervention', at: 0.9, value: 0 },
+      { chapter: 'transformation', at: 0.2, value: 1, pace: { window: [0, 1], ease: 'out' } },
+      { chapter: 'tarifs', at: 1, value: 1 },
+      { chapter: 'bascule', at: 0.3, value: 0, pace: smooth },
+    ],
     // Jauge Avant / Après : elle suit exactement la ligne de lumière.
     clean: [
       { chapter: 'intervention', at: 0.12, value: 0 },
@@ -277,18 +294,12 @@ export const definition: ExperienceDefinition = {
       { chapter: 'location', at: 0.7, value: 345, pace: linear },
       { chapter: 'location', at: 0.93, value: 398, pace: smooth },
     ],
-    // La balise : une adresse. Elle s'allume quand le pays apparaît, s'éteint quand on est arrivé.
-    beacon: [
-      { chapter: 'galaxie', at: 0.5, value: 0 },
-      { chapter: 'ville', at: 0.2, value: 1, pace: smooth },
-      { chapter: 'arrivee', at: 0.45, value: 0.3, pace: smooth },
-      { chapter: 'arrivee', at: 0.7, value: 0, pace: smooth },
-    ],
     // — L'univers, présent d'un bout à l'autre ; tenu en retrait quand la matière est le sujet.
     skyLight: [
       { chapter: 'galaxie', at: 0, value: 0.16 },
       { chapter: 'galaxie', at: 0.5, value: 0.12, pace: smooth },
-      { chapter: 'descente', at: 0.5, value: 0.5, pace: smooth },
+      { chapter: 'descente', at: 0.28, value: 0.62, pace: smooth },
+      { chapter: 'descente', at: 0.75, value: 0.9, pace: smooth },
       { chapter: 'ville', at: 0.45, value: 1, pace: smooth },
       { chapter: 'arrivee', at: 0.45, value: 0.95, pace: smooth },
       { chapter: 'arrivee', at: 0.9, value: 0.7, pace: smooth },

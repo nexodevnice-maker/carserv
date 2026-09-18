@@ -46,7 +46,12 @@ for (const [k, p] of list.entries()) {
   const round = (a) => `[${a.map((v) => Math.round(v)).join(', ')}]`;
   console.log(
     `p=${p}  ${info.chapter}@${info.local}  plan=${c?.shot ?? '?'}\n` +
-      `   position: ${round(c.position)}, target: ${round(c.target)}, fov: ${c.fov.toFixed(1)}`,
+      `   position: ${round(c.position)}, target: ${round(c.target)}, fov: ${c.fov.toFixed(1)}\n` +
+      // Les canaux non nuls : c'est ce qui dit si un effet est éteint par la narration ou cassé dans le nuanceur.
+      `   canaux: ${Object.entries(info.channels ?? {})
+        .filter(([, v]) => Math.abs(v) > 0.001)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(' ')}`,
   );
 }
 if (errors.length) console.log('\nERREURS :', [...new Set(errors)].slice(0, 6).join(' | '));

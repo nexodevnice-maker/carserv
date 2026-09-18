@@ -1,11 +1,13 @@
 import {
   Box3,
+  CanvasTexture,
   Group,
   Mesh,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
   ShaderMaterial,
+  SRGBColorSpace,
   Vector2,
   Vector3,
   type Material,
@@ -43,7 +45,7 @@ export interface VehicleOptions {
    * Canaux lus. `light` : présence (0–1). Les autres sont ceux de la démonstration du nettoyage ; absents, le véhicule
    * est simplement propre et verni (le véhicule de location).
    */
-  channels: { light: string; dirt?: string; scan?: string; polish?: string };
+  channels: { light: string; dirt?: string; scan?: string; polish?: string; beam?: string };
   /** Avance le long du cap (m), pour la route de la location. */
   travel?: string;
   /**
@@ -62,6 +64,8 @@ interface VehicleUniforms {
   uDirt: { value: number };
   /** 1 : la caisse entière est propre et vernie (l'ouverture du récit, avant tout relevé). */
   uCleanBase: { value: number };
+  /** Allumage des optiques (canal `headlight`) : 0 éteint, 1 plein feu. */
+  uBeam: { value: number };
   uScanFront: { value: number };
   uScanOn: { value: number };
   uPolish: { value: number };
@@ -85,6 +89,7 @@ const PATCH_HEAD = /* glsl */ `
 const PATCH_FRAGMENT_HEAD = /* glsl */ `
   uniform float uDirt;
   uniform float uCleanBase;
+  uniform float uBeam;
   uniform float uScanFront;
   uniform float uScanOn;
   uniform float uPolish;
@@ -139,8 +144,44 @@ const shadowVertex = /* glsl */ `
   }
 `;
 
-/** Rien de ce qui identifie un constructeur ou un propriétaire n'est publié : emblèmes et plaque sont retirés. */
-const HIDDEN = /badge|plate|logo|emblem|numberplate/i;
+/** Rien de ce qui identifie un CONSTRUCTEUR n'est publié : emblèmes et écussons sont retirés du modèle. */
+const HIDDEN = /badge|logo|emblem/i;
+
+/**
+ * La plaque, elle, n'est pas retirée : elle est REPEINTE aux couleurs de l'entreprise. Ce n'est pas une
+ * immatriculation — aucun numéro, aucun format officiel — c'est la signature du véhicule de démonstration.
+ */
+const PLATE = /plate/i;
+
+/** Les optiques du modèle : l'avant (xénon, blanc froid) et l'arrière (rouge). */
+const FRONT_LIGHT = /LightA|headlight|head_light/i;
+const REAR_LIGHT = /red_glass|taillight|tail_light|rearlight/i;
+
+/** La plaque « CAR SERVICE | 06 », dessinée une fois. Fond sombre, filet jaune, deux blocs de texte. */
+function plateTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 220;
+  const c = canvas.getContext('2d') as CanvasRenderingContext2D;
+  c.fillStyle = '#0c0c0d';
+  c.fillRect(0, 0, canvas.width, canvas.height);
+  c.strokeStyle = '#fdc727';
+  c.lineWidth = 10;
+  c.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
+  c.textBaseline = 'middle';
+  c.fillStyle = '#f4f4f2';
+  c.font = 'bold 108px "Arial Narrow", system-ui, sans-serif';
+  c.textAlign = 'right';
+  c.fillText('CAR SERVICE', 596, 114);
+  c.fillStyle = '#fdc727';
+  c.fillRect(628, 46, 9, 130);
+  c.textAlign = 'left';
+  c.fillText('06', 672, 114);
+  const map = new CanvasTexture(canvas);
+  map.colorSpace = SRGBColorSpace;
+  map.anisotropy = 8;
+  return map;
+}
 
 export function createVehicleLayer(options: VehicleOptions) {
   const root = new Group();
@@ -162,6 +203,7 @@ export function createVehicleLayer(options: VehicleOptions) {
   const uniforms: VehicleUniforms = {
     uDirt: { value: 0 },
     uCleanBase: { value: 1 },
+    uBeam: { value: 0 },
     uScanFront: { value: 99 },
     uScanOn: { value: 0 },
     uPolish: { value: 0 },
@@ -173,11 +215,28 @@ export function createVehicleLayer(options: VehicleOptions) {
   let stage: StageContext | null = null;
   let loaded = false;
   let loading: Promise<void> | null = null;
-  const last = { dirt: -1, scan: -1, polish: -1, light: -1, travel: NaN };
+  let plate: CanvasTexture | null = null;
+  /** Ce que la couche a VRAIMENT fait de chaque matériau (relevé QA : le nom lu par le navigateur, pas par le fichier). */
+  const roles: Record<string, string> = {};
+  const last = { dirt: -1, scan: -1, polish: -1, light: -1, travel: NaN, beam: -1 };
 
   /** Poussière, scan et vernis dans tous les matériaux du modèle : aucune texture ajoutée, seuls les paramètres bougent. */
   const patch = (material: Material) => {
     const standard = material as MeshStandardMaterial & MeshPhysicalMaterial;
+    // LES OPTIQUES. Une fois le relevé passé, le véhicule s'allume : xénon à l'avant (blanc très froid, légèrement
+    // bleu — c'est ce bleu qui fait lire « xénon » et pas « ampoule »), feux rouges à l'arrière. Ce n'est pas une
+    // décoration : c'est le signe que la voiture est prête à repartir.
+    const beam = FRONT_LIGHT.test(standard.name) ? 'avant' : REAR_LIGHT.test(standard.name) ? 'arriere' : null;
+    roles[standard.name || '(sans nom)'] = beam ? `optique ${beam}` : 'caisse';
+    // Three.js met les programmes en cache d'après les PARAMÈTRES du matériau : deux matériaux réglés pareil
+    // partagent le même programme, même si leur `onBeforeCompile` injecte un code différent. L'optique héritait donc
+    // du programme de la carrosserie, sans la ligne qui l'allume — et restait éteinte. La clé lève l'ambiguïté.
+    standard.customProgramCacheKey = () => `carservice:${beam ?? 'caisse'}`;
+    if (beam) {
+      standard.roughness = 0.14;
+      standard.metalness = 0.1;
+      standard.needsUpdate = true;
+    }
     // LA LAQUE. On IMPOSE la couleur de carrosserie au lieu d'atténuer celle du modèle : les modèles fournis sont
     // peints en gris clair, et un gris clair sous une lumière chaude devient kaki — la voiture n'était plus noire,
     // elle était beige. Une laque sombre, elle, n'existe que par ce qu'elle reflète : c'est tout le sujet du récit
@@ -247,6 +306,30 @@ export function createVehicleLayer(options: VehicleOptions) {
             float wake = exp(-pow((carX - uScanFront - 0.5) / 0.55, 2.0)) * 0.08;
             totalEmissiveRadiance += vec3(1.0, 0.8, 0.3) * (line * 5.0 + glow + wake) * uScanOn;
           }
+          ${
+            beam
+              ? /* glsl */ `
+          // L'OPTIQUE. Ce n'est pas une plaque qui s'allume : c'est un bloc de verre où SEULES les lentilles
+          // éclairent. Le dessin de ces lentilles est déjà dans la texture du modèle — ses zones claires sont le
+          // verre, ses zones sombres le boîtier — alors on s'en sert comme masque au lieu d'allumer tout le bloc.
+          // Et une optique ÉBLOUIT de face, pas de profil : la part regardée de face s'ajoute par-dessus.
+          float lensMask = smoothstep(0.10, 0.60, dot(diffuseColor.rgb, vec3(0.32, 0.55, 0.13)));
+          vec3 lensView = normalize(cameraPosition - vCarWorld);
+          float lensFace = pow(clamp(dot(normalize(vCarNormal), lensView), 0.0, 1.0), 1.5);
+          ${
+            beam === 'avant'
+              ? // Xénon : le cœur est presque blanc, les bords tirent vers le bleu froid. C'est ce bleu qui fait
+                // lire « xénon » et non « ampoule », et il ne survit que si le blanc ne sature pas tout.
+                `vec3 lensTint = mix(vec3(0.52, 0.70, 1.0), vec3(1.0, 0.99, 0.95), lensMask);
+          totalEmissiveRadiance += lensTint * uBeam * (lensMask * 2.6 + lensMask * lensFace * 4.4 + 0.10);`
+              : // Feux arrière : le rouge doit RESTER rouge, donc la puissance est basse et c'est le masque qui
+                // dessine la signature lumineuse.
+                `vec3 lensTint = mix(vec3(0.55, 0.02, 0.01), vec3(1.0, 0.10, 0.05), lensMask);
+          totalEmissiveRadiance += lensTint * uBeam * (lensMask * 1.5 + lensMask * lensFace * 1.6 + 0.05);`
+          }
+        `
+              : ''
+          }
         `,
         );
     };
@@ -292,6 +375,20 @@ export function createVehicleLayer(options: VehicleOptions) {
       const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       if (materials.some((material) => HIDDEN.test(material.name))) {
         mesh.visible = false;
+        for (const material of materials) roles[material.name || '(sans nom)'] = 'masqué';
+        return;
+      }
+      if (materials.some((material) => PLATE.test(material.name))) {
+        for (const material of materials) {
+          const standard = material as MeshStandardMaterial;
+          plate ??= plateTexture();
+          standard.map = plate;
+          standard.color?.setRGB(1, 1, 1);
+          standard.metalness = 0.1;
+          standard.roughness = 0.42;
+          standard.needsUpdate = true;
+          roles[standard.name || '(sans nom)'] = 'plaque';
+        }
         return;
       }
       for (const material of materials) patch(material);
@@ -314,6 +411,7 @@ export function createVehicleLayer(options: VehicleOptions) {
   /** Relevé de contrôle (crochets QA) : ce que valent réellement les matériaux du modèle fourni. */
   const debug = () => {
     const seen = new Map<string, Record<string, unknown>>();
+    seen.set('__roles', roles as unknown as Record<string, unknown>);
     body.traverse((node) => {
       const mesh = node as Mesh;
       if (!mesh.isMesh || !mesh.visible) return;
@@ -362,8 +460,11 @@ export function createVehicleLayer(options: VehicleOptions) {
       const scan = options.channels.scan ? (state.channels[options.channels.scan] ?? 0) : 0;
       const polish = options.channels.polish ? (state.channels[options.channels.polish] ?? 0) : 1;
       const travel = options.travel ? (state.channels[options.travel] ?? 0) : 0;
-      if (dirt === last.dirt && scan === last.scan && polish === last.polish && light === last.light && travel === last.travel) return false;
-      Object.assign(last, { dirt, scan, polish, light, travel });
+      const beam = options.channels.beam ? (state.channels[options.channels.beam] ?? 0) : 0;
+      if (dirt === last.dirt && scan === last.scan && polish === last.polish && light === last.light && travel === last.travel && beam === last.beam)
+        return false;
+      Object.assign(last, { dirt, scan, polish, light, travel, beam });
+      uniforms.uBeam.value = beam;
       uniforms.uDirt.value = dirt;
       // Avant tout relevé, une caisse sans poussière est propre PARTOUT : sinon le vernis de l'ouverture n'existe pas.
       uniforms.uCleanBase.value = scan <= 0.001 && dirt <= 0.001 ? 1 : 0;

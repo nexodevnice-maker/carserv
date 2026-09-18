@@ -10,15 +10,32 @@ import type { CloudField } from '../scenes/clouds/cloud-layer';
  */
 const NORTH = -Math.PI / 2;
 
+/** Point de la carte du 06 (repère de map-06.json) posé à l'origine du monde : l'emplacement du véhicule. */
+const ANCHOR = [400, 900] as const;
+
 export const WORLD = {
   /** Rotation du ciel, constante sur tout le site : regarder au nord, c'est regarder le cœur de la Voie lactée. */
   skyYaw: 1.32,
   north: NORTH,
   /**
-   * Le sol du monde est au MÊME niveau que la place et que la ville (0 m). Il était 40 m plus bas : le parking
-   * flottait alors comme un radeau au-dessus du vide, et un trou noir séparait la voiture des immeubles.
+   * Hauteur des falaises du 06 au-dessus de la mer de nuit. Le plateau affleure à y = 0 : la place, la route et le
+   * véhicule sont DESSUS, la mer est 30 m plus bas. C'est ce qui fait qu'on se pose sur un territoire, et pas sur
+   * une dalle posée dans le vide.
    */
-  seaDepth: 0,
+  seaDepth: 30,
+  /**
+   * LE 06 — le contour officiel du département (relevé IGN, scripts/content-map.mjs), extrudé à l'échelle du monde.
+   * On le traverse en descendant de la galaxie : il est le dernier palier avant la place, et c'est lui qui dit
+   * « ici, c'est les Alpes-Maritimes » sans qu'aucun texte n'ait à le dire.
+   */
+  map: {
+    anchor: ANCHOR,
+    scale: 1,
+    depth: 30,
+    bevel: 5,
+    numberAt: [640, 470] as const,
+    seaAt: [520, 1205] as const,
+  },
   /**
    * LA GALAXIE (modèle fourni, nuage de 50 000 points) : l'univers du site, et un vrai volume qu'on traverse.
    * Diamètre en mètres — c'est l'échelle du voyage ; la caméra part de l'intérieur et en sort par le bas.
@@ -58,8 +75,6 @@ export const WORLD = {
     cleaning: { length: 4.99, at: [0, 0] as const, heading: 0 },
     rental: { length: 4.36, at: [0, -240] as const, heading: NORTH },
   },
-  /** Hauteur de la colonne de la balise (m) : visible depuis l'orbite de la France. */
-  beaconHeight: 2600,
   road: {
     /** Origine de la route (x, z) : la voie de la caméra passe en x = 0. */
     origin: [1.7, -240] as const,

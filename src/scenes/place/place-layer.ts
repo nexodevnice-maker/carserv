@@ -239,6 +239,66 @@ function lampPoolTexture(options: PlaceOptions, pixelsPerMeter: number) {
   return map;
 }
 
+/**
+ * LES TAGS DU MUR. Un parking de nuit porte toujours quelque chose sur son béton ; ici, c'est la signature de
+ * l'entreprise, peinte au pochoir. Dessinés dans une image transparente : seule la peinture existe, le reste laisse
+ * voir le mur — et la peinture reçoit la lumière des candélabres comme le béton, sinon elle flotte au-dessus.
+ * Aucun logo tiers, aucune marque de constructeur : seulement le nom de l'entreprise et son département.
+ */
+function tagTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 2048;
+  canvas.height = 512;
+  const c = canvas.getContext('2d') as CanvasRenderingContext2D;
+  c.clearRect(0, 0, canvas.width, canvas.height);
+  c.textBaseline = 'middle';
+
+  // Le nom, au pochoir : lettres pleines, légèrement inclinées, avec un décalage d'ombre qui imite deux passes.
+  c.save();
+  c.translate(96, 214);
+  c.rotate(-0.035);
+  c.font = 'bold 168px "Arial Narrow", system-ui, sans-serif';
+  c.fillStyle = 'rgba(12,11,10,0.85)';
+  c.fillText('CAR SERVICE', 8, 8);
+  c.fillStyle = 'rgba(244,243,240,0.92)';
+  c.fillText('CAR SERVICE', 0, 0);
+  const width = c.measureText('CAR SERVICE').width;
+  c.fillStyle = 'rgba(253,199,39,0.95)';
+  c.fillText('06', width + 38, 0);
+  c.restore();
+
+  // La ligne du dessous, plus petite et plus usée.
+  c.save();
+  c.translate(104, 356);
+  c.rotate(-0.035);
+  c.font = 'bold 78px "Arial Narrow", system-ui, sans-serif';
+  c.fillStyle = 'rgba(253,199,39,0.72)';
+  c.fillText('PRESENT', 0, 0);
+  c.fillStyle = 'rgba(214,212,206,0.55)';
+  c.fillText('·  NETTOYAGE  ·  NUIT  ·  06', 330, 0);
+  c.restore();
+
+  // L'usure : la peinture s'écaille sur le grain du béton. Sans elle, le tag est un autocollant.
+  const random = seeded(4242);
+  c.globalCompositeOperation = 'destination-out';
+  for (let k = 0; k < 1400; k += 1) {
+    const x = random() * canvas.width;
+    const y = random() * canvas.height;
+    const r = 2 + random() * 13;
+    c.globalAlpha = 0.25 + random() * 0.7;
+    c.beginPath();
+    c.ellipse(x, y, r, r * (0.3 + random()), random() * Math.PI, 0, Math.PI * 2);
+    c.fill();
+  }
+  c.globalAlpha = 1;
+  c.globalCompositeOperation = 'source-over';
+
+  const map = new CanvasTexture(canvas);
+  map.colorSpace = SRGBColorSpace;
+  map.anisotropy = 8;
+  return map;
+}
+
 const placeVertex = /* glsl */ `
   varying vec2 vUv;
   varying vec3 vWorld;
@@ -307,7 +367,9 @@ const propVertex = /* glsl */ `
   varying vec3 vWorld;
   varying vec3 vNormalW;
   varying vec3 vLocal;
+  varying vec2 vTagUv;
   void main() {
+    vTagUv = uv;
     vec4 local = vec4(position, 1.0);
     vec3 nrm = normal;
     #ifdef USE_INSTANCING
@@ -377,6 +439,43 @@ const propFragment = /* glsl */ `
     }
     col = mix(haze(V) * uLight, col, exp(-pow(uFog * t, 2.0)));
     gl_FragColor = vec4(col * uPlace, uPlace);
+  }
+`;
+
+/** La peinture du mur : éclairée exactement comme le béton, mais teintée et découpée par son image. */
+const tagFragment = /* glsl */ `
+  ${SKY_GLSL}
+  uniform sampler2D uTag;
+  uniform float uLight;
+  uniform float uFog;
+  uniform float uPlace;
+  uniform float uLamp;
+  uniform vec3 uLampPos[${MAX_LAMPS}];
+  uniform int uLampCount;
+  varying vec3 vWorld;
+  varying vec3 vNormalW;
+  varying vec2 vTagUv;
+
+  void main() {
+    vec4 paint = texture2D(uTag, vTagUv);
+    if (paint.a < 0.02) discard;
+    vec3 ray = vWorld - cameraPosition;
+    float t = length(ray);
+    vec3 V = ray / t;
+    vec3 N = normalize(vNormalW);
+    vec3 col = paint.rgb * skyLod(N, 5.0) * uLight * 0.6;
+    for (int i = 0; i < ${MAX_LAMPS}; i++) {
+      if (i >= uLampCount) break;
+      vec3 L = uLampPos[i] - vWorld;
+      float d = length(L);
+      L /= d;
+      float att = 1.0 / (1.0 + d * d * 0.028);
+      float spot = smoothstep(0.02, 0.55, L.y);
+      col += paint.rgb * vec3(1.0, 0.82, 0.55) * max(dot(N, L), 0.0) * att * spot * uLamp * 4.6;
+    }
+    col = mix(haze(V) * uLight, col, exp(-pow(uFog * t, 2.0)));
+    float a = paint.a * uPlace;
+    gl_FragColor = vec4(col * a, a);
   }
 `;
 
@@ -497,6 +596,37 @@ export function createPlaceLayer(options: PlaceOptions) {
   const pilasters: [number, number, number][] = [];
   for (let z = -wallL / 2 + 2.2; z <= wallL / 2 - 2.2; z += 4.4) pilasters.push([wallX + 0.16, wallH / 2, z]);
   repeat(new BoxGeometry(0.28, wallH, 0.56), concrete, pilasters);
+
+  // — LES TAGS, peints sur le béton juste devant la voiture. Deux panneaux : la signature en grand face à l'allée,
+  // un rappel plus loin. Ils sont posés 2 cm devant le mur pour ne jamais se battre avec lui en profondeur.
+  const tag = tagTexture();
+  textures.push(tag);
+  const tagMaterial = new ShaderMaterial({
+    uniforms: {
+      ...options.night,
+      uTag: { value: tag },
+      uPlace: uniforms.uPlace,
+      uLamp: uniforms.uLamp,
+      uLampPos: { value: lampPositions },
+      uLampCount: { value: Math.min(options.lamps.length, MAX_LAMPS) },
+    },
+    vertexShader: propVertex,
+    fragmentShader: tagFragment,
+    transparent: true,
+    depthWrite: false,
+  });
+  materials.push(tagMaterial);
+  for (const [z, width, height, y] of [
+    [3.4, 9.2, 2.3, 1.62],
+    [-13.5, 5.4, 1.35, 1.35],
+  ] as const) {
+    const decal = new Mesh(new PlaneGeometry(width, height), tagMaterial);
+    decal.position.set(wallX + 0.19, y, z);
+    decal.rotation.y = Math.PI / 2;
+    decal.renderOrder = 2;
+    geometries.push(decal.geometry);
+    root.add(decal);
+  }
 
   // — Bordure : la limite du stationnement, et l'arête qui sépare l'enrobé du pied du mur.
   add(new BoxGeometry(0.4, 0.15, wallL * 0.92), kerbStone, -options.bay.length / 2 - 0.5, 0.075, 0);
