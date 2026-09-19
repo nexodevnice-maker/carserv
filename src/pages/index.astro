@@ -148,6 +148,15 @@ const description =
           </ul>
           <p class="script">{property.servicePromise.value}</p>
         </div>
+        {
+          (['devant', 'portiere', 'roue'] as const).map((id) => (
+            <div class="panel" style={win('arrivee', id)}>
+              <p class="index"><span>{copy[id].index}</span></p>
+              <h3 class="title title--small">{copy[id].title}</h3>
+              <p class="text">{copy[id].text}</p>
+            </div>
+          ))
+        }
         <div class="panel" style={win('arrivee', 'avant')}>
           <p class="index"><span>{copy.avant.index}</span></p>
           <h2 id="titre-avant" class="title">{copy.avant.title}</h2>

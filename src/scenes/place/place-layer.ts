@@ -247,45 +247,142 @@ function lampPoolTexture(options: PlaceOptions, pixelsPerMeter: number) {
  */
 function tagTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 2048;
-  canvas.height = 512;
+  canvas.width = 1280;
+  canvas.height = 960;
   const c = canvas.getContext('2d') as CanvasRenderingContext2D;
   c.clearRect(0, 0, canvas.width, canvas.height);
-  c.textBaseline = 'middle';
-
-  // Le nom, au pochoir : lettres pleines, légèrement inclinées, avec un décalage d'ombre qui imite deux passes.
-  c.save();
-  c.translate(96, 214);
-  c.rotate(-0.035);
-  c.font = 'bold 168px "Arial Narrow", system-ui, sans-serif';
-  c.fillStyle = 'rgba(12,11,10,0.85)';
-  c.fillText('CAR SERVICE', 8, 8);
-  c.fillStyle = 'rgba(244,243,240,0.92)';
-  c.fillText('CAR SERVICE', 0, 0);
-  const width = c.measureText('CAR SERVICE').width;
-  c.fillStyle = 'rgba(253,199,39,0.95)';
-  c.fillText('06', width + 38, 0);
-  c.restore();
-
-  // La ligne du dessous, plus petite et plus usée.
-  c.save();
-  c.translate(104, 356);
-  c.rotate(-0.035);
-  c.font = 'bold 78px "Arial Narrow", system-ui, sans-serif';
-  c.fillStyle = 'rgba(253,199,39,0.72)';
-  c.fillText('PRESENT', 0, 0);
-  c.fillStyle = 'rgba(214,212,206,0.55)';
-  c.fillText('·  NETTOYAGE  ·  NUIT  ·  06', 330, 0);
-  c.restore();
-
-  // L'usure : la peinture s'écaille sur le grain du béton. Sans elle, le tag est un autocollant.
   const random = seeded(4242);
+  const YELLOW = '253, 199, 39';
+
+  // DEUX LIGNES, pas une. Sur une seule ligne, le mot faisait sept mètres de large : dans un plan serré sur la
+  // voiture, on n'en lisait qu'un morceau (« RVICE 06 »). Empilé, le bloc est presque carré — il tient dans
+  // n'importe quel cadre, et il reste grand. C'est aussi ainsi qu'on signe un mur.
+  const LINES: { text: string; size: number; y: number; align: number }[] = [
+    { text: 'CAR SERVICE', size: 190, y: 330, align: 0.5 },
+    { text: '06', size: 400, y: 760, align: 0.5 },
+  ];
+
+  type Glyph = { ch: string; x: number; y: number; rot: number; w: number; size: number };
+  const glyphs: Glyph[] = [];
+  const margin = 70;
+  for (const line of LINES) {
+    const font = (size: number) => {
+      c.font = `bold ${size}px "Arial Narrow", "Haettenschweiler", system-ui, sans-serif`;
+      return c.measureText(line.text).width;
+    };
+    // La taille est MESURÉE pour tenir, jamais écrite en dur : une lettre coupée tue la signature.
+    const size = Math.floor(line.size * Math.min(1, (canvas.width - margin * 2) / font(line.size)));
+    font(size);
+    const chars = [...line.text];
+    const widths = chars.map((ch) => c.measureText(ch).width);
+    const gaps = chars.map(() => size * (0.008 + random() * 0.03));
+    const total = widths.reduce((a, b) => a + b, 0) + gaps.reduce((a, b) => a + b, 0) - (gaps.at(-1) ?? 0);
+    let cursor = (canvas.width - total) * line.align;
+    chars.forEach((ch, i) => {
+      glyphs.push({
+        ch,
+        x: cursor + widths[i]! / 2,
+        // La ligne de base DANSE : une main qui tient une bombe ne trace pas droit.
+        y: line.y + (random() - 0.5) * size * 0.1,
+        rot: (random() - 0.5) * 0.09,
+        w: widths[i]!,
+        size,
+      });
+      cursor += widths[i]! + gaps[i]!;
+    });
+  }
+
+  c.textAlign = 'center';
+  c.textBaseline = 'alphabetic';
+  const each = (fn: (g: Glyph) => void) => {
+    for (const g of glyphs) {
+      if (g.ch === ' ') continue;
+      c.save();
+      c.translate(g.x, g.y);
+      c.rotate(g.rot);
+      c.font = `bold ${g.size}px "Arial Narrow", "Haettenschweiler", system-ui, sans-serif`;
+      fn(g);
+      c.restore();
+    }
+  };
+
+  // 1. LA SURPULVÉRISATION : le halo diffus que laisse une bombe autour du trait. C'est lui qu'on voit en premier
+  //    sur un vrai tag ; sans lui, on a un autocollant.
+  each(() => {
+    c.shadowColor = `rgba(${YELLOW}, 0.26)`;
+    c.shadowBlur = 70;
+    c.fillStyle = `rgba(${YELLOW}, 0.2)`;
+    c.fillText('', 0, 0);
+  });
+  for (const alpha of [
+    [0.2, 66],
+    [0.28, 30],
+  ] as const) {
+    each((g) => {
+      c.shadowColor = `rgba(${YELLOW}, ${alpha[0]})`;
+      c.shadowBlur = alpha[1];
+      c.fillStyle = `rgba(${YELLOW}, ${alpha[0]})`;
+      c.fillText(g.ch, 0, 0);
+    });
+  }
+  // 2. L'ombre portée sur le béton : la peinture a une épaisseur.
+  each((g) => {
+    c.fillStyle = 'rgba(8, 7, 5, 0.78)';
+    c.fillText(g.ch, g.size * 0.045, g.size * 0.055);
+  });
+  // 3. Le trait plein, puis un CONTOUR plus sombre : c'est la deuxième passe du tagueur, celle qui détache les
+  //    lettres du mur.
+  each((g) => {
+    c.fillStyle = `rgba(${YELLOW}, 0.97)`;
+    c.fillText(g.ch, 0, 0);
+    c.lineWidth = Math.max(2, g.size * 0.022);
+    c.strokeStyle = 'rgba(96, 62, 4, 0.85)';
+    c.strokeText(g.ch, 0, 0);
+  });
+
+  // 4. LES COULURES. Une bombe tenue trop longtemps coule : un filet qui descend, s'amincit, finit par une goutte.
+  c.lineCap = 'round';
+  for (const g of glyphs) {
+    if (g.ch === ' ' || random() > 0.4) continue;
+    const x = g.x + (random() - 0.5) * g.w * 0.6;
+    const y = g.y + g.size * 0.05;
+    const len = g.size * (0.3 + random() * 0.9);
+    const w = g.size * (0.024 + random() * 0.028);
+    const grad = c.createLinearGradient(x, y, x, y + len);
+    grad.addColorStop(0, `rgba(${YELLOW}, 0.94)`);
+    grad.addColorStop(0.7, `rgba(${YELLOW}, 0.52)`);
+    grad.addColorStop(1, `rgba(${YELLOW}, 0.1)`);
+    c.strokeStyle = grad;
+    c.lineWidth = w;
+    c.beginPath();
+    c.moveTo(x, y);
+    c.quadraticCurveTo(x + (random() - 0.5) * 12, y + len * 0.6, x + (random() - 0.5) * 16, y + len);
+    c.stroke();
+    c.fillStyle = `rgba(${YELLOW}, 0.45)`;
+    c.beginPath();
+    c.arc(x, y + len, w * 0.75, 0, Math.PI * 2);
+    c.fill();
+  }
+
+  // 5. Les projections : les gouttelettes qui partent à côté du trait quand on appuie trop près.
+  for (let k = 0; k < 520; k += 1) {
+    const g = glyphs[Math.floor(random() * glyphs.length)]!;
+    if (g.ch === ' ') continue;
+    const x = g.x + (random() - 0.5) * (g.w + g.size * 0.9);
+    const y = g.y - g.size * 0.8 + random() * g.size * 1.6;
+    c.fillStyle = `rgba(${YELLOW}, ${0.08 + random() * 0.45})`;
+    c.beginPath();
+    c.arc(x, y, 1 + random() * 5, 0, Math.PI * 2);
+    c.fill();
+  }
+
+  // 6. L'usure, LÉGÈRE : le béton mange la peinture par endroits. Trop forte, le mot devient illisible.
   c.globalCompositeOperation = 'destination-out';
-  for (let k = 0; k < 1400; k += 1) {
+  for (let k = 0; k < 700; k += 1) {
     const x = random() * canvas.width;
     const y = random() * canvas.height;
-    const r = 2 + random() * 13;
-    c.globalAlpha = 0.25 + random() * 0.7;
+    const r = 1.5 + random() * 8;
+    c.globalAlpha = 0.14 + random() * 0.36;
     c.beginPath();
     c.ellipse(x, y, r, r * (0.3 + random()), random() * Math.PI, 0, Math.PI * 2);
     c.fill();
@@ -463,7 +560,9 @@ const tagFragment = /* glsl */ `
     float t = length(ray);
     vec3 V = ray / t;
     vec3 N = normalize(vNormalW);
-    vec3 col = paint.rgb * skyLod(N, 5.0) * uLight * 0.6;
+    // La peinture est éclairée plus franchement que le béton : c'est de la bombe fraîche sur un mur sale, elle
+    // doit rester JAUNE. À la même exposition que le béton, elle virait au brun et on ne lisait plus la marque.
+    vec3 col = paint.rgb * (0.10 + skyLod(N, 5.0) * uLight * 2.6);
     for (int i = 0; i < ${MAX_LAMPS}; i++) {
       if (i >= uLampCount) break;
       vec3 L = uLampPos[i] - vWorld;
@@ -471,7 +570,8 @@ const tagFragment = /* glsl */ `
       L /= d;
       float att = 1.0 / (1.0 + d * d * 0.028);
       float spot = smoothstep(0.02, 0.55, L.y);
-      col += paint.rgb * vec3(1.0, 0.82, 0.55) * max(dot(N, L), 0.0) * att * spot * uLamp * 4.6;
+      // Teinte de lampe ATTÉNUÉE sur la peinture : sous le sodium pur, le jaune de la marque virait à l'orange.
+      col += paint.rgb * vec3(1.0, 0.96, 0.86) * max(dot(N, L), 0.0) * att * spot * uLamp * 8.0;
     }
     col = mix(haze(V) * uLight, col, exp(-pow(uFog * t, 2.0)));
     float a = paint.a * uPlace;
@@ -616,9 +716,13 @@ export function createPlaceLayer(options: PlaceOptions) {
     depthWrite: false,
   });
   materials.push(tagMaterial);
+  // Largeur calée sur le CADRE, pas sur le mur : à onze mètres le mot débordait des deux côtés et on lisait
+  // « RVICE 06 ». À sept mètres et demi, « CAR SERVICE 06 » tient entier derrière la voiture.
+  // Les proportions du panneau suivent celles de l'image (2048 x 640) : sans quoi les lettres sont étirées.
+  // Bloc presque carré (1280 x 960) : 3,4 m sur 2,55 m, centré derrière le véhicule, à hauteur d'homme.
   for (const [z, width, height, y] of [
-    [3.4, 9.2, 2.3, 1.62],
-    [-13.5, 5.4, 1.35, 1.35],
+    [-0.6, 3.4, 2.55, 1.55],
+    [-14.0, 2.2, 1.65, 1.35],
   ] as const) {
     const decal = new Mesh(new PlaneGeometry(width, height), tagMaterial);
     decal.position.set(wallX + 0.19, y, z);
@@ -640,7 +744,8 @@ export function createPlaceLayer(options: PlaceOptions) {
 
   // — Bornes le long de l'allée : le premier plan qui manque aux plans bas.
   const bollards: [number, number, number][] = [];
-  for (let z = -13; z <= 13; z += 3.6) bollards.push([length / 2 + 1.4, 0.48, z]);
+  // Décalées d'une demi-maille : une borne tombait pile devant la face du véhicule et lui barrait le plan de nez.
+  for (let z = -12.6; z <= 13; z += 3.6) bollards.push([length / 2 + 1.4, 0.48, z]);
   repeat(new CylinderGeometry(0.085, 0.105, 0.96, 8), painted, bollards);
 
   // — Grille d'égout et regard : deux objets minuscules, mais ce sont eux qu'on cherche du regard quand on doute.

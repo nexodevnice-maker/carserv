@@ -40,11 +40,17 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'galaxie',
     universe: 'territory',
-    span: { desktop: 240, mobile: 250 },
-    rests: [0, 0.5],
-    panels: [{ id: 'marque', in: -1, out: 0.32 }],
+    // Quatre unités, pas deux : le voyage dans l'univers durait le temps d'un geste. On MONTE au-dessus du disque,
+    // on le TRAVERSE, puis on BASCULE vers le bas — trois mouvements de caméra différents, et une parallaxe réelle
+    // à chaque fois, parce que les étoiles sont un volume et non une image.
+    // Trois unités : le héros, la montée au-dessus du disque, la traversée. Une quatrième avait été tentée — la
+    // bascule vers le bas — et supprimée : à cette altitude il n'y a NI galaxie NI territoire dans le cadre, donc un
+    // défilement qui ne montre rien. La bascule se fait maintenant pendant le vol vers la descente.
+    span: { desktop: 480, mobile: 540 },
+    rests: [0, 0.34, 0.76],
+    panels: [{ id: 'marque', in: -1, out: 0.2 }],
     intent:
-      'LE HÉROS : on est DANS la galaxie fournie — un vrai volume de 50 000 étoiles. On avance vers le cœur, les étoiles proches défilent, les lointaines tiennent : la distance existe.',
+      'LE HÉROS : on est DANS la galaxie fournie — un vrai volume de 50 000 étoiles. On s’élève au-dessus du disque, puis on le traverse en plein : la distance existe, et on la parcourt.',
   },
   {
     id: 'descente',
@@ -67,14 +73,17 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'arrivee',
     universe: 'cleaning',
-    span: { desktop: 280, mobile: 300 },
-    rests: [0.45, 0.9],
+    span: { desktop: 560, mobile: 620 },
+    rests: [0.14, 0.34, 0.54, 0.74, 0.94],
     panels: [
-      { id: 'deplacement', in: 0.18, out: 0.62 },
-      { id: 'avant', in: 0.66, out: 0.985 },
+      { id: 'deplacement', in: 0.02, out: 0.22 },
+      { id: 'devant', in: 0.26, out: 0.44 },
+      { id: 'portiere', in: 0.46, out: 0.64 },
+      { id: 'roue', in: 0.66, out: 0.84 },
+      { id: 'avant', in: 0.86, out: 0.985 },
     ],
     intent:
-      'Se poser SUR LA PLACE : une aire de stationnement de nuit, mouillée, éclairée par ses candélabres — et le véhicule garé entre deux lignes. Puis au ras du sol : sa laque ne renvoie plus rien.',
+      'Se poser sur la place, le véhicule ENTIER dans le cadre — puis l’inspecter pièce par pièce, une par défilement : le devant, une portière, une roue. Et revenir devant, à hauteur de phare : c’est l’état dans lequel on le prend.',
   },
   {
     id: 'intervention',
@@ -204,15 +213,17 @@ export const definition: ExperienceDefinition = {
     // — LE 06 : la vague de lumière parcourt le département pendant qu'on le traverse. À l'arrivée sur la place, il
     // est entièrement allumé — et on est dessus.
     mapReveal: [
-      { chapter: 'galaxie', at: 0.6, value: 0 },
+      { chapter: 'galaxie', at: 0.62, value: 0 },
+      { chapter: 'galaxie', at: 0.95, value: 0.3, pace: smooth },
       { chapter: 'descente', at: 0.3, value: 0.7, pace: smooth },
       { chapter: 'descente', at: 0.85, value: 1, pace: smooth },
     ],
     // — LE MONDE D'EN BAS : il n'existe pas tant qu'on est dans l'espace (ni sol, ni horizon, ni collines).
     world: [
       { chapter: 'galaxie', at: 0, value: 0 },
-      { chapter: 'galaxie', at: 0.5, value: 0 },
-      { chapter: 'descente', at: 0.5, value: 0.35, pace: smooth },
+      { chapter: 'galaxie', at: 0.62, value: 0 },
+      { chapter: 'galaxie', at: 0.95, value: 0.22, pace: smooth },
+      { chapter: 'descente', at: 0.5, value: 0.55, pace: smooth },
       { chapter: 'ville', at: 0.45, value: 1, pace: smooth },
     ],
     // — La place : elle apparaît quand on descend sous les nuages et ne repart qu'avec la bascule vers la route.
@@ -298,8 +309,9 @@ export const definition: ExperienceDefinition = {
     // — L'univers, présent d'un bout à l'autre ; tenu en retrait quand la matière est le sujet.
     skyLight: [
       { chapter: 'galaxie', at: 0, value: 0.16 },
-      { chapter: 'galaxie', at: 0.5, value: 0.12, pace: smooth },
-      { chapter: 'descente', at: 0.28, value: 0.62, pace: smooth },
+      { chapter: 'galaxie', at: 0.62, value: 0.12, pace: smooth },
+      { chapter: 'galaxie', at: 0.95, value: 0.42, pace: smooth },
+      { chapter: 'descente', at: 0.28, value: 0.68, pace: smooth },
       { chapter: 'descente', at: 0.75, value: 0.9, pace: smooth },
       { chapter: 'ville', at: 0.45, value: 1, pace: smooth },
       { chapter: 'arrivee', at: 0.45, value: 0.95, pace: smooth },

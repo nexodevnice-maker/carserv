@@ -14,7 +14,7 @@ import {
 } from 'three';
 import type { CameraRig } from '../engine/camera/camera-rig';
 import { createPose } from '../engine/camera/camera-rig';
-import { loadBakedEnvironment } from '../engine/webgl/environment';
+import { createNightEnvironment } from '../engine/webgl/night-environment';
 import type { WebGLLayer } from '../engine/webgl/webgl-stage';
 
 /**
@@ -22,7 +22,7 @@ import type { WebGLLayer } from '../engine/webgl/webgl-stage';
  * un chrome pour lire l'environnement de nuit pré-calculé, et la trajectoire réelle de la caméra dessinée dans la
  * scène (reconstruite à chaque mesure ou changement de format) avec ses plans.
  */
-export function createProbeLayer(options: { rig: CameraRig; envUrl: () => string; version: () => number }) {
+export function createProbeLayer(options: { rig: CameraRig; version: () => number }) {
   const root = new Group();
   root.name = 'probe';
   const abort = new AbortController();
@@ -74,7 +74,10 @@ export function createProbeLayer(options: { rig: CameraRig; envUrl: () => string
       chrome.position.set(1.6, 0.35, 2.6);
       root.add(grid, body, cabin, chrome, trajectory, markers);
       rebuild();
-      const env = await loadBakedEnvironment(options.envUrl(), abort.signal);
+      // MÊME environnement que le site : la nuit CALCULÉE, sans aucun fichier. Le laboratoire chargeait encore une
+      // photographie 360° qui n'existe plus depuis que l'HDRI est sorti du projet — il mesurait donc un éclairage
+      // que la scène n'utilise plus, et échouait à le charger.
+      const env = createNightEnvironment(ctx.renderer);
       if (env) {
         ctx.scene.environment = env;
         envLoaded = true;

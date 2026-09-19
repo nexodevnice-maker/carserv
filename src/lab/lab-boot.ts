@@ -106,7 +106,7 @@ export function bootLab() {
     const rig = experience.rig;
     Promise.all([import('../engine/webgl/webgl-stage'), import('./probe-layer')])
       .then(async ([{ createWebGLStage }, { createProbeLayer }]) => {
-        const layer = createProbeLayer({ rig, envUrl: () => ENVIRONMENT.url[state.format], version: () => version });
+        const layer = createProbeLayer({ rig, version: () => version });
         stage = await createWebGLStage({
           experience,
           canvas,

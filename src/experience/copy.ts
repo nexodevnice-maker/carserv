@@ -21,6 +21,9 @@ export const copy = {
     text: 'Le regard bascule sous la galaxie : une lueur grandit en dessous. Ce n’est pas une étoile, c’est une ville de nuit — et c’est là qu’on va.',
   },
   zone: { index: '02', title: 'Dans tout le 06', sea: 'Mer Méditerranée' },
+  devant: { index: '02', title: 'Le devant', text: 'Calandre, boucliers, optiques. C’est ce qu’on voit en premier — et ce qui se salit le plus vite.' },
+  portiere: { index: '02', title: 'La portière', text: 'Poignée, joint, bas de caisse. Le passage de portes fait partie de toutes les formules.' },
+  roue: { index: '02', title: 'La roue', text: 'Jante, étrier, passage de roue. C’est là que la poussière se voit le mieux, et qu’elle part le moins seule.' },
   avant: {
     index: '02',
     title: 'Avant',
