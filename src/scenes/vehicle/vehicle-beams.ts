@@ -50,20 +50,54 @@ const coneFragment = /* glsl */ `
   }
 `;
 
-/** La nappe au sol : une ellipse étirée devant le véhicule, la plus vive juste devant lui. */
+/**
+ * LA NAPPE AU SOL. Ce n'était qu'un dégradé triangulaire : de la lumière posée, sans forme propre.
+ * Un vrai faisceau de croisement a trois signes, et ce sont eux qu'on reconnaît sans savoir les nommer :
+ * - une COUPURE : le bord lointain est net, pas fondu. C'est elle qui dit « phare » plutôt que « lampe » ;
+ * - un POINT CHAUD un peu avant la coupure, là où le réflecteur concentre ;
+ * - des STRIES longitudinales, laissées par les nervures de l'optique.
+ * `uCut` sépare l'avant (coupure franche) de l'arrière (feux rouges, diffus, sans coupure).
+ */
 const poolFragment = /* glsl */ `
+  uniform float uBeam;
+  uniform vec3 uTint;
+  uniform float uCut;
+  varying vec2 vUv;
+  void main() {
+    vec2 p = vUv - vec2(0.5, 0.5);
+    float along = clamp(vUv.x, 0.0, 1.0);
+    float across = 1.0 - smoothstep(0.0, 0.5, abs(p.y) / mix(0.16, 0.5, along));
+    float fade = pow(1.0 - along, 1.7);
+    // La coupure : au-delà de 0,82 de la nappe, la lumière tombe en deux fois moins d'espace qu'elle ne montait.
+    float coupure = mix(1.0, 1.0 - smoothstep(0.80, 0.90, along), uCut);
+    // Le point chaud, juste en deçà de la coupure.
+    float chaud = exp(-pow((along - 0.62) / 0.20, 2.0)) * (1.0 - smoothstep(0.30, 0.52, abs(p.y))) * uCut;
+    // Les stries : régulières en travers, atténuées au loin pour ne pas moirer.
+    float stries = 1.0 + 0.16 * sin(p.y * 46.0) * (1.0 - along) * uCut;
+    float a = (across * fade * coupure * stries + chaud * 0.5) * uBeam * 0.85;
+    if (a < 0.002) discard;
+    gl_FragColor = vec4(uTint * a, 1.0);
+  }
+`;
+
+/**
+ * LE BANDEAU ARRIÈRE. Deux halos ronds font des yeux de lapin : une voiture récente a une BARRE lumineuse, large et
+ * fine, qui court d'un feu à l'autre. C'est la signature qu'on reconnaît de loin dans la nuit — et c'est elle qui
+ * manquait. Extrémités arrondies, cœur plus dense, et un voile qui déborde en dessous.
+ */
+const barFragment = /* glsl */ `
   uniform float uBeam;
   uniform vec3 uTint;
   varying vec2 vUv;
   void main() {
-    vec2 p = vUv - vec2(0.5, 0.5);
-    // Étirée dans le sens de la marche, et décalée : le maximum n'est pas au centre de la nappe mais à son bord
-    // proche — une nappe de phares est un triangle, pas un rond.
-    float along = clamp(vUv.x, 0.0, 1.0);
-    float across = 1.0 - smoothstep(0.0, 0.5, abs(p.y) / mix(0.16, 0.5, along));
-    float fade = pow(1.0 - along, 1.7);
-    float a = across * fade * uBeam * 0.85;
-    if (a < 0.002) discard;
+    vec2 p = vUv - 0.5;
+    // Le trait : fin en hauteur, long en largeur, avec des bouts arrondis.
+    float bout = 1.0 - smoothstep(0.40, 0.50, abs(p.x));
+    float trait = exp(-pow(p.y / 0.085, 2.0)) * bout;
+    // Le voile autour : c'est lui qui fait que la barre ÉCLAIRE au lieu d'être un autocollant.
+    float voile = exp(-pow(p.y / 0.30, 2.0)) * bout * 0.22;
+    float a = (trait + voile) * uBeam;
+    if (a < 0.003) discard;
     gl_FragColor = vec4(uTint * a, 1.0);
   }
 `;
@@ -92,9 +126,9 @@ export function createVehicleBeams(options: BeamOptions) {
   const geometries: BufferGeometry[] = [];
   const materials: ShaderMaterial[] = [];
 
-  const make = (fragment: string, tint: [number, number, number]) => {
+  const make = (fragment: string, tint: [number, number, number], cut = 0) => {
     const material = new ShaderMaterial({
-      uniforms: { ...shared, uTint: { value: tint } },
+      uniforms: { ...shared, uTint: { value: tint }, uCut: { value: cut } },
       vertexShader: beamVertex,
       fragmentShader: fragment,
       transparent: true,
@@ -108,10 +142,11 @@ export function createVehicleBeams(options: BeamOptions) {
 
   // Xénon devant (blanc très légèrement bleu), rouge derrière.
   const xenon = make(coneFragment, [0.72, 0.84, 1.0]);
-  const xenonPool = make(poolFragment, [0.6, 0.72, 0.95]);
+  const xenonPool = make(poolFragment, [0.6, 0.72, 0.95], 1);
   const xenonHalo = make(haloFragment, [0.78, 0.88, 1.0]);
   const rubyHalo = make(haloFragment, [1.0, 0.13, 0.07]);
   const rubyPool = make(poolFragment, [1.0, 0.1, 0.05]);
+  const rubyBar = make(barFragment, [1.0, 0.11, 0.06]);
 
   const add = (geometry: BufferGeometry, material: ShaderMaterial, place: (mesh: Mesh) => void, order = 5) => {
     const mesh = new Mesh(geometry, material);
@@ -150,11 +185,18 @@ export function createVehicleBeams(options: BeamOptions) {
       mesh.rotation.y = Math.PI / 2;
     }, 6);
     add(new PlaneGeometry(1, 1), rubyHalo, (mesh) => {
-      mesh.scale.setScalar(0.62);
+      mesh.scale.setScalar(0.40);
       mesh.position.set(-half - 0.06, height + 0.06, side * spread * 1.02);
       mesh.rotation.y = -Math.PI / 2;
     }, 6);
   }
+
+  // — LE BANDEAU ARRIÈRE, d'un feu à l'autre : la signature lumineuse de la voiture vue de dos.
+  add(new PlaneGeometry(1, 1), rubyBar, (mesh) => {
+    mesh.scale.set(spread * 2.5, 0.42, 1);
+    mesh.position.set(-half - 0.05, height + 0.06, 0);
+    mesh.rotation.y = -Math.PI / 2;
+  }, 6);
 
   // — LA NAPPE ARRIÈRE : courte, rouge, juste sous le bouclier.
   add(new PlaneGeometry(1, 1), rubyPool, (mesh) => {
