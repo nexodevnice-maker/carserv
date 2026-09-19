@@ -90,60 +90,114 @@ function markingsTexture(options: PlaceOptions, pixelsPerMeter: number) {
   c.clearRect(0, 0, canvas.width, canvas.height);
 
   const { width, length, count } = options.bay;
+  const jaune = (a: number) => `rgba(253,199,39,${a})`;
+
+  /**
+   * LE PLAN DU PARKING — toute la plateforme, plus seulement deux rangées.
+   * Il n'y avait que la rangée du véhicule et celle d'en face : au-delà, quarante mètres d'enrobé nu, et une route
+   * plaquée en travers pour meubler. Un vrai parking, c'est un MOTIF : une rangée adossée au mur, une allée, puis
+   * des rangées DOS À DOS séparées par des allées, jusqu'au bord. C'est ce motif qu'on déroule ici.
+   * La rangée du héros reste calée sur l'origine du monde (le véhicule est garé dedans) : tout le reste s'en déduit.
+   */
+  const ALLEE = 5.8;
+  const rows: { from: number; to: number; head: number }[] = [{ from: -length / 2, to: length / 2, head: -length / 2 }];
+  const allees: number[] = [];
+  let x = length / 2;
+  while (x + ALLEE + length <= w / 2 - 0.4) {
+    allees.push(x + ALLEE / 2);
+    x += ALLEE;
+    // Deux rangées dos à dos quand la place le permet : leurs têtes se rejoignent sur la même ligne.
+    const paire = x + 2 * length <= w / 2 - 0.4;
+    rows.push({ from: x, to: x + length, head: x + length });
+    x += length;
+    if (paire) {
+      rows.push({ from: x, to: x + length, head: x });
+      x += length;
+    }
+  }
+
+  // Les places montent sur TOUTE la hauteur de la plateforme, pas sur cinq rangs.
+  const kMin = Math.ceil((-h / 2 + 1.2) / width);
+  const kMax = Math.floor((h / 2 - 1.2) / width);
   const half = Math.floor(count / 2);
-  const rows = [
-    { from: -length / 2, to: length / 2, head: -length / 2 },
-    { from: length / 2 + 5.8, to: length * 1.5 + 5.8, head: length * 1.5 + 5.8 },
-  ];
 
   // — Traces de pneus : elles arrivent par l'allée et tournent dans les places. C'est le détail qui dit qu'on n'est
   // pas le premier à se garer ici. Dessinées AVANT la peinture : la peinture passe par-dessus, puis s'use.
   c.lineCap = 'round';
   for (const row of rows) {
-    for (let k = -half; k <= half; k += 1) {
-      if (random() < 0.35) continue;
+    for (let k = kMin; k <= kMax; k += 1) {
+      if (random() < 0.45) continue;
       const z = k * width;
-      const inner = row === rows[0] ? row.to : row.from;
-      const outer = row === rows[0] ? row.from : row.to;
+      const versTete = row.head === row.from ? 1 : -1;
+      const inner = row.head + versTete * 0.7;
+      const outer = row.head + versTete * (length - 0.7);
       for (const side of [-0.78, 0.78]) {
-        c.strokeStyle = `rgba(10,9,8,${0.14 + random() * 0.16})`;
+        c.strokeStyle = `rgba(10,9,8,${0.12 + random() * 0.15})`;
         c.lineWidth = (0.19 + random() * 0.05) * pixelsPerMeter;
         c.beginPath();
-        c.moveTo(toX(inner + (row === rows[0] ? 3.2 : -3.2)), toY(z + side * 1.5));
-        c.quadraticCurveTo(toX(inner), toY(z + side), toX(outer + (row === rows[0] ? 0.7 : -0.7)), toY(z + side));
+        c.moveTo(toX(outer), toY(z + side * 1.5));
+        c.quadraticCurveTo(toX(inner + versTete * 1.6), toY(z + side), toX(inner), toY(z + side));
         c.stroke();
       }
     }
   }
 
-  // — Les places : une rangée où le véhicule est garé (sa place est centrée sur l'origine du monde, capot vers l'est),
-  // l'allée devant lui, et une rangée qui lui fait face. C'est ce dessin qui dit « il est garé », pas « il est posé ».
+  // — Les séparations de places et les lignes de tête, rangée par rangée.
   c.lineCap = 'square';
   for (const row of rows) {
-    for (let k = -half; k <= half + 1; k += 1) {
+    for (let k = kMin; k <= kMax + 1; k += 1) {
       const z = (k - 0.5) * width;
-      c.strokeStyle = `rgba(253,199,39,${0.62 + random() * 0.3})`;
+      c.strokeStyle = jaune(0.58 + random() * 0.3);
       c.lineWidth = Math.max(2, (0.11 + random() * 0.02) * pixelsPerMeter);
       c.beginPath();
       c.moveTo(toX(row.from), toY(z));
       c.lineTo(toX(row.to), toY(z));
       c.stroke();
     }
-    // Ligne de fond de places, contre la bordure.
-    c.strokeStyle = 'rgba(253,199,39,0.7)';
+    c.strokeStyle = jaune(0.66);
     c.beginPath();
-    c.moveTo(toX(row.head), toY((-half - 0.5) * width));
-    c.lineTo(toX(row.head), toY((half + 1.5) * width));
+    c.moveTo(toX(row.head), toY((kMin - 0.5) * width));
+    c.lineTo(toX(row.head), toY((kMax + 0.5) * width));
     c.stroke();
   }
 
-  // — Numéros de place, à la tête de chaque emplacement. Peints au pochoir, donc irréguliers.
-  c.fillStyle = 'rgba(253,199,39,0.5)';
+  // — LES ALLÉES : un axe discontinu au milieu, et des flèches de sens. Sans elles, les rangées flottent côte à côte
+  // sans qu'on sache par où l'on circule.
+  for (const axe of allees) {
+    c.strokeStyle = jaune(0.24);
+    c.lineWidth = Math.max(2, 0.1 * pixelsPerMeter);
+    c.setLineDash([1.4 * pixelsPerMeter, 1.6 * pixelsPerMeter]);
+    c.beginPath();
+    c.moveTo(toX(axe), toY((kMin - 0.5) * width));
+    c.lineTo(toX(axe), toY((kMax + 0.5) * width));
+    c.stroke();
+    c.setLineDash([]);
+    for (const z of [(kMin + 2) * width, 0, (kMax - 2) * width]) {
+      c.fillStyle = jaune(0.34 + random() * 0.12);
+      c.save();
+      c.translate(toX(axe + 1.5), toY(z));
+      c.rotate(-Math.PI / 2);
+      c.beginPath();
+      c.moveTo(0, -1.5 * pixelsPerMeter);
+      c.lineTo(0.55 * pixelsPerMeter, -0.45 * pixelsPerMeter);
+      c.lineTo(0.2 * pixelsPerMeter, -0.45 * pixelsPerMeter);
+      c.lineTo(0.2 * pixelsPerMeter, 1.5 * pixelsPerMeter);
+      c.lineTo(-0.2 * pixelsPerMeter, 1.5 * pixelsPerMeter);
+      c.lineTo(-0.2 * pixelsPerMeter, -0.45 * pixelsPerMeter);
+      c.lineTo(-0.55 * pixelsPerMeter, -0.45 * pixelsPerMeter);
+      c.closePath();
+      c.fill();
+      c.restore();
+    }
+  }
+
+  // — Numéros de place, sur la rangée du héros seulement : c'est la seule qu'on voit d'assez près pour les lire.
+  c.fillStyle = jaune(0.5);
   c.textAlign = 'center';
   c.textBaseline = 'middle';
   for (let k = -half; k <= half; k += 1) {
     c.save();
-    c.translate(toX(rows[0]!.head + 0.95), toY(k * width));
+    c.translate(toX(rows[0].head + 0.95), toY(k * width));
     c.rotate(Math.PI / 2);
     c.font = `bold ${Math.round(0.62 * pixelsPerMeter)}px system-ui, sans-serif`;
     c.globalAlpha = 0.5 + random() * 0.4;
@@ -152,32 +206,18 @@ function markingsTexture(options: PlaceOptions, pixelsPerMeter: number) {
   }
   c.globalAlpha = 1;
 
-  // — Flèche de circulation dans l'allée : un parking a un sens de rotation.
-  c.fillStyle = 'rgba(253,199,39,0.42)';
-  c.save();
-  c.translate(toX(length / 2 + 2.9), toY(-half * width - 1.2));
-  c.rotate(-Math.PI / 2);
-  c.beginPath();
-  c.moveTo(0, -1.5 * pixelsPerMeter);
-  c.lineTo(0.55 * pixelsPerMeter, -0.45 * pixelsPerMeter);
-  c.lineTo(0.2 * pixelsPerMeter, -0.45 * pixelsPerMeter);
-  c.lineTo(0.2 * pixelsPerMeter, 1.5 * pixelsPerMeter);
-  c.lineTo(-0.2 * pixelsPerMeter, 1.5 * pixelsPerMeter);
-  c.lineTo(-0.2 * pixelsPerMeter, -0.45 * pixelsPerMeter);
-  c.lineTo(-0.55 * pixelsPerMeter, -0.45 * pixelsPerMeter);
-  c.closePath();
-  c.fill();
-  c.restore();
-
-  // — Hachures d'interdiction au bout de l'allée (un vrai parking en a toujours).
-  c.strokeStyle = 'rgba(253,199,39,0.36)';
+  // — Hachures d'interdiction en bout d'allée (un vrai parking en a toujours).
+  c.strokeStyle = jaune(0.32);
   c.lineWidth = Math.max(2, 0.09 * pixelsPerMeter);
-  for (let k = 0; k < 10; k += 1) {
-    const x = 3.4 + k * 0.62;
-    c.beginPath();
-    c.moveTo(toX(x), toY(-half * width - 3.4));
-    c.lineTo(toX(x + 1.2), toY(-half * width - 0.6));
-    c.stroke();
+  for (const axe of allees) {
+    for (let k = 0; k < 9; k += 1) {
+      const zz = (kMin - 0.5) * width + 0.3;
+      const xx = axe - 2.6 + k * 0.62;
+      c.beginPath();
+      c.moveTo(toX(xx), toY(zz));
+      c.lineTo(toX(xx + 1.1), toY(zz + 2.6));
+      c.stroke();
+    }
   }
 
   // — L'USURE : on ronge la peinture. `destination-out` efface, donc la ligne devient l'enrobé nu par endroits —
@@ -408,54 +448,103 @@ function tagTexture() {
  */
 function coastTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 1400;
-  canvas.height = 700;
+  // 2048 x 1024 : à 1400 x 700 le trait du littoral et les noms de villes se crénelaient dès qu'on approchait du mur.
+  canvas.width = 2048;
+  canvas.height = 1024;
   const c = canvas.getContext('2d') as CanvasRenderingContext2D;
   c.clearRect(0, 0, canvas.width, canvas.height);
   const YELLOW = 'rgba(253, 199, 39, ';
   const random = seeded(90126);
+  // Toutes les épaisseurs sont écrites pour 1400 px de large : ce facteur les suit quand on change la définition.
+  const S = canvas.width / 1400;
+
+  /**
+   * UNE COULURE. C'est le détail qui sépare un pochoir propre d'un vrai tag : la bombe charge, la peinture s'accumule
+   * et elle FILE vers le bas, en s'amincissant, avec une goutte au bout. Elle DÉPASSE de la forme — c'est le
+   * débordement qui fait qu'on y croit.
+   */
+  const coulure = (x: number, y: number, len: number, w0: number, alpha: number) => {
+    const g = c.createLinearGradient(x, y, x, y + len);
+    g.addColorStop(0, `${YELLOW}${alpha})`);
+    g.addColorStop(0.75, `${YELLOW}${alpha * 0.55})`);
+    g.addColorStop(1, `${YELLOW}0)`);
+    c.strokeStyle = g;
+    c.lineCap = 'round';
+    c.lineWidth = w0;
+    c.beginPath();
+    c.moveTo(x, y);
+    c.quadraticCurveTo(x + (random() - 0.5) * 6 * S, y + len * 0.6, x + (random() - 0.5) * 9 * S, y + len);
+    c.stroke();
+    // La goutte au bout : elle est plus opaque que la traînée, c'est là que la peinture s'est arrêtée.
+    c.fillStyle = `${YELLOW}${alpha * 0.8})`;
+    c.beginPath();
+    c.ellipse(x + (random() - 0.5) * 9 * S, y + len, w0 * 0.62, w0 * 0.92, 0, 0, Math.PI * 2);
+    c.fill();
+  };
 
   // Le littoral : une polyligne adoucie, du sud-ouest au nord-est, avec le cap qui descend au milieu.
   const shore: [number, number][] = [
-    [0.05, 0.60],
-    [0.16, 0.58],
-    [0.27, 0.62],
-    [0.38, 0.56],
-    [0.47, 0.60],
-    [0.55, 0.74],
-    [0.61, 0.58],
-    [0.70, 0.50],
-    [0.82, 0.42],
-    [0.95, 0.30],
+    [0.05, 0.58],
+    [0.16, 0.56],
+    [0.27, 0.60],
+    [0.38, 0.54],
+    [0.47, 0.58],
+    [0.55, 0.72],
+    [0.61, 0.56],
+    [0.70, 0.48],
+    [0.82, 0.40],
+    [0.95, 0.28],
   ];
+  const traceShore = () => {
+    c.beginPath();
+    shore.forEach(([x, y], i) => {
+      const px = x * canvas.width;
+      const py = y * canvas.height;
+      if (i === 0) c.moveTo(px, py);
+      else {
+        const [px0, py0] = shore[i - 1]!;
+        c.quadraticCurveTo(((px0 + x) / 2) * canvas.width, ((py0 + y) / 2) * canvas.height + 6 * S, px, py);
+      }
+    });
+    c.stroke();
+  };
+
+  // 1. LA SURPULVÉRISATION. Une bombe ne dépose pas un trait net : elle pose d'abord un voile large et flou tout
+  //    autour. Sans lui, le tag est un autocollant.
   c.save();
   c.lineCap = 'round';
   c.lineJoin = 'round';
-  c.strokeStyle = `${YELLOW}0.9)`;
-  c.lineWidth = 11;
-  c.shadowColor = `${YELLOW}0.5)`;
-  c.shadowBlur = 26;
-  c.beginPath();
-  shore.forEach(([x, y], i) => {
-    const px = x * canvas.width;
-    const py = y * canvas.height;
-    if (i === 0) c.moveTo(px, py);
-    else {
-      const [px0, py0] = shore[i - 1]!;
-      c.quadraticCurveTo(((px0 + x) / 2) * canvas.width, ((py0 + y) / 2) * canvas.height + 6, px, py);
-    }
-  });
-  c.stroke();
+  c.filter = `blur(${Math.round(9 * S)}px)`;
+  c.strokeStyle = `${YELLOW}0.30)`;
+  c.lineWidth = 34 * S;
+  traceShore();
+  c.filter = 'none';
   c.restore();
+
+  // 2. LE TRAIT lui-même.
+  c.save();
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  c.strokeStyle = `${YELLOW}0.92)`;
+  c.lineWidth = 11 * S;
+  c.shadowColor = `${YELLOW}0.5)`;
+  c.shadowBlur = 26 * S;
+  traceShore();
+  c.restore();
+
+  // 3. LES COULURES sous le littoral : la peinture a filé là où la main s'est attardée.
+  for (const [x, y] of [shore[1]!, shore[4]!, shore[5]!, shore[7]!, shore[8]!]) {
+    coulure(x * canvas.width + (random() - 0.5) * 20 * S, y * canvas.height + 5 * S, (40 + random() * 90) * S, (5 + random() * 3) * S, 0.5 + random() * 0.3);
+  }
 
   // Les villes : un point, un nom. Les noms alternent au-dessus et au-dessous du trait pour ne jamais se toucher.
   const towns: [string, number, number, number][] = [
-    ['CANNES', 0.09, 0.60, -1],
-    ['ANTIBES', 0.27, 0.62, 1],
-    ['NICE', 0.44, 0.585, -1],
-    ['ST-JEAN-CAP-FERRAT', 0.55, 0.745, 1],
-    ['BEAULIEU', 0.635, 0.545, -1],
-    ['MENTON', 0.88, 0.375, -1],
+    ['CANNES', 0.09, 0.58, -1],
+    ['ANTIBES', 0.27, 0.60, 1],
+    ['NICE', 0.44, 0.565, -1],
+    ['ST-JEAN-CAP-FERRAT', 0.55, 0.725, 1],
+    ['BEAULIEU', 0.635, 0.525, -1],
+    ['MENTON', 0.88, 0.355, -1],
   ];
   c.textBaseline = 'middle';
   for (const [name, x, y, dir] of towns) {
@@ -463,38 +552,85 @@ function coastTexture() {
     const py = y * canvas.height;
     c.fillStyle = `${YELLOW}0.95)`;
     c.beginPath();
-    c.arc(px, py, 9, 0, Math.PI * 2);
+    c.arc(px, py, 9 * S, 0, Math.PI * 2);
     c.fill();
     c.save();
-    c.translate(px, py + dir * 40);
+    c.translate(px, py + dir * 40 * S);
     c.rotate(-0.03);
-    c.font = `bold ${name.length > 12 ? 40 : 52}px "Arial Narrow", system-ui, sans-serif`;
+    c.font = `bold ${Math.round((name.length > 12 ? 40 : 52) * S)}px "Arial Narrow", system-ui, sans-serif`;
     c.textAlign = 'center';
     c.fillStyle = 'rgba(10,9,7,0.7)';
-    c.fillText(name, 4, 4);
+    c.fillText(name, 4 * S, 4 * S);
     c.fillStyle = `${YELLOW}0.92)`;
     c.fillText(name, 0, 0);
     c.restore();
   }
 
-  // Le titre, en haut à gauche.
+  // Le titre, en haut à gauche, avec sa surpulvérisation et ses coulures.
   c.save();
-  c.translate(70, 96);
+  c.translate(70 * S, 96 * S);
   c.rotate(-0.025);
   c.textAlign = 'left';
-  c.font = 'bold 76px "Arial Narrow", system-ui, sans-serif';
+  c.font = `bold ${Math.round(76 * S)}px "Arial Narrow", system-ui, sans-serif`;
+  c.filter = `blur(${Math.round(7 * S)}px)`;
+  c.fillStyle = `${YELLOW}0.26)`;
+  c.fillText('DANS TOUT LE 06', 0, 0);
+  c.filter = 'none';
   c.fillStyle = 'rgba(10,9,7,0.7)';
-  c.fillText('DANS TOUT LE 06', 5, 5);
+  c.fillText('DANS TOUT LE 06', 5 * S, 5 * S);
   c.fillStyle = `${YELLOW}0.9)`;
   c.fillText('DANS TOUT LE 06', 0, 0);
   c.restore();
+  for (const dx of [0.06, 0.15, 0.27]) {
+    coulure(dx * canvas.width, 0.125 * canvas.height, (50 + random() * 80) * S, (4 + random() * 3) * S, 0.45 + random() * 0.3);
+  }
+
+  /**
+   * LE PALMIER — la signature, en bas à droite. Un tag se signe : c'est ce qui le sort du pochoir industriel. Tracé
+   * à la bombe comme le reste (voile large, puis trait), tronc légèrement courbé et palmes retombantes.
+   */
+  const palmX = 0.885 * canvas.width;
+  const palmY = 0.90 * canvas.height;
+  const palmH = 0.30 * canvas.height;
+  const palme = (ang: number, len: number) => {
+    c.beginPath();
+    c.moveTo(palmX, palmY - palmH);
+    const mx = palmX + Math.cos(ang) * len * 0.55;
+    const my = palmY - palmH + Math.sin(ang) * len * 0.55;
+    c.quadraticCurveTo(mx, my - len * 0.22, palmX + Math.cos(ang) * len, palmY - palmH + Math.sin(ang) * len + len * 0.30);
+    c.stroke();
+  };
+  const tracePalm = () => {
+    c.beginPath();
+    c.moveTo(palmX, palmY);
+    c.quadraticCurveTo(palmX - 0.018 * canvas.width, palmY - palmH * 0.55, palmX, palmY - palmH);
+    c.stroke();
+    for (const [ang, len] of [[-2.85, 0.20], [-2.2, 0.17], [-1.55, 0.15], [-0.95, 0.17], [-0.30, 0.20]] as const) {
+      palme(ang, len * canvas.height);
+    }
+  };
+  c.save();
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  c.filter = `blur(${Math.round(8 * S)}px)`;
+  c.strokeStyle = `${YELLOW}0.26)`;
+  c.lineWidth = 26 * S;
+  tracePalm();
+  c.filter = 'none';
+  c.strokeStyle = `${YELLOW}0.88)`;
+  c.lineWidth = 9 * S;
+  c.shadowColor = `${YELLOW}0.45)`;
+  c.shadowBlur = 20 * S;
+  tracePalm();
+  c.restore();
+  coulure(palmX + 3 * S, palmY, 46 * S, 5 * S, 0.5);
 
   // L'usure du béton.
   c.globalCompositeOperation = 'destination-out';
-  for (let k = 0; k < 900; k += 1) {
+  for (let k = 0; k < 1400; k += 1) {
     c.globalAlpha = 0.14 + random() * 0.4;
     c.beginPath();
-    c.ellipse(random() * canvas.width, random() * canvas.height, 1.5 + random() * 8, 1.5 + random() * 8, random() * Math.PI, 0, Math.PI * 2);
+    c.ellipse(random() * canvas.width, random() * canvas.height, (1.5 + random() * 8) * S, (1.5 + random() * 8) * S, random() * Math.PI, 0, Math.PI * 2);
     c.fill();
   }
   c.globalAlpha = 1;
@@ -712,6 +848,80 @@ const coneFragment = /* glsl */ `
   }
 `;
 
+/**
+ * LE TAG DE LA PROMESSE : « ON VIENT À VOUS DANS TOUT LE 06 ».
+ * Trois lignes, parce qu'en une seule le mot ferait huit mètres de large et deviendrait illisible dès qu'on serre.
+ * Même fabrication que les autres tags : un voile de surpulvérisation, le trait, puis les coulures qui débordent.
+ */
+function promiseTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 2048;
+  canvas.height = 768;
+  const c = canvas.getContext('2d') as CanvasRenderingContext2D;
+  c.clearRect(0, 0, canvas.width, canvas.height);
+  const YELLOW = 'rgba(253, 199, 39, ';
+  const random = seeded(60624);
+  const lignes = [
+    { texte: 'ON VIENT À VOUS', taille: 176, y: 200, x: 96, tilt: -0.022 },
+    { texte: 'DANS TOUT', taille: 176, y: 400, x: 150, tilt: -0.012 },
+    { texte: 'LE 06', taille: 232, y: 622, x: 214, tilt: -0.03 },
+  ];
+  for (const l of lignes) {
+    c.save();
+    c.translate(l.x, l.y);
+    c.rotate(l.tilt);
+    c.textAlign = 'left';
+    c.textBaseline = 'alphabetic';
+    c.font = `bold ${l.taille}px "Arial Narrow", system-ui, sans-serif`;
+    // Le voile : la bombe pose d'abord large et flou.
+    c.filter = 'blur(13px)';
+    c.fillStyle = `${YELLOW}0.28)`;
+    c.fillText(l.texte, 0, 0);
+    c.filter = 'none';
+    // L'ombre portée sur le béton, puis la lettre.
+    c.fillStyle = 'rgba(10,9,7,0.72)';
+    c.fillText(l.texte, 7, 7);
+    c.fillStyle = `${YELLOW}0.93)`;
+    c.fillText(l.texte, 0, 0);
+    c.restore();
+    // Les coulures partent du bas des lettres et DÉPASSENT : c'est ce débordement qui fait le tag.
+    const largeur = c.measureText(l.texte).width;
+    for (let k = 0; k < 4; k += 1) {
+      const x = l.x + random() * largeur;
+      const len = 40 + random() * 130;
+      const g = c.createLinearGradient(x, l.y, x, l.y + len);
+      g.addColorStop(0, `${YELLOW}${0.5 + random() * 0.3})`);
+      g.addColorStop(0.7, `${YELLOW}0.3)`);
+      g.addColorStop(1, `${YELLOW}0)`);
+      c.strokeStyle = g;
+      c.lineCap = 'round';
+      c.lineWidth = 6 + random() * 5;
+      c.beginPath();
+      c.moveTo(x, l.y);
+      c.quadraticCurveTo(x + (random() - 0.5) * 10, l.y + len * 0.6, x + (random() - 0.5) * 14, l.y + len);
+      c.stroke();
+      c.fillStyle = `${YELLOW}0.55)`;
+      c.beginPath();
+      c.ellipse(x + (random() - 0.5) * 14, l.y + len, 4 + random() * 3, 6 + random() * 4, 0, 0, Math.PI * 2);
+      c.fill();
+    }
+  }
+  // L'usure du béton : le tag n'a pas été peint hier.
+  c.globalCompositeOperation = 'destination-out';
+  for (let k = 0; k < 1100; k += 1) {
+    c.globalAlpha = 0.12 + random() * 0.4;
+    c.beginPath();
+    c.ellipse(random() * canvas.width, random() * canvas.height, 2 + random() * 11, 2 + random() * 11, random() * Math.PI, 0, Math.PI * 2);
+    c.fill();
+  }
+  c.globalAlpha = 1;
+  c.globalCompositeOperation = 'source-over';
+  const map = new CanvasTexture(canvas);
+  map.colorSpace = SRGBColorSpace;
+  map.anisotropy = 8;
+  return map;
+}
+
 export function createPlaceLayer(options: PlaceOptions) {
   const root = new Group();
   root.name = 'place';
@@ -843,15 +1053,36 @@ export function createPlaceLayer(options: PlaceOptions) {
     root.add(decal);
   }
 
-  // — LE TAG DE LA CÔTE, plus loin sur le même mur : le littoral et ses villes, peints au pochoir.
+  // — LE TAG DE LA CÔTE. Il était à treize mètres et demi le long du mur : hors de tous les plans du véhicule, donc
+  // invisible. Il passe JUSTE À CÔTÉ du nom, derrière la voiture, là où on le lit.
+  //
+  // LARGEUR CALÉE SUR L'INTERVALLE ENTRE PILASTRES (3,84 m de libre, pilastres tous les 4,4 m). Les pilastres
+  // avancent de 30 cm devant le mur, le tag n'est qu'à 19 cm : au-delà de l'intervalle, il passe DERRIÈRE eux et
+  // les lettres sont tranchées net. Proportions de l'image (2:1) respectées : 3,7 m sur 1,85 m.
   const coast = coastTexture();
   textures.push(coast);
   const coastMaterial = tagMaterial.clone();
   coastMaterial.uniforms = { ...tagMaterial.uniforms, uTag: { value: coast } };
   materials.push(coastMaterial);
   {
-    const decal = new Mesh(new PlaneGeometry(5.2, 2.6), coastMaterial);
-    decal.position.set(wallX + 0.19, 1.6, -13.5);
+    const decal = new Mesh(new PlaneGeometry(3.7, 1.85), coastMaterial);
+    decal.position.set(wallX + 0.19, 1.5, 3.4);
+    decal.rotation.y = Math.PI / 2;
+    decal.renderOrder = 2;
+    geometries.push(decal.geometry);
+    root.add(decal);
+  }
+
+  // — LE TAG DE LA PROMESSE : « ON VIENT À VOUS DANS TOUT LE 06 ». C'est le seul fait commercial confirmé qui tienne
+  // en une phrase, et il est dit là où on le croit : à la bombe, sur le mur, de l'autre côté du véhicule.
+  const promise = promiseTexture();
+  textures.push(promise);
+  const promiseMaterial = tagMaterial.clone();
+  promiseMaterial.uniforms = { ...tagMaterial.uniforms, uTag: { value: promise } };
+  materials.push(promiseMaterial);
+  {
+    const decal = new Mesh(new PlaneGeometry(3.7, 1.39), promiseMaterial);
+    decal.position.set(wallX + 0.19, 1.52, -5.4);
     decal.rotation.y = Math.PI / 2;
     decal.renderOrder = 2;
     geometries.push(decal.geometry);

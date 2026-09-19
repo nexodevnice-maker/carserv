@@ -78,7 +78,6 @@ export const WORLD = {
     // emploi avec elle et ajoutaient un appel de dessin plus un programme de nuanceur pour rien.
     blocks: { count: 0, inner: 170, outer: 620, low: 11, high: 34 },
     rail: { at: 19.5, length: 62 },
-    road: { at: 30, half: 4, length: 340 },
   },
   /**
    * Les deux véhicules (modèles 3D fournis, tools/3d). Longueurs réelles des modèles concernés : le modèle est mis à
