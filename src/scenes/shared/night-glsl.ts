@@ -56,18 +56,35 @@ export const SKY_GLSL = /* glsl */ `
    * petite qu'un pixel, elle clignote dès que la caméra bouge. On lui donne donc une taille ANGULAIRE d'environ deux
    * pixels — assez pour qu'elle tienne en place, assez peu pour rester une étoile.
    */
-  float skyStars(vec3 d) {
+  float skyStars(vec3 d, float seed) {
     vec3 a = abs(d);
     vec3 p = d / max(a.x, max(a.y, a.z));
     vec2 uv = a.x > a.y && a.x > a.z ? p.yz : (a.y > a.z ? p.xz : p.xy);
     vec2 g = uv * 74.0;
     vec2 id = floor(g);
     vec2 f = fract(g) - 0.5;
-    float h = fract(sin(dot(id, vec2(127.1, 311.7))) * 43758.5453);
+    float h = fract(sin(dot(id, vec2(127.1, 311.7)) + seed) * 43758.5453);
     if (h < 0.855) return 0.0;
     vec2 off = vec2(fract(h * 37.0), fract(h * 91.0)) - 0.5;
     float r = length(f - off * 0.72);
     return exp(-r * r * 34.0) * (0.22 + fract(h * 13.0) * 1.7);
+  }
+
+  /**
+   * LA VOIE LACTÉE. Un ciel noir semé de points réguliers reste un fond d'écran : ce qui fait un VRAI ciel, c'est la
+   * bande — la galaxie vue par la tranche, depuis l'intérieur. Une lueur diffuse le long d'un grand cercle, un
+   * renflement plus clair vers le centre galactique, des voiles de poussière qui la mangent par endroits, et des
+   * étoiles BEAUCOUP plus denses dedans que dehors. C'est elle qui remplit le ciel et qui surprend : on lève les
+   * yeux, et il y a quelque chose à regarder.
+   */
+  const vec3 SKY_ARM = normalize(vec3(0.38, 0.86, -0.34));
+  const vec3 SKY_CORE = normalize(vec3(-0.62, 0.22, -0.75));
+
+  float skyDust(vec3 d) {
+    float a = sin(d.x * 7.3 + d.z * 4.1) * 0.5 + 0.5;
+    float b = sin(d.y * 9.7 - d.x * 5.3 + 1.7) * 0.5 + 0.5;
+    float c = sin(d.z * 12.1 + d.y * 6.7 + 3.1) * 0.5 + 0.5;
+    return a * 0.5 + b * 0.32 + c * 0.18;
   }
 
   /**
@@ -105,7 +122,18 @@ export const SKY_GLSL = /* glsl */ `
     col += vec3(0.05, 0.06, 0.09) * pow(moon, 44.0);
     // Étoiles et planètes : elles s'effacent dans les reflets rugueux, où elles ne feraient que scintiller.
     float sharp = exp(-bias * 1.1);
-    col += vec3(0.86, 0.90, 1.0) * skyStars(d) * 0.75 * sharp * smoothstep(-0.06, 0.16, d.y);
+    float above = smoothstep(-0.06, 0.16, d.y);
+    // LA BANDE : large et douce, plus claire vers le centre galactique, percée de voiles de poussière.
+    float arm = pow(clamp(1.0 - abs(dot(d, SKY_ARM)), 0.0, 1.0), 22.0);
+    float dust = 0.45 + 0.55 * skyDust(d * 2.4);
+    float core = pow(max(dot(d, SKY_CORE), 0.0), 2.6);
+    col += vec3(0.034, 0.037, 0.052) * arm * dust * above;
+    col += vec3(0.085, 0.072, 0.054) * arm * core * dust * above;
+    // Deux semis d'étoiles : un partout, un BEAUCOUP plus dense dans la bande — c'est ce contraste qui fait la galaxie.
+    col += vec3(0.86, 0.90, 1.0) * skyStars(d, 0.0) * 0.75 * sharp * above;
+    // Multiplicateurs tenus bas : au-delà, les étoiles de la bande saturent, grossissent et deviennent de la neige.
+    col += vec3(0.95, 0.94, 0.98) * skyStars(d, 31.7) * arm * dust * 1.5 * sharp * above;
+    col += vec3(1.0, 0.88, 0.74) * skyStars(d, 77.3) * arm * core * 1.9 * sharp * above;
     col += skyPlanet(d, normalize(vec3(0.72, 0.21, -0.66)), 0.042, vec3(0.94, 0.72, 0.46)) * sharp;
     col += skyPlanet(d, normalize(vec3(-0.78, 0.44, 0.44)), 0.021, vec3(0.62, 0.76, 0.92)) * sharp;
     // Aucune étoile semée ici : une grille de points produit un moiré visible dès qu'on bouge, et les vraies étoiles
