@@ -16,6 +16,7 @@ import { createQuality } from '../performance/quality';
 import type { Format } from '../responsive/formats';
 import type { ExperienceState } from '../state/experience-state';
 import { disposeObject } from './dispose';
+import { createPostProcess, type PostOptions } from './post-process';
 
 /**
  * Une seule scène WebGL pour toute la page (un seul contexte, un seul canvas épinglé), rendue à la demande :
@@ -104,6 +105,8 @@ export interface StageConfig {
    * au ras du sol puis s'élève peut creuser légèrement entre deux points ; la garde l'aplatit au lieu de traverser le sol.
    */
   floor?: number;
+  /** Passe d'image (halo, tramage, étalonnage). Absente : la scène va directement à l'écran, comme avant. */
+  post?: PostOptions;
 }
 
 export async function createWebGLStage(options: {
@@ -160,6 +163,11 @@ export async function createWebGLStage(options: {
 
   const ratios = (format: Format) => config.pixelRatios[format].map((r) => Math.min(window.devicePixelRatio, r));
   let quality = createQuality(ratios(state.format), () => resize());
+
+  // La passe d'image. Elle n'existe que si elle est configurée, et elle s'efface d'elle-même dès que la définition
+  // recule : au-delà du cran toléré, le téléphone a besoin de ses millisecondes, pas d'un halo.
+  const post = config.post ? createPostProcess(renderer, config.post) : null;
+  const postActive = () => post !== null && quality.level <= (config.post?.maxLevel ?? 0);
 
   const ctx: StageContext = {
     renderer,
@@ -281,6 +289,7 @@ export async function createWebGLStage(options: {
     height = Math.max(host.clientHeight, 1);
     renderer.setPixelRatio(quality.ratio);
     renderer.setSize(width, height, false);
+    post?.resize();
     camera.aspect = width / height;
     if (Number.isFinite(last.fov)) camera.fov = fovFor(last.fov);
     applyProjection();
@@ -382,6 +391,12 @@ export async function createWebGLStage(options: {
     if (!config.busy?.()) quality.tick(info.dt, changed, info.now);
     if (!changed) return false;
     renderer.render(scene, camera);
+    // La scène est dans le canevas : la passe d'image la reprend telle quelle et la repose, retouchée. Le grain suit
+    // la position de défilement, jamais l'horloge — au retour, la même image.
+    if (postActive()) {
+      const channel = config.post?.channel;
+      post?.render(state.progress.shown, channel ? (state.channels[channel] ?? 1) : 1);
+    }
     renders++;
     if (firstFrame) {
       firstFrame = false;
@@ -407,6 +422,7 @@ export async function createWebGLStage(options: {
         geometries: renderer.info.memory.geometries,
         textures: renderer.info.memory.textures,
         programs: renderer.info.programs?.length ?? 0,
+        post: postActive(),
         lost,
         active,
       };
@@ -424,6 +440,7 @@ export async function createWebGLStage(options: {
         layer.dispose(ctx);
         disposeObject(layer.root);
       }
+      post?.dispose();
       scene.environment?.dispose();
       renderer.renderLists.dispose();
       renderer.dispose();

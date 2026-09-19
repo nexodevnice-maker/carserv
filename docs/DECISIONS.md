@@ -416,5 +416,59 @@ Typographie mobile : plus de grand titre à chaque écran. Une annotation (`.not
 Vérifié : typecheck, build, **60/60 `qa:engine`**, 24 captures mobile + planche-contact, sonde de fluidité, déployé,
 parcouru en production sans erreur console, première image 3D en 3,7 s.
 
-Reste à faire : reflet du véhicule sur la chaussée mouillée, passe de post-traitement (bloom doux) si le porteur en
-veut plus, et trois unités encore à 19–24 ms (les macros où le véhicule remplit l'écran).
+Reste à faire : reflet du véhicule sur la chaussée mouillée, et trois unités encore à 19–24 ms (les macros où le
+véhicule remplit l'écran).
+
+
+---
+
+## 19/09/2026 — La passe d'image : halo, tramage, étalonnage
+
+**Le manque.** Le récit se joue de nuit, et toutes ses sources — lampes, phares, ligne d'or, liseré des tarifs, feux
+du circuit, étoiles — s'arrêtaient net au bord de leur pixel. Une nuit sans débordement n'est pas une nuit : c'est un
+fond noir avec des taches claires dessus. C'était le plus gros écart restant avec une image de cinéma.
+
+**La contrainte qui a décidé de tout.** Le réflexe (rendre la scène dans une cible, composer, corriger à la fin)
+était impraticable ici. Trois.js n'applique sa correction d'affichage (courbe de rendu + encodage écran) **que**
+lorsqu'il dessine dans le canevas ; dans une cible de rendu, il ne l'applique pas (vérifié dans la source de
+`three@0.186`, `WebGLPrograms` : `toneMapping = NoToneMapping` et espace de travail linéaire dès que la cible n'est
+pas l'écran). Or ce projet mélange deux familles : les **véhicules** (matériaux standard, corrigés par Trois.js) et
+**tout le reste** (nuanceurs maison, qui écrivent déjà des valeurs d'écran et n'incluent aucun `colorspace_fragment`).
+Rendre dans une cible aurait assombri les véhicules ; rattraper au moment de composer aurait éclairci tout le reste.
+La direction artistique entière y passait.
+
+**Le choix.** La scène se dessine **exactement comme avant**, dans le canevas. On **recopie** ensuite le résultat
+dans une texture (`copyFramebufferToTexture`, un blit de GPU à GPU), et les effets s'ajoutent par-dessus. L'image de
+départ est au pixel près celle d'hier. Conséquence heureuse : passe éteinte, il ne reste rigoureusement rien — ni
+coût, ni différence. Le halo travaille sur des valeurs **mises au carré** (retour approximatif vers l'énergie) :
+sinon une étoile et un phare, tous deux proches de 1 à l'écran, débordent pareil.
+
+**Coût mesuré** (téléphone, 780 × 1688, cran 0) : **+6 appels de dessin, +12 triangles, +3 programmes, +5 textures**.
+La chaîne de flou travaille au quart puis au huitième de côté. Au-delà d'un cran de définition perdu
+(`post.maxLevel: 1`), la passe s'efface : un téléphone qui rame a besoin de ses millisecondes, pas d'un halo.
+
+**Trois erreurs, corrigées en mesurant** (luminance moyenne de la zone 3D, 31 unités, avant/après) :
+
+1. **Vignette rapportée au côté long.** Sur un écran en 0,46, elle noircissait de 28 % le tiers haut et le tiers bas :
+   la place perdait son sol, le ciel ses étoiles. Elle se mesure désormais en « part du chemin vers le coin »,
+   indépendante du format. Seuls les angles s'assombrissent.
+2. **Courbe en S classique.** Elle creuse tout ce qui est sous la moitié — or ce récit est à 98 % dans les ombres.
+   Mesuré : **−13 % sur la descente et −14 % sur la place**, les deux plans qu'on nous reproche déjà de ne pas voir.
+   Remplacée par une sculpture des **hautes lumières seules** : les noirs ne bougent plus.
+3. **Halo à pleine intensité dans la galaxie.** La traversée du cœur perdait ses étoiles une à une, fondues en une
+   seule tache blanche — or cette unité ne raconte QUE ça, des étoiles détachées à des vitesses différentes. Le canal
+   `bloom` (chapters.ts) retient le débordement à mesure qu'on entre dans l'amas (0,85 → 0,32).
+
+Résultat après correction : **+7,5 % de luminance moyenne** sur les 31 unités, avec la « matière » (les valeurs entre
+12 et 50 %, celles qui portent le relief) en hausse partout — la location passe de 4,9 % à 11,5 % de l'image. Les
+deux plans les plus sombres restent à −6 %, ce qui vaut ici **un millième de luminance, soit un quart de niveau
+d'affichage** : invisible.
+
+**Le grain est d'abord un tramage.** 0,012 ≈ trois valeurs sur 255. Sans lui, le dégradé du ciel et le cône de brume
+des candélabres se découpent en bandes sur un écran 8 bits. Il est fonction de la **position de défilement**, jamais
+de l'horloge : même endroit, même image, à l'aller comme au retour.
+
+**Constaté au passage, pas corrigé** : les quatre anneaux du constructeur sont lisibles sur la calandre du RS6
+(unité 10). Le filtre `badge|logo|emblem` masque bien `BadgeA_Material1`, mais ces anneaux-là sont portés par un
+matériau `Grille*A` que le nom ne trahit pas. C'est une entorse à la règle de vérité, à lever avant publication
+réelle (REFERENTIEL §13.9).

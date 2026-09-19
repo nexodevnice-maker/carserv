@@ -56,6 +56,38 @@ export const STAGE: StageConfig = {
   // Objectif : turbulence des vols (0,0035 rad ≈ 0,2° par unité, shots.ts) ; au bureau, le regard suit la souris
   // (±4° de lacet, ±2,6° de tangage) — on est la caméra.
   lens: { shake: { channel: 'shake', amplitude: 0.0035 }, look: { yaw: 0.07, pitch: 0.045, rate: 2.4 } },
+  /**
+   * LA PASSE D'IMAGE. Le récit se joue de nuit, et une nuit sans halo autour des sources n'est pas une nuit : c'est
+   * un fond noir avec des taches claires dessus. Les valeurs sont volontairement basses — il s'agit de faire croire
+   * à une optique, pas d'ajouter un effet.
+   *
+   * `maxLevel: 1` : le halo survit à un cran de définition en moins, pas à deux. Passé là, le téléphone rame pour de
+   * vrai et la fluidité vaut mieux que la photographie.
+   * `grain: 0,012` ≈ trois valeurs sur 255 : c'est d'abord un TRAMAGE. Sans lui, le dégradé du ciel et le cône de
+   * brume des candélabres se découpent en bandes sur un écran 8 bits — le défaut le plus visible d'une image sombre.
+   */
+  post: {
+    maxLevel: 1,
+    scale: 4,
+    // Seuil en valeur d'écran : au-dessus, une source « déborde ». À 0,5, les phares, les lampes, la ligne d'or, le
+    // liseré des tarifs et les étoiles débordent ; la carrosserie et le béton, non.
+    threshold: 0.5,
+    knee: 0.25,
+    bloom: 0.55,
+    // Le canal `bloom` (chapters.ts) module cette intensité : plein partout, retenu dans la galaxie où les sources
+    // sont déjà par milliers.
+    channel: 'bloom',
+    spread: 1.6,
+    // Mesurée vers les ANGLES, pas vers les bords : sur un écran de téléphone, tout ce qui compte est au milieu de la
+    // hauteur, et une vignette un peu forte y mange le sol de la place.
+    vignette: 0.18,
+    grain: 0.012,
+    // La lune est froide, les candélabres au sodium sont ambrés : on accentue ce que la scène contient déjà. Les deux
+    // teintes se compensent (moyenne ≈ 1) : l'étalonnage colore, il n'assombrit pas.
+    shadowTint: [0.96, 0.98, 1.06],
+    lightTint: [1.06, 1.0, 0.94],
+    contrast: 0.07,
+  },
 };
 
 /** Anticipation des chargements, en chapitres. Le mobile anticipe moins (données, mémoire). */

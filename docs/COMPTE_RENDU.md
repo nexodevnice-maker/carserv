@@ -1,7 +1,7 @@
 # CAR SERVICE 06 — compte rendu
 
 En ligne : **https://carservice.nexodevnice.workers.dev** · 60/60 aux contrôles automatiques
-Arrêté au 19/09/2026.
+Arrêté au 19/09/2026, passe d'image comprise.
 
 ---
 
@@ -84,17 +84,28 @@ téléphone.
    d'envoi de courriel. **Je ne manipule jamais vos clés** : vous les posez vous-même avec
    `wrangler secret put`. Tant que ce n'est pas fait, l'écran de rendez-vous envoie par courriel.
 
+### Fait depuis
+
+3. **L'ombre portée** sous le véhicule : il touche enfin le sol (`engine/webgl/bake-shadow.ts`).
+4. **Le traitement d'image** (19/09) : les sources DÉBORDENT — lampes, phares, ligne d'or, liseré des
+   tarifs, feux du circuit, étoiles. Plus un tramage qui efface les bandes du ciel, un étalonnage
+   (ombres froides, lumières ambrées) et une vignette d'angle. Mesuré sur les 31 unités :
+   **+7,5 % de lumière**, et la « matière » — les demi-teintes qui portent le relief — en hausse
+   partout (la location passe de 4,9 % à 11,5 % de l'image). Coût : **+6 appels de dessin par
+   image**, et la passe s'efface d'elle-même si le téléphone perd un cran de définition.
+   **L'occlusion ambiante n'est pas faite** (c'est le morceau cher).
+
 ### Défauts connus que je n'ai pas encore levés
 
-3. **Aucune ombre portée.** Le véhicule ne touche pas le sol — c'est le défaut que l'œil repère en
-   premier. Une ombre de contact précalculée coûte presque rien ; une vraie carte d'ombre pour le
-   candélabre le plus proche coûte ~1,5 ms par image.
-4. **Aucun traitement d'image** : pas de halo autour des sources, pas d'occlusion, pas
-   d'étalonnage. C'est le plus gros écart qui reste avec un rendu de cinéma, et c'est une seule
-   passe plein écran.
-5. **Carrosserie plate en gros plan** : les exports Sketchfab n'ont pas le micro-relief d'une vraie
+5. **Les quatre anneaux du constructeur sont lisibles sur la calandre** du véhicule de démonstration.
+   C'est une entorse à la règle du projet (aucun logo constructeur mis en avant). Le filtre par nom
+   masque bien le matériau « Badge », mais ces anneaux-là sont portés par un matériau de calandre que
+   le nom ne trahit pas. **À lever avant toute publication réelle.**
+6. **Le bandeau des tribunes traverse le ciel en diagonale** sur certains plans du circuit : on lit une
+   barre dorée, pas une tribune.
+7. **Carrosserie plate en gros plan** : les exports Sketchfab n'ont pas le micro-relief d'une vraie
    tôle. Une carte de normales générée corrigerait ça.
-6. **La descente reste sombre.** La carte du 06 se lit, mais l'ensemble manque de matière entre
+8. **La descente reste sombre.** La carte du 06 se lit, mais l'ensemble manque de matière entre
    l'univers et la place.
 
 ### Avant toute publication réelle
@@ -109,7 +120,7 @@ téléphone.
 
 ## 5. Dans quel ordre je continuerais
 
-1. La piste de F1 (c'est ce qui manque au récit).
-2. L'ombre de contact sous le véhicule (le défaut le plus visible, le moins cher).
-3. Le traitement d'image (halo + étalonnage).
+1. **Les anneaux sur la calandre** : c'est une règle du projet, pas un goût.
+2. **Le bandeau des tribunes**, qui barre le ciel du circuit.
+3. L'occlusion ambiante (le seul morceau de cinéma qui manque encore).
 4. Le calendrier serveur, dès que la clé d'envoi est posée.

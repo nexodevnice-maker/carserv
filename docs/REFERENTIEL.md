@@ -69,6 +69,7 @@ src/
 │   ├── motion/                amorti, ressort, glissade quintique, courbes (pace)
 │   ├── scroll/guide.ts        pas guidés : un geste = un plan
 │   ├── webgl/webgl-stage.ts   scène unique, rendu à la demande, DPR adaptatif, near/far par altitude
+│   ├── webgl/post-process.ts  la passe d'image : halo, tramage, étalonnage, vignette
 │   ├── media/media-registry.ts  QUAND charger un média, QUELLE déclinaison, QUAND libérer
 │   └── debug/qa-hooks.ts      window.__experience (DÉVELOPPEMENT SEULEMENT)
 │
@@ -110,6 +111,7 @@ src/
 | un texte de récit (titre, phrase d'accroche) | `src/experience/copy.ts` |
 | un prix, une prestation, une condition | `src/domain/` (avec statut et source) |
 | la matière d'un véhicule (salissure, reflets, scan) | `src/scenes/vehicle/vehicle-layer.ts` |
+| le halo des sources, le grain, la vignette, l'étalonnage | `src/experience/config.ts` → `STAGE.post` |
 | la lumière des véhicules | `src/scenes/vehicle/vehicle-light.ts` + `ENVIRONMENT` dans `config.ts` |
 | la route, les marquages, les feux | `src/scenes/road/road-layer.ts` |
 | le ciel, le sol mouillé, la brume | `src/scenes/sky/sky-layer.ts` + `src/scenes/shared/night-glsl.ts` |
@@ -239,6 +241,7 @@ par les scènes. C'est **l'unique moyen** de relier le scroll à ce qu'on voit.
 | `mapReveal` | map | La vague de lumière qui parcourt le 06 |
 | `roadDraw`, `roadTrail` | road | Le tracé rouge qui se dessine vu du ciel |
 | `roadLight` | road | Allumage de la chaussée et amorçage des feux |
+| `bloom` | passe d'image (webgl-stage) | Combien les sources débordent. 1 partout, retenu dans la galaxie |
 
 **Pour ajouter un effet piloté par le scroll :** créer un canal ici, le lire dans la couche concernée, ne jamais
 lire une horloge.
@@ -372,6 +375,8 @@ node scripts/qa-live.mjs https://carservice.nexodevnice.workers.dev   # parcours
 | « Le véhicule flotte » | `vehicle-layer.ts`, l'ombre de contact | Augmenter `uStrength` ou la taille du plan d'ombre |
 | « Les feux du C-HR sont mal placés » | `road-layer.ts`, position des sprites + `tail.offset` dans `boot.ts` | Ajuster hauteur et écartement (repère local : x le long de la route) |
 | « On ne voyage pas assez dans la location » | `chapters.ts` → `chrTravel` **et** `shots.ts` → les `lane(...)` | Déplacer les deux suites ensemble (§6) ; garder la route dans ses 420 m |
+| « Les lumières bavent / l'image est laiteuse » | `config.ts` → `STAGE.post.bloom`, `threshold` | Monter le seuil AVANT de baisser le halo : c'est le tri des sources qui fait la propreté |
+| « Cette unité est trop lumineuse depuis la passe d'image » | `chapters.ts` → canal `bloom` | Le retenir sur ce chapitre seulement (c'est ce qui est fait dans la galaxie) |
 | « La couleur est fausse » | `styles/tokens.css` | Une seule source pour toutes les couleurs |
 | « Un prix / un texte commercial est faux » | `src/domain/` | Corriger la donnée **et** son statut ; ne jamais écrire un fait dans une page |
 | « Le formulaire n'envoie pas au bon endroit » | `config.ts` → `CONTACT.inbox` | Un seul endroit |
@@ -403,8 +408,13 @@ node scripts/qa-live.mjs https://carservice.nexodevnice.workers.dev   # parcours
 **Pistes d'amélioration identifiées, non faites**
 
 7. Reflet du véhicule sur la chaussée mouillée (aujourd'hui seuls les feux se reflètent).
-8. Passe de post-traitement (bloom doux, vignette, grain) pour renforcer encore la profondeur au téléphone.
-9. Sons (aucun pour l'instant), et une vraie prise de rendez-vous côté serveur si le porteur veut un suivi.
+8. Sons (aucun pour l'instant), et une vraie prise de rendez-vous côté serveur si le porteur veut un suivi.
+9. **Les quatre anneaux du constructeur sont lisibles sur la calandre du RS6** (plan `avant`, unité 10). Ce n'est pas
+   un détail de rendu : c'est une entorse à la règle 2 du §2. Le filtre de `vehicle-layer.ts` masque les matériaux
+   nommés `badge|logo|emblem` — et il masque bien `BadgeA_Material1` — mais les anneaux visibles à l'écran sont une
+   géométrie portée par un matériau `Grille*A`, que le nom ne trahit pas. Les identifier demande de masquer les
+   meshes de calandre un par un et de regarder ; les masquer tous crèverait la calandre. **À lever avant toute
+   publication réelle.**
 
 ---
 

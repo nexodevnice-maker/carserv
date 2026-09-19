@@ -344,6 +344,20 @@ export const definition: ExperienceDefinition = {
       { chapter: 'location', at: 0.93, value: 0.9 },
       { chapter: 'contact', at: 0.6, value: 1, pace: smooth },
     ],
+    /**
+     * — LE DÉBORDEMENT DES SOURCES (passe d'image, config.ts → STAGE.post). Multiplicateur du halo.
+     *
+     * Partout, il vaut 1 : une lampe, un phare, la ligne d'or, le liseré des tarifs débordent, et c'est ce qui fait
+     * la nuit. DANS la galaxie, non — et c'est mesuré : à pleine intensité, la traversée du cœur perdait ses étoiles
+     * une à une, fondues en une seule tache blanche. Or cette unité ne raconte QUE ça : des étoiles détachées, qui
+     * défilent à des vitesses différentes. Plus on entre dans l'amas, moins les sources débordent.
+     */
+    bloom: [
+      { chapter: 'galaxie', at: 0, value: 0.85 },
+      { chapter: 'galaxie', at: 0.34, value: 0.6, pace: smooth },
+      { chapter: 'galaxie', at: 0.76, value: 0.32, pace: smooth },
+      { chapter: 'descente', at: 0.35, value: 1, pace: smooth },
+    ],
     // Un seul ciel : même rotation d'un bout à l'autre (le nord regarde le cœur de la Voie lactée).
     skyYaw: [{ chapter: 'galaxie', at: 0, value: WORLD.skyYaw }],
     // Un lent balancement, seulement là-haut : dans l'univers, rien n'est jamais parfaitement immobile.
