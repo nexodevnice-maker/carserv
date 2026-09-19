@@ -213,13 +213,12 @@ export function createSurroundingsLayer(options: SurroundingsOptions) {
   glowMesh.renderOrder = 3;
 
   // — LA GLISSIÈRE : la limite du terrain, côté ouvert.
-  const rail = make(metalFragment);
-  place(new BoxGeometry(0.1, 0.32, options.rail.length), rail, [new Matrix4().makeTranslation(options.rail.at, 0.62, 0)]);
+  place(new BoxGeometry(0.1, 0.32, options.rail.length), metal, [new Matrix4().makeTranslation(options.rail.at, 0.62, 0)]);
   const posts: Matrix4[] = [];
   for (let z = -options.rail.length / 2 + 1.5; z <= options.rail.length / 2 - 1.5; z += 3.4) {
     posts.push(new Matrix4().makeTranslation(options.rail.at, 0.36, z));
   }
-  place(new BoxGeometry(0.12, 0.72, 0.12), rail, posts);
+  place(new BoxGeometry(0.12, 0.72, 0.12), metal, posts);
 
   // — LES IMMEUBLES DU FOND. Répartis en couronne, jamais devant la place, jamais alignés.
   const random = seeded(7311);

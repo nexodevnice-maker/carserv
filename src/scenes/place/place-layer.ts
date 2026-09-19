@@ -21,6 +21,7 @@ import {
   Vector2,
   Vector3,
 } from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
 import { GROUND_GLSL, SKY_GLSL, type SharedNight } from '../shared/night-glsl';
@@ -665,28 +666,29 @@ export function createPlaceLayer(options: PlaceOptions) {
   const metal = prop([0.085, 0.09, 0.10], 0, 1.4);
   const painted = prop([0.44, 0.35, 0.08], 0.4, 0.9);
 
-  /** Ajoute un objet unique et retient sa géométrie pour la libération. */
-  const add = (geometry: BufferGeometry, material: ShaderMaterial, x: number, y: number, z: number) => {
-    const mesh = new Mesh(geometry, material);
-    mesh.position.set(x, y, z);
-    geometries.push(geometry);
-    root.add(mesh);
-    return mesh;
+  /**
+   * TOUT CE QUI PARTAGE UNE MATIÈRE EST FONDU EN UNE SEULE GÉOMÉTRIE.
+   *
+   * Mur, pilastres, bordure, butoirs, bornes, mâts, crosses, grille, panneau : seize objets, donc seize appels de
+   * dessin par image, pour des volumes qui ne bougent jamais. Fondus par matière, il en reste QUATRE. Sur un
+   * téléphone, un appel de dessin coûte plus cher que les quelques triangles qu'il porte.
+   *
+   * Les objets sont collectés d'abord, fondus à la fin : c'est pour ça que rien n'est ajouté à la scène ici.
+   */
+  const batches = new Map<ShaderMaterial, BufferGeometry[]>();
+  const collect = (geometry: BufferGeometry, material: ShaderMaterial, matrix: Matrix4) => {
+    const baked = geometry.clone().applyMatrix4(matrix);
+    const list = batches.get(material);
+    if (list) list.push(baked);
+    else batches.set(material, [baked]);
+    geometry.dispose();
   };
-
-  /** Ajoute N exemplaires d'un même objet en UN SEUL appel de dessin. */
+  const add = (geometry: BufferGeometry, material: ShaderMaterial, x: number, y: number, z: number) => {
+    collect(geometry, material, new Matrix4().makeTranslation(x, y, z));
+  };
   const repeat = (geometry: BufferGeometry, material: ShaderMaterial, places: readonly (readonly [number, number, number])[]) => {
-    const mesh = new InstancedMesh(geometry, material, places.length);
-    const matrix = new Matrix4();
-    places.forEach(([x, y, z], i) => {
-      matrix.makeTranslation(x, y, z);
-      mesh.setMatrixAt(i, matrix);
-    });
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.frustumCulled = false;
-    geometries.push(geometry);
-    root.add(mesh);
-    return mesh;
+    for (const [x, y, z] of places) collect(geometry.clone(), material, new Matrix4().makeTranslation(x, y, z));
+    geometry.dispose();
   };
 
   // — LE MUR D'ENCEINTE, derrière la rangée où le véhicule est garé. C'est le fond de tous les plans du nettoyage :
@@ -784,8 +786,14 @@ export function createPlaceLayer(options: PlaceOptions) {
     side: DoubleSide,
   });
   materials.push(coneMaterial);
-  const coneMesh = repeat(new ConeGeometry(4.3, coneHeight, 14, 1, true), coneMaterial, cones);
+  const coneGeometry = new ConeGeometry(4.3, coneHeight, 14, 1, true);
+  const coneMesh = new InstancedMesh(coneGeometry, coneMaterial, cones.length);
+  cones.forEach(([x, y, z], i) => coneMesh.setMatrixAt(i, new Matrix4().makeTranslation(x, y, z)));
+  coneMesh.instanceMatrix.needsUpdate = true;
+  coneMesh.frustumCulled = false;
   coneMesh.renderOrder = 3;
+  geometries.push(coneGeometry);
+  root.add(coneMesh);
 
   // Le halo de l'ampoule elle-même : ce qui reste quand on regarde la lampe en face.
   const glow = (() => {
@@ -812,6 +820,18 @@ export function createPlaceLayer(options: PlaceOptions) {
     lampSprites.push(head);
     root.add(head);
   }
+
+  // — LA FONTE. Une géométrie par matière, donc un appel de dessin par matière.
+  for (const [material, parts] of batches) {
+    const merged = mergeGeometries(parts, false);
+    for (const part of parts) part.dispose();
+    if (!merged) continue;
+    const mesh = new Mesh(merged, material);
+    mesh.frustumCulled = false;
+    geometries.push(merged);
+    root.add(mesh);
+  }
+  batches.clear();
 
   const last = { place: -1, lamp: -1 };
   const layer: WebGLLayer = {

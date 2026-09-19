@@ -26,6 +26,20 @@ export const media: readonly MediaDescriptor[] = [
     license: 'TO_CONFIRM — origine et licence du modèle à confirmer auprès du porteur',
   },
   {
+    id: 'skyline',
+    kind: 'image',
+    role: 'La ville au loin, derrière le mur du parking : la ligne d’horizon de toutes les scènes de nettoyage.',
+    chapters: ['ville', 'arrivee', 'intervention', 'transformation', 'prestations', 'tarifs', 'bascule'],
+    priority: 'proximity',
+    renditions: [
+      { formats: ['desktop'], src: '/media/skyline-2048.webp', type: 'image/webp', bytes: 168960 },
+      { formats: ['tablet', 'mobile'], src: '/media/skyline-1024.webp', type: 'image/webp', bytes: 62464 },
+    ],
+    alt: 'Une ville de nuit au bord d’un fleuve : des tours éclairées et leurs reflets dans l’eau.',
+    source: 'Image fournie par le porteur du projet (tools/skyline/skyline-source.jpg), publiée par sharp',
+    license: 'TO_CONFIRM — origine et droits de l’image à confirmer auprès du porteur',
+  },
+  {
     id: 'vehicle-cleaning',
     kind: 'model',
     role: 'Le véhicule du récit : sa laque EST la première image du site (unité 1), puis il est sali, parcouru par la ligne de lumière, verni, et visité de l’intérieur.',

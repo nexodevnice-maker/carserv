@@ -93,7 +93,12 @@ export const SKY_GLSL = /* glsl */ `
    * ciel. Sans elle, le fond du ciel n'a aucune échelle.
    */
   vec3 skyPlanet(vec3 d, vec3 dir, float size, vec3 tint) {
-    float ang = acos(clamp(dot(d, dir), -1.0, 1.0));
+    // Test BON MARCHÉ d'abord : une planète occupe deux degrés de ciel, donc 99,99 % des pixels n'ont rien à
+    // calculer. Sans cette porte, chaque pixel de l'écran payait un arc-cosinus et deux produits vectoriels — et le
+    // ciel est recalculé à chaque reflet du sol mouillé.
+    float c = dot(d, dir);
+    if (c < cos(size * 1.2)) return vec3(0.0);
+    float ang = acos(clamp(c, -1.0, 1.0));
     float disc = smoothstep(size, size * 0.955, ang);
     if (disc <= 0.0) return vec3(0.0);
     vec3 right = normalize(cross(dir, vec3(0.0, 1.0, 0.0)));
@@ -121,21 +126,32 @@ export const SKY_GLSL = /* glsl */ `
     // gris. Le ciel doit rester noir — c'est le noir qui fait les étoiles.
     col += vec3(0.05, 0.06, 0.09) * pow(moon, 44.0);
     // Étoiles et planètes : elles s'effacent dans les reflets rugueux, où elles ne feraient que scintiller.
+    /*
+     * LE CIEL DÉTAILLÉ N'EST CALCULÉ QUE QUAND IL SE VOIT.
+     * Cette fonction n'est pas appelée une fois par pixel : le sol mouillé l'appelle pour son reflet, la brume
+     * l'appelle à son tour. Étoiles, Voie lactée et planètes se payaient donc deux ou trois fois par pixel d'écran,
+     * y compris sur de l'asphalte sec où un reflet flou n'en montre rien. Deux portes suffisent : un reflet trop
+     * rugueux, ou une direction sous l'horizon, n'a plus rien à calculer.
+     */
     float sharp = exp(-bias * 1.1);
     float above = smoothstep(-0.06, 0.16, d.y);
-    // LA BANDE : large et douce, plus claire vers le centre galactique, percée de voiles de poussière.
-    float arm = pow(clamp(1.0 - abs(dot(d, SKY_ARM)), 0.0, 1.0), 22.0);
-    float dust = 0.45 + 0.55 * skyDust(d * 2.4);
-    float core = pow(max(dot(d, SKY_CORE), 0.0), 2.6);
-    col += vec3(0.034, 0.037, 0.052) * arm * dust * above;
-    col += vec3(0.085, 0.072, 0.054) * arm * core * dust * above;
-    // Deux semis d'étoiles : un partout, un BEAUCOUP plus dense dans la bande — c'est ce contraste qui fait la galaxie.
-    col += vec3(0.86, 0.90, 1.0) * skyStars(d, 0.0) * 0.75 * sharp * above;
-    // Multiplicateurs tenus bas : au-delà, les étoiles de la bande saturent, grossissent et deviennent de la neige.
-    col += vec3(0.95, 0.94, 0.98) * skyStars(d, 31.7) * arm * dust * 1.5 * sharp * above;
-    col += vec3(1.0, 0.88, 0.74) * skyStars(d, 77.3) * arm * core * 1.9 * sharp * above;
-    col += skyPlanet(d, normalize(vec3(0.72, 0.21, -0.66)), 0.042, vec3(0.94, 0.72, 0.46)) * sharp;
-    col += skyPlanet(d, normalize(vec3(-0.78, 0.44, 0.44)), 0.021, vec3(0.62, 0.76, 0.92)) * sharp;
+    if (sharp > 0.05 && above > 0.003) {
+      float arm = pow(clamp(1.0 - abs(dot(d, SKY_ARM)), 0.0, 1.0), 22.0);
+      // Un semis d'étoiles partout, et — seulement dans la bande — la lueur, les poussières et un semis bien plus
+      // dense. C'est ce contraste qui fait la galaxie, et il ne coûte que là où il existe.
+      col += vec3(0.86, 0.90, 1.0) * skyStars(d, 0.0) * 0.75 * sharp * above;
+      if (arm > 0.004) {
+        float dust = 0.45 + 0.55 * skyDust(d * 2.4);
+        float core = pow(max(dot(d, SKY_CORE), 0.0), 2.6);
+        col += vec3(0.034, 0.037, 0.052) * arm * dust * above;
+        col += vec3(0.085, 0.072, 0.054) * arm * core * dust * above;
+        // Multiplicateurs tenus bas : au-delà, les étoiles de la bande saturent et deviennent de la neige.
+        col += vec3(0.95, 0.94, 0.98) * skyStars(d, 31.7) * arm * dust * 1.5 * sharp * above;
+        col += vec3(1.0, 0.88, 0.74) * skyStars(d, 77.3) * arm * core * 1.9 * sharp * above;
+      }
+      col += skyPlanet(d, normalize(vec3(0.72, 0.21, -0.66)), 0.042, vec3(0.94, 0.72, 0.46)) * sharp;
+      col += skyPlanet(d, normalize(vec3(-0.78, 0.44, 0.44)), 0.021, vec3(0.62, 0.76, 0.92)) * sharp;
+    }
     // Aucune étoile semée ici : une grille de points produit un moiré visible dès qu'on bouge, et les vraies étoiles
     // du site sont la galaxie 3D (scenes/galaxy). Ce ciel-ci ne sert qu'à donner sa lumière aux reflets.
     return col;

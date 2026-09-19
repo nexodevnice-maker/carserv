@@ -95,6 +95,17 @@ export const WORLD = {
     half: 5.5,
     stands: { side: 15, at: -450, length: 130, tiers: 8 },
   },
+  /**
+   * LA LIGNE D'HORIZON (scenes/skyline) : la ville au loin, derrière le mur. À un kilomètre une ville n'a plus de
+   * volume, seulement une silhouette et des lumières — une photographie sur une portion de cylindre en dit plus que
+   * des centaines de boîtes, pour un seul appel de dessin. La bande ne couvre que le secteur qu'on regarde depuis
+   * l'aire (vers l'ouest, derrière le mur) ; au-dessus, le ciel et la Voie lactée continuent.
+   */
+  // Azimut NÉGATIF : le cylindre de Three.js commence en +Z, et la caméra du parking regarde vers l'ouest (-X).
+  // À +π/2 la bande se retrouvait dans le dos de la caméra, donc invisible.
+  // L'ouverture est calée sur les PROPORTIONS de l'image : à 1,1 π la photo était étirée quatre fois et la ville
+  // devenait une traînée. 1,55 rad (89°) couvre tout ce qu'on voit depuis l'aire, en n'étirant que du double.
+  skyline: { radius: 1150, height: 260, heading: -Math.PI * 0.5, spread: 1.55, base: -86 },
   road: {
     /** Origine de la route (x, z) : la voie de la caméra passe en x = 0. */
     origin: [1.7, -240] as const,

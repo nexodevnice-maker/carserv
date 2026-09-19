@@ -169,6 +169,7 @@ export function boot() {
       import('../scenes/map/map-layer'),
       import('../scenes/surroundings/surroundings-layer'),
       import('../scenes/circuit/circuit-layer'),
+      import('../scenes/skyline/skyline-layer'),
       import('../scenes/galaxy/galaxy-layer'),
       import('../scenes/clouds/cloud-layer'),
       import('../scenes/relief/relief-layer'),
@@ -184,6 +185,7 @@ export function boot() {
           { createMapLayer },
           { createSurroundingsLayer },
           { createCircuitLayer },
+          { createSkylineLayer },
           { createGalaxyLayer },
           { createCloudLayer },
           { createReliefLayer },
@@ -267,6 +269,13 @@ export function boot() {
           // LE CIRCUIT : la location ne se raconte plus sur une chaussée dans le noir. Le véhicule roule sur une
           // piste, entre des vibreurs, devant des gradins qui lui donnent son échelle.
           const circuit = createCircuitLayer({ night: sky.uniforms, ...WORLD.circuit, chapters: ['bascule', 'location'] });
+          // La ville au loin, derrière le mur : c'est elle qui remplit l'horizon pendant tout le nettoyage.
+          const skyline = createSkylineLayer({
+            night: sky.uniforms,
+            url: desktop ? '/media/skyline-2048.webp' : '/media/skyline-1024.webp',
+            ...WORLD.skyline,
+            chapters: ['ville', 'arrivee', 'intervention', 'transformation', 'prestations', 'tarifs', 'bascule'],
+          });
           const road = createRoadLayer({
             placement: WORLD.road,
             night: sky.uniforms,
@@ -281,11 +290,14 @@ export function boot() {
           galaxyLayer = galaxy;
           // L'environnement des véhicules est calculé (aucun fichier) : on le prépare dès que la scène existe.
           void Promise.resolve().then(() => vehicleLight?.ensure());
+          // La ligne d'horizon : une seule image, 61 ko au téléphone. On la charge dès que la scène existe — elle
+          // doit être là AVANT qu'on se pose, sinon on arrive une fois de plus devant du vide.
+          void Promise.resolve().then(() => skyline.ensure());
           const created = await createWebGLStage({
             experience,
             canvas,
             host: stageEl,
-            layers: [sky, galaxy, territory, relief, around, place, circuit, vehicleLight, cleaningCar, road, rentalCar, clouds],
+            layers: [sky, galaxy, territory, skyline, relief, around, place, circuit, vehicleLight, cleaningCar, road, rentalCar, clouds],
             config: { ...STAGE, busy: () => registry.busy },
             onReady: () => {
               stageStatus = 'ready';
