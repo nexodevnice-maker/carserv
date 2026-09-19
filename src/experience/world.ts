@@ -78,6 +78,7 @@ export const WORLD = {
     // emploi avec elle et ajoutaient un appel de dessin plus un programme de nuanceur pour rien.
     blocks: { count: 0, inner: 170, outer: 620, low: 11, high: 34 },
     rail: { at: 19.5, length: 62 },
+    road: { at: 30, half: 4, length: 340 },
   },
   /**
    * Les deux véhicules (modèles 3D fournis, tools/3d). Longueurs réelles des modèles concernés : le modèle est mis à
@@ -95,7 +96,9 @@ export const WORLD = {
   circuit: {
     lane: { x: 0, from: -250, to: -700 },
     half: 5.5,
-    stands: { side: 15, at: -450, length: 130, tiers: 8 },
+    // Gradins ÉCARTÉS (15 → 27 m) : à quinze mètres de l'axe, leur bandeau lumineux traversait le cadre en diagonale
+    // dès qu'on roulait dans la voie, et on ne lisait plus ni piste ni tribune.
+    stands: { side: 27, at: -450, length: 150, tiers: 9 },
   },
   /**
    * LA LIGNE D'HORIZON (scenes/skyline) : la ville au loin, derrière le mur. À un kilomètre une ville n'a plus de
@@ -110,7 +113,7 @@ export const WORLD = {
    * dès qu'un plan tournait, on retombait sur du noir. Quatre copies de 90° chacune n'étirent l'image que du double
    * et, en miroir, ne laissent voir ni couture ni répétition. C'est ce qui supprime le vide.
    */
-  skyline: { radius: 1150, height: 260, heading: 0, spread: Math.PI * 2, repeat: 4, base: -86 },
+  skyline: { radius: 1150, height: 292, heading: 0, spread: Math.PI * 2, repeat: 4, base: -36 },
   road: {
     /** Origine de la route (x, z) : la voie de la caméra passe en x = 0. */
     origin: [1.7, -240] as const,

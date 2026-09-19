@@ -129,7 +129,8 @@ const glowFragment = /* glsl */ `
     vec2 d = vUv - 0.5;
     float r = dot(d, d) * 4.0;
     if (r > 1.0) discard;
-    float core = exp(-r * 6.0) + exp(-r * 1.6) * 0.35;
+    // Chute rapide : une traîne large donnait un disque gris flottant dans le ciel au lieu d'un halo de projecteur.
+    float core = exp(-r * 14.0) + exp(-r * 3.6) * 0.22;
     gl_FragColor = vec4(vec3(0.86, 0.92, 1.0) * core * uCircuit / (1.0 + vFar * 0.0035), 1.0);
   }
 `;
@@ -187,6 +188,20 @@ export function createCircuitLayer(options: CircuitOptions) {
   const markMesh = place(new BoxGeometry(0.34, 0.04, 0.9), markMaterial, marks);
   markMesh.renderOrder = 2;
 
+  // — LES FEUX DE LA PISTE, encastrés dans la chaussée elle-même : deux files le long de l'axe, tous les neuf
+  // mètres. C'est ce qui fait la vitesse quand on roule dessus — les vibreurs disent le bord, ces feux disent
+  // l'avance. Additifs et posés au ras du sol : ils n'éclairent rien, ils défilent.
+  const track: Matrix4[] = [];
+  for (let z = from; Math.abs(z - from) <= Math.abs(to - from); z += step * 9) {
+    track.push(new Matrix4().makeTranslation(lane - 1.9, 0.015, z));
+    track.push(new Matrix4().makeTranslation(lane + 1.9, 0.015, z));
+  }
+  const trackMaterial = make(neonFragment, { uTint: { value: [0.68, 0.78, 1.0] } });
+  trackMaterial.depthWrite = false;
+  trackMaterial.blending = AdditiveBlending;
+  const trackMesh = place(new BoxGeometry(0.26, 0.03, 1.5), trackMaterial, track);
+  trackMesh.renderOrder = 2;
+
   // — LES GRADINS. Des marches qui montent EN S'ÉLOIGNANT de la piste, un toit plat, et sous le toit un bandeau
   // lumineux. C'est lui qu'on voit de loin, et c'est l'échelle de tout le reste.
   const { side, at, length, tiers } = options.stands;
@@ -225,7 +240,9 @@ export function createCircuitLayer(options: CircuitOptions) {
         .multiply(new Matrix4().makeScale(0.22, 0.5, length * 0.94)),
     );
   }
-  const bandMaterial = make(neonFragment, { uTint: { value: [0.99, 0.78, 0.15] } });
+  // Teinte BASSE : à pleine intensité, ce bandeau vu par la tranche depuis la voie traversait tout le cadre en
+  // diagonale comme un néon posé en travers de l'image. C'est une arête éclairée, pas une enseigne.
+  const bandMaterial = make(neonFragment, { uTint: { value: [0.34, 0.26, 0.05] } });
   bandMaterial.depthWrite = false;
   bandMaterial.blending = AdditiveBlending;
   place(new BoxGeometry(1, 1, 1), bandMaterial, bands);
@@ -243,7 +260,7 @@ export function createCircuitLayer(options: CircuitOptions) {
   }
   place(new CylinderGeometry(0.22, 0.34, mastHeight, 6), concrete, masts);
   const glowMaterial = new ShaderMaterial({
-    uniforms: { ...shared, uSize: { value: 5.2 } },
+    uniforms: { ...shared, uSize: { value: 3.4 } },
     vertexShader: glowVertex,
     fragmentShader: glowFragment,
     transparent: true,

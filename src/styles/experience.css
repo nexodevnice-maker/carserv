@@ -1361,3 +1361,50 @@ html.is-intro {
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
 }
+
+
+/* — Renvoi vers la grille tarifaire ——————————————————————————————————————————— */
+/* Posé juste après la preuve : c'est là que le visiteur veut le prix, pas cinq écrans plus loin. Un cadre, pas un
+   bouton plein : il ne doit pas concurrencer l'appel à l'action du pied de page. */
+.jump {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.15rem 1rem;
+  margin-top: 1.1rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 12px;
+  background: rgb(8 8 9 / 0.72);
+  text-decoration: none;
+  transition: border-color var(--duration-ui) linear, background var(--duration-ui) linear;
+}
+
+.jump:hover,
+.jump:focus-visible {
+  border-color: var(--accent);
+  background: rgb(8 8 9 / 0.88);
+}
+
+.jump__label {
+  grid-column: 1;
+  font: var(--font-title-small);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-1);
+}
+
+.jump__hint {
+  grid-column: 1;
+  font: var(--font-label);
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+}
+
+.jump__arrow {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--accent);
+}

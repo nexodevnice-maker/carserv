@@ -68,8 +68,11 @@ const skylineFragment = /* glsl */ `
     vec3 col = night * 0.05 + mix(night, vec3(1.0, 0.82, 0.55), 0.45) * lights * 3.2;
     // Les fondus sont calés sur CE QUE CONTIENT l'image : la ville occupe sa bande médiane. On efface le ciel de la
     // photo (le nôtre est derrière, avec sa Voie lactée) et son premier plan d'eau, qui tomberait sous l'horizon.
-    float top = 1.0 - smoothstep(0.58, 0.84, vUv.y);
-    float bottom = smoothstep(0.22, 0.34, vUv.y);
+    // LA VILLE OCCUPE LE BAS DE LA PHOTO, pas son milieu : dans l'image, l'eau est en bas, les tours au-dessus, et
+    // tout le haut est un ciel de crépuscule orange. Mes fondus gardaient justement ce ciel — saturé par le
+    // rallumage des lumières, il donnait un grand rectangle BLANC en plein horizon. On ne garde que les tours.
+    float top = 1.0 - smoothstep(0.40, 0.52, vUv.y);
+    float bottom = smoothstep(0.06, 0.15, vUv.y);
     float alpha = top * bottom * uSkyline;
     // Même brume que le reste du monde.
     col = mix(haze(V) * uLight, col, exp(-pow(uFog * t, 2.0)));

@@ -31,6 +31,7 @@ export const copy = {
   },
   passage: { index: '03', title: 'Le passage', after: 'Derrière la ligne : plus une trace.' },
   face: { index: '04', title: 'De face', text: 'Propre, phares allumés. La même distance qu’avant le passage — la comparaison se fait sans y penser.' },
+  prixApres: { label: 'Prix après nettoyage', hint: 'Quatre formules, de 40 à 110 €' },
   apres: {
     index: '04',
     title: 'Après',

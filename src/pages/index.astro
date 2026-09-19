@@ -184,6 +184,12 @@ const description =
           <p class="index"><span>{copy.face.index}</span></p>
           <h3 class="title title--small">{copy.face.title}</h3>
           <p class="text">{copy.face.text}</p>
+          {/* Le visiteur vient de voir le résultat : c'est LE moment où il veut le prix, pas cinq écrans plus loin. */}
+          <a class="jump" href="#tarifs">
+            <span class="jump__label">{copy.prixApres.label}</span>
+            <span class="jump__hint">{copy.prixApres.hint}</span>
+            <span class="jump__arrow" aria-hidden="true">→</span>
+          </a>
         </div>
         <div class="panel" style={win('transformation', 'apres')}>
           <p class="index"><span>{copy.apres.index}</span></p>

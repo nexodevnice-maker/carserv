@@ -15,6 +15,8 @@ import {
   type Texture,
 } from 'three';
 import type { ExperienceState } from '../../engine/state/experience-state';
+import { bakeShadow } from '../../engine/webgl/bake-shadow';
+import { createVehicleBeams } from './vehicle-beams';
 import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
 
 /**
@@ -129,13 +131,23 @@ const PATCH_FRAGMENT_HEAD = /* glsl */ `
  */
 const shadowFragment = /* glsl */ `
   uniform float uStrength;
+  uniform sampler2D uShade;
+  uniform float uBaked;
   varying vec2 vUv;
   void main() {
     vec2 p = (vUv - 0.5) * 2.0;
+    // Repli tant que la silhouette n'est pas cuite : une empreinte approchée vaut mieux qu'un véhicule qui flotte.
     float body = exp(-dot(p, p) * 2.6);
-    // Deux appuis : les trains avant et arrière marquent le sol plus que le milieu.
     float axles = exp(-pow((abs(p.x) - 0.55) / 0.28, 2.0)) * exp(-p.y * p.y * 4.5) * 0.55;
-    float alpha = clamp((body + axles) * uStrength, 0.0, 0.92);
+    float rough = body + axles;
+    // Cuite : le canal rouge porte la pénombre SERRÉE (le contact sous les roues), le vert la pénombre LARGE.
+    // C'est leur somme qui fait qu'une voiture pose au lieu de planer.
+    vec2 shade = texture2D(uShade, vUv).rg;
+    float baked = clamp(shade.r * 0.5 + shade.g * 0.3, 0.0, 1.0);
+    // Bordure fondue OBLIGATOIRE : sans elle, le panneau de l'ombre se voit comme un rectangle sombre posé sur le
+    // sol — un trou, pas une ombre. Une ombre n'a jamais de bord droit.
+    vec2 b = smoothstep(vec2(0.0), vec2(0.1), vUv) * smoothstep(vec2(1.0), vec2(0.9), vUv);
+    float alpha = clamp(mix(rough, baked, uBaked) * uStrength * b.x * b.y, 0.0, 0.8);
     gl_FragColor = vec4(0.0, 0.0, 0.0, alpha);
   }
 `;
@@ -194,7 +206,7 @@ export function createVehicleLayer(options: VehicleOptions) {
   const body = new Group();
   root.add(body);
   body.visible = false;
-  const shadowUniforms = { uStrength: { value: 0.85 } };
+  const shadowUniforms = { uStrength: { value: 0.85 }, uShade: { value: null as Texture | null }, uBaked: { value: 0 } };
   const shadow = new Mesh(
     new PlaneGeometry(options.length * 1.5, options.length * 0.78),
     new ShaderMaterial({ uniforms: shadowUniforms, vertexShader: shadowVertex, fragmentShader: shadowFragment, transparent: true, depthWrite: false }),
@@ -205,6 +217,11 @@ export function createVehicleLayer(options: VehicleOptions) {
   shadow.renderOrder = 4;
   body.add(shadow);
   const forward = new Vector2(Math.cos(options.heading), Math.sin(options.heading));
+  // LA LUMIÈRE QUE LES PHARES JETTENT (faisceaux, nappe au sol, halos). Elle vit dans le repère du véhicule : elle
+  // suit donc son cap et son déplacement sans un calcul de plus.
+  const beams = createVehicleBeams({ half: options.length / 2, height: options.length * 0.145, spread: options.length * 0.145 });
+  beams.root.rotation.y = -options.heading;
+  body.add(beams.root);
   const uniforms: VehicleUniforms = {
     uDirt: { value: 0 },
     uCleanBase: { value: 1 },
@@ -234,6 +251,12 @@ export function createVehicleLayer(options: VehicleOptions) {
     // décoration : c'est le signe que la voiture est prête à repartir.
     const beam = FRONT_LIGHT.test(standard.name) ? 'avant' : REAR_LIGHT.test(standard.name) ? 'arriere' : null;
     const cabin = !beam && CABIN.test(standard.name);
+    if (cabin) {
+      standard.color?.multiplyScalar(0.11);
+      standard.roughness = Math.max(standard.roughness ?? 0.5, 0.62);
+      standard.metalness = 0.04;
+      standard.needsUpdate = true;
+    }
     roles[standard.name || '(sans nom)'] = beam ? `optique ${beam}` : 'caisse';
     // Three.js met les programmes en cache d'après les PARAMÈTRES du matériau : deux matériaux réglés pareil
     // partagent le même programme, même si leur `onBeforeCompile` injecte un code différent. L'optique héritait donc
@@ -318,7 +341,13 @@ export function createVehicleLayer(options: VehicleOptions) {
               ? /* glsl */ `
           // L'HABITACLE. Une lueur chaude, très basse, posée sur les garnitures — la lumière d'ambiance qu'on laisse
           // allumée la nuit. Elle monte avec le canal cabin : on entre dans la voiture, la voiture s'allume.
-          totalEmissiveRadiance += vec3(1.0, 0.72, 0.36) * uCabin * 0.42;
+          // Deux couches : un fond d'ambiance très bas sur toutes les garnitures, et une LIGNE DE LED sur le bas des
+          // contreportes — la bande lumineuse qu'on voit dans une voiture récente, la nuit. Elle est tracée par la
+          // hauteur dans le repère du véhicule, donc elle suit la caisse sans aucune géométrie ajoutée.
+          float cabinY = vCarWorld.y - uCarOrigin.y;
+          float strip = exp(-pow((cabinY - 0.78) / 0.035, 2.0));
+          totalEmissiveRadiance += vec3(1.0, 0.70, 0.34) * uCabin * 0.09;
+          totalEmissiveRadiance += vec3(1.0, 0.56, 0.20) * strip * uCabin * 0.85;
         `
               : ''
           }
@@ -419,6 +448,23 @@ export function createVehicleLayer(options: VehicleOptions) {
     root.visible = true;
     body.visible = true;
     await stage.renderer.compileAsync(body, stage.camera, stage.scene).catch(() => undefined);
+    // L'OMBRE PORTÉE, cuite ICI et une seule fois : le véhicule ne bouge pas par rapport à son sol, donc son ombre
+    // ne change jamais. Une carte d'ombre classique coûterait un rendu complet de la scène à chaque image ; celle-ci
+    // ne coûte rien après ce moment. Le modèle est visible à cet instant (compilation en cours), c'est exactement
+    // quand il faut le faire.
+    const half = options.length / 2;
+    const shade = bakeShadow(stage.renderer, {
+      models: [body],
+      // Lumière haute et légèrement de côté : une ombre au pied du véhicule, pas une ombre de fin de journée.
+      light: [options.at[0] - 2.4, 9.5, options.at[1] - 3.2],
+      area: [options.at[0] - half * 1.5, options.at[1] - half * 1.1, options.at[0] + half * 1.5, options.at[1] + half * 1.1],
+      width: 512,
+    });
+    if (shade) {
+      shadowUniforms.uShade.value = shade;
+      shadowUniforms.uBaked.value = 1;
+      shadow.scale.set(1, (half * 2.2) / (options.length * 0.78), 1);
+    }
     root.visible = hiddenRoot;
     body.visible = hiddenBody;
     stage.invalidate();
@@ -486,6 +532,7 @@ export function createVehicleLayer(options: VehicleOptions) {
       Object.assign(last, { dirt, scan, polish, light, travel, beam, cabin });
       uniforms.uBeam.value = beam;
       uniforms.uCabin.value = cabin;
+      beams.set(beam * light);
       uniforms.uDirt.value = dirt;
       // Avant tout relevé, une caisse sans poussière est propre PARTOUT : sinon le vernis de l'ouverture n'existe pas.
       uniforms.uCleanBase.value = scan <= 0.001 && dirt <= 0.001 ? 1 : 0;
@@ -500,7 +547,9 @@ export function createVehicleLayer(options: VehicleOptions) {
       }
       return true;
     },
-    dispose() {},
+    dispose() {
+      beams.dispose();
+    },
   };
   return layer;
 }

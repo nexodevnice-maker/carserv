@@ -399,6 +399,113 @@ function tagTexture() {
   return map;
 }
 
+/**
+ * LE SECOND TAG : la CÔTE, peinte au pochoir sur le béton. Le trait du littoral, six points, six noms — Cannes,
+ * Antibes, Nice, Villefranche, Saint-Jean-Cap-Ferrat, Beaulieu, Menton. C'est la zone d'intervention dite sans une
+ * phrase, et à l'endroit où on la dit le mieux : sur un mur, dans la nuit, à côté du véhicule.
+ * Les coordonnées sont relatives (0-1 dans l'image), posées à l'œil d'après la forme réelle du littoral : d'ouest en
+ * est, Cannes au plus bas, Menton au plus haut, le cap qui avance au milieu.
+ */
+function coastTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1400;
+  canvas.height = 700;
+  const c = canvas.getContext('2d') as CanvasRenderingContext2D;
+  c.clearRect(0, 0, canvas.width, canvas.height);
+  const YELLOW = 'rgba(253, 199, 39, ';
+  const random = seeded(90126);
+
+  // Le littoral : une polyligne adoucie, du sud-ouest au nord-est, avec le cap qui descend au milieu.
+  const shore: [number, number][] = [
+    [0.05, 0.60],
+    [0.16, 0.58],
+    [0.27, 0.62],
+    [0.38, 0.56],
+    [0.47, 0.60],
+    [0.55, 0.74],
+    [0.61, 0.58],
+    [0.70, 0.50],
+    [0.82, 0.42],
+    [0.95, 0.30],
+  ];
+  c.save();
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  c.strokeStyle = `${YELLOW}0.9)`;
+  c.lineWidth = 11;
+  c.shadowColor = `${YELLOW}0.5)`;
+  c.shadowBlur = 26;
+  c.beginPath();
+  shore.forEach(([x, y], i) => {
+    const px = x * canvas.width;
+    const py = y * canvas.height;
+    if (i === 0) c.moveTo(px, py);
+    else {
+      const [px0, py0] = shore[i - 1]!;
+      c.quadraticCurveTo(((px0 + x) / 2) * canvas.width, ((py0 + y) / 2) * canvas.height + 6, px, py);
+    }
+  });
+  c.stroke();
+  c.restore();
+
+  // Les villes : un point, un nom. Les noms alternent au-dessus et au-dessous du trait pour ne jamais se toucher.
+  const towns: [string, number, number, number][] = [
+    ['CANNES', 0.09, 0.60, -1],
+    ['ANTIBES', 0.27, 0.62, 1],
+    ['NICE', 0.44, 0.585, -1],
+    ['ST-JEAN-CAP-FERRAT', 0.55, 0.745, 1],
+    ['BEAULIEU', 0.635, 0.545, -1],
+    ['MENTON', 0.88, 0.375, -1],
+  ];
+  c.textBaseline = 'middle';
+  for (const [name, x, y, dir] of towns) {
+    const px = x * canvas.width;
+    const py = y * canvas.height;
+    c.fillStyle = `${YELLOW}0.95)`;
+    c.beginPath();
+    c.arc(px, py, 9, 0, Math.PI * 2);
+    c.fill();
+    c.save();
+    c.translate(px, py + dir * 40);
+    c.rotate(-0.03);
+    c.font = `bold ${name.length > 12 ? 40 : 52}px "Arial Narrow", system-ui, sans-serif`;
+    c.textAlign = 'center';
+    c.fillStyle = 'rgba(10,9,7,0.7)';
+    c.fillText(name, 4, 4);
+    c.fillStyle = `${YELLOW}0.92)`;
+    c.fillText(name, 0, 0);
+    c.restore();
+  }
+
+  // Le titre, en haut à gauche.
+  c.save();
+  c.translate(70, 96);
+  c.rotate(-0.025);
+  c.textAlign = 'left';
+  c.font = 'bold 76px "Arial Narrow", system-ui, sans-serif';
+  c.fillStyle = 'rgba(10,9,7,0.7)';
+  c.fillText('DANS TOUT LE 06', 5, 5);
+  c.fillStyle = `${YELLOW}0.9)`;
+  c.fillText('DANS TOUT LE 06', 0, 0);
+  c.restore();
+
+  // L'usure du béton.
+  c.globalCompositeOperation = 'destination-out';
+  for (let k = 0; k < 900; k += 1) {
+    c.globalAlpha = 0.14 + random() * 0.4;
+    c.beginPath();
+    c.ellipse(random() * canvas.width, random() * canvas.height, 1.5 + random() * 8, 1.5 + random() * 8, random() * Math.PI, 0, Math.PI * 2);
+    c.fill();
+  }
+  c.globalAlpha = 1;
+  c.globalCompositeOperation = 'source-over';
+
+  const map = new CanvasTexture(canvas);
+  map.colorSpace = SRGBColorSpace;
+  map.anisotropy = 8;
+  return map;
+}
+
 const placeVertex = /* glsl */ `
   varying vec2 vUv;
   varying vec3 vWorld;
@@ -727,12 +834,24 @@ export function createPlaceLayer(options: PlaceOptions) {
   // « RVICE 06 ». À sept mètres et demi, « CAR SERVICE 06 » tient entier derrière la voiture.
   // Les proportions du panneau suivent celles de l'image (2048 x 640) : sans quoi les lettres sont étirées.
   // Bloc presque carré (1280 x 960) : 3,4 m sur 2,55 m, centré derrière le véhicule, à hauteur d'homme.
-  for (const [z, width, height, y] of [
-    [-0.6, 3.4, 2.55, 1.55],
-    [-14.0, 2.2, 1.65, 1.35],
-  ] as const) {
+  for (const [z, width, height, y] of [[-0.6, 3.4, 2.55, 1.55]] as const) {
     const decal = new Mesh(new PlaneGeometry(width, height), tagMaterial);
     decal.position.set(wallX + 0.19, y, z);
+    decal.rotation.y = Math.PI / 2;
+    decal.renderOrder = 2;
+    geometries.push(decal.geometry);
+    root.add(decal);
+  }
+
+  // — LE TAG DE LA CÔTE, plus loin sur le même mur : le littoral et ses villes, peints au pochoir.
+  const coast = coastTexture();
+  textures.push(coast);
+  const coastMaterial = tagMaterial.clone();
+  coastMaterial.uniforms = { ...tagMaterial.uniforms, uTag: { value: coast } };
+  materials.push(coastMaterial);
+  {
+    const decal = new Mesh(new PlaneGeometry(5.2, 2.6), coastMaterial);
+    decal.position.set(wallX + 0.19, 1.6, -13.5);
     decal.rotation.y = Math.PI / 2;
     decal.renderOrder = 2;
     geometries.push(decal.geometry);

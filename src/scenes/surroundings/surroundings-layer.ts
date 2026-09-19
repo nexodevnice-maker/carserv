@@ -37,6 +37,8 @@ export interface SurroundingsOptions {
   blocks: { count: number; inner: number; outer: number; low: number; high: number };
   /** Glissière : abscisse, longueur (m). */
   rail: { at: number; length: number };
+  /** La route qui longe l'aire : axe, demi-largeur et longueur (m). */
+  road: { at: number; half: number; length: number };
   chapters?: readonly string[];
 }
 
@@ -97,6 +99,44 @@ const blockFragment = /* glsl */ `
     float blur = smoothstep(0.3, 0.8, max(edge.x, edge.y));
     float win = mix(pane.x * pane.y * lit, 0.1, blur) * (1.0 - axis.y);
     col += vec3(1.0, 0.76, 0.42) * win * 1.9;
+    col = mix(haze(V) * uLight, col, exp(-pow(uFog * t, 2.0)));
+    gl_FragColor = vec4(col * uAround, uAround);
+  }
+`;
+
+/**
+ * LA ROUTE qui longe l'aire. Un parking sans voie d'accès n'est pas un parking : c'est une dalle. Chaussée, ligne
+ * axiale discontinue et rives continues sont PEINTES par le nuanceur d'après la position dans le monde — aucune
+ * texture, aucun appel de dessin supplémentaire, et le marquage reste net quelle que soit la distance.
+ */
+const roadFragment = /* glsl */ `
+  ${SKY_GLSL}
+  uniform sampler2D uNoise;
+  uniform float uLight;
+  uniform float uFog;
+  uniform float uAround;
+  uniform float uHalf;
+  varying vec3 vWorld;
+  varying vec3 vNormalW;
+
+  void main() {
+    vec3 ray = vWorld - cameraPosition;
+    float t = length(ray);
+    vec3 V = ray / t;
+    float grain = texture2D(uNoise, vWorld.xz * 0.35).r;
+    vec3 col = vec3(0.016, 0.017, 0.020) * (0.6 + grain * 0.9);
+    // Ligne axiale discontinue : trois mètres de trait, six de vide.
+    float lane = abs(vWorld.x - uHalf);
+    float dash = step(fract(vWorld.z / 9.0), 0.34);
+    float axis = (1.0 - smoothstep(0.06, 0.13, lane)) * dash;
+    // Rives continues, de part et d'autre.
+    float edge = 1.0 - smoothstep(0.06, 0.13, abs(lane - 3.6));
+    vec3 paint = vec3(0.62, 0.62, 0.58);
+    col = mix(col, paint * (0.1 + skyLod(vec3(0.0, 1.0, 0.0), 4.0) * uLight * 14.0), clamp(axis + edge, 0.0, 1.0));
+    // Un peu de ciel dans l'enrobé mouillé : c'est ce reflet qui fait la nuit.
+    vec3 R = reflect(V, normalize(vNormalW));
+    R.y = abs(R.y);
+    col += skyLod(R, 2.6) * uLight * 0.35;
     col = mix(haze(V) * uLight, col, exp(-pow(uFog * t, 2.0)));
     gl_FragColor = vec4(col * uAround, uAround);
   }
@@ -219,6 +259,12 @@ export function createSurroundingsLayer(options: SurroundingsOptions) {
     posts.push(new Matrix4().makeTranslation(options.rail.at, 0.36, z));
   }
   place(new BoxGeometry(0.12, 0.72, 0.12), metal, posts);
+
+  // — LA ROUTE. Une voie d'accès, au-delà de la glissière : c'est par là qu'on arrive sur l'aire.
+  const roadMaterial = make(roadFragment, { uHalf: { value: options.road.at } });
+  const roadPlane = new PlaneGeometry(options.road.half * 2 + 3.2, options.road.length);
+  roadPlane.rotateX(-Math.PI / 2);
+  place(roadPlane, roadMaterial, [new Matrix4().makeTranslation(options.road.at, 0.008, 0)]);
 
   // — LES IMMEUBLES DU FOND. Répartis en couronne, jamais devant la place, jamais alignés.
   const random = seeded(7311);
