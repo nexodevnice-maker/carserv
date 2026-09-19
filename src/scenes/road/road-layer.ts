@@ -6,7 +6,6 @@ import {
   LinearMipmapLinearFilter,
   Matrix4,
   Mesh,
-  MeshBasicMaterial,
   PlaneGeometry,
   RepeatWrapping,
   ShaderMaterial,
@@ -46,12 +45,12 @@ export const ROAD = {
   center: -3.4,
   halfWidth: 6.8,
   lane: -1.7,
-  /** Marquages de durée (x du centre). */
-  markings: [
-    { x: 100, label: '1 JOUR' },
-    { x: 200, label: '7 JOURS' },
-    { x: 300, label: '15 JOURS' },
-  ],
+  /**
+   * Il n'y a plus de durée peinte sur la chaussée. Elle répétait EN ÉNORME ce que le panneau dit juste en dessous
+   * (« 15 JOURS · 700 € »), et tombait entre la caméra et le véhicule quelle que soit sa position le long de la
+   * route — un pavé gris en travers du bas du cadre. Un défilement dit UNE chose : ici, c'est le panneau.
+   * Au passage : trois appels de dessin, trois matériaux et trois textures de canevas en moins.
+   */
 };
 
 const TILE = 63; // mètres de chaussée par répétition de texture (7 tirets de 9 m : aucun raccord visible, motif long vu du ciel)
@@ -137,41 +136,6 @@ function ignite(light: number) {
   if (light <= 0 || light >= 1) return light;
   const beat = Math.sin(light * 61.7) * Math.sin(light * 23.3);
   return light < 0.8 && beat < -0.18 ? light * 0.12 : light;
-}
-
-/** Durée peinte au sol, lettres étirées dans le sens de la marche (comme un marquage routier). */
-function markingTexture(label: string): CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 1024;
-  const c = canvas.getContext('2d') as CanvasRenderingContext2D;
-  c.fillStyle = 'rgba(226,224,214,0.9)';
-  c.textAlign = 'center';
-  c.textBaseline = 'middle';
-  const [number, unit] = label.split(' ');
-  c.save();
-  c.translate(256, 420);
-  c.scale(1, 2.4);
-  c.font = '700 150px "Barlow Condensed", "Arial Narrow", sans-serif';
-  c.fillText(number ?? '', 0, 0);
-  c.restore();
-  c.save();
-  c.translate(256, 800);
-  c.scale(1, 2.1);
-  c.font = '600 64px "Barlow Condensed", "Arial Narrow", sans-serif';
-  c.fillText(unit ?? '', 0, 0);
-  c.restore();
-  // Usure de la peinture.
-  const random = seeded(label.length * 31);
-  c.globalCompositeOperation = 'destination-out';
-  for (let k = 0; k < 900; k++) {
-    c.fillStyle = `rgba(0,0,0,${0.2 + random() * 0.5})`;
-    c.fillRect(random() * 512, random() * 1024, 1 + random() * 4, 1 + random() * 3);
-  }
-  const texture = new CanvasTexture(canvas);
-  texture.colorSpace = SRGBColorSpace;
-  texture.anisotropy = 8;
-  return texture;
 }
 
 function haloTexture(): CanvasTexture {
@@ -358,7 +322,6 @@ export function createRoadLayer(options: {
   trail.frustumCulled = false;
   frame.add(trail);
 
-  const markingMaterials: MeshBasicMaterial[] = [];
   // Repère : u (largeur des lettres) vers +z (droite du conducteur), v (haut des lettres) vers +x (le lointain).
   const basis = new Matrix4().makeBasis(new Vector3(0, 0, 1), new Vector3(1, 0, 0), new Vector3(0, 1, 0));
 
@@ -420,17 +383,6 @@ export function createRoadLayer(options: {
           }
         }),
       );
-      for (const { x, label } of ROAD.markings) {
-        const texture = markingTexture(label);
-        textures.push(texture);
-        const material = new MeshBasicMaterial({ map: texture, color: 0x8a8d92, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
-        markingMaterials.push(material);
-        const decal = new Mesh(new PlaneGeometry(4.2, 8.4), material);
-        decal.quaternion.setFromRotationMatrix(basis);
-        decal.position.set(x, 0.012, ROAD.lane);
-        decal.renderOrder = 2;
-        frame.add(decal);
-      }
     },
     update(state: Readonly<ExperienceState>, ctx: StageContext): LayerUpdate {
       const light = state.channels.roadLight ?? 0;
@@ -451,7 +403,6 @@ export function createRoadLayer(options: {
       road.visible = light > 0.001;
       roadUniforms.uRoad.value = light;
       roadUniforms.uLamp.value = lamp;
-      for (const material of markingMaterials) material.opacity = 0.9 * Math.max(0, light * 1.4 - 0.4);
       tail.visible = lamp > 0.001;
       tail.position.set(tailX, 0, ROAD.lane);
       tail.updateMatrixWorld(true);
