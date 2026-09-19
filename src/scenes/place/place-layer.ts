@@ -265,7 +265,9 @@ function tagTexture() {
 
   type Glyph = { ch: string; x: number; y: number; rot: number; w: number; size: number };
   const glyphs: Glyph[] = [];
-  const margin = 70;
+  // Marge large : la taille est calculée sur la largeur mesurée, mais une lettre penchée et son ombre portée
+  // débordent encore de leur boîte. À 70 px, le « C » de CAR sortait de l'image et se retrouvait coupé net.
+  const margin = 190;
   for (const line of LINES) {
     const font = (size: number) => {
       c.font = `bold ${size}px "Arial Narrow", "Haettenschweiler", system-ui, sans-serif`;

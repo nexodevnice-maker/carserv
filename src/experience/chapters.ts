@@ -254,31 +254,33 @@ export const definition: ExperienceDefinition = {
       { chapter: 'transformation', at: 0.1, value: 0, pace: linear },
     ],
     // La ligne de lumière traverse le véhicule pendant tout le chapitre du lavage.
+    // LE RELEVÉ PASSE EN UN SEUL GESTE : d'un repos au suivant. Étalé sur trois défilements, on ne voyait jamais la
+    // ligne traverser — on voyait trois états figés, et il fallait scroller trois fois pour une seule action.
     scan: [
-      { chapter: 'intervention', at: 0.12, value: 0 },
-      { chapter: 'intervention', at: 0.9, value: 1, pace: linear },
+      { chapter: 'intervention', at: 0.2, value: 0 },
+      { chapter: 'intervention', at: 0.56, value: 1, pace: linear },
     ],
     polish: [
       { chapter: 'galaxie', at: 0, value: 0 },
-      { chapter: 'intervention', at: 0.12, value: 0 },
-      { chapter: 'intervention', at: 0.9, value: 1, pace: linear },
+      { chapter: 'intervention', at: 0.2, value: 0 },
+      { chapter: 'intervention', at: 0.56, value: 1, pace: linear },
       { chapter: 'tarifs', at: 1, value: 1 },
     ],
     // Niveau de reflet des véhicules : sale, une carrosserie ne renvoie rien ; vernie, elle rend le ciel entier.
     gloss: [
       { chapter: 'arrivee', at: 0.45, value: 0.72 },
-      { chapter: 'intervention', at: 0.12, value: 0.72 },
-      { chapter: 'intervention', at: 0.9, value: 1.2, pace: linear },
+      { chapter: 'intervention', at: 0.2, value: 0.72 },
+      { chapter: 'intervention', at: 0.56, value: 1.2, pace: linear },
       { chapter: 'transformation', at: 0.35, value: 1.3, pace: smooth },
       { chapter: 'prestations', at: 0.25, value: 1, pace: smooth },
     ],
     // — LES PHARES. Ils s'allument quand le relevé a fini de passer : la voiture est propre, elle est prête, elle
     // s'allume. Avant, rien — une carrosserie sale aux phares allumés ne raconte rien.
     headlight: [
-      { chapter: 'intervention', at: 0.15, value: 0 },
+      { chapter: 'intervention', at: 0.22, value: 0 },
       // La ligne de lumière descend de l'AVANT vers l'arrière : les optiques s'allument quand elle vient de les
       // traverser, pas une fois tout terminé. C'est le relevé qui rallume la voiture, sous nos yeux.
-      { chapter: 'intervention', at: 0.42, value: 1, pace: { window: [0, 1], ease: 'out' } },
+      { chapter: 'intervention', at: 0.4, value: 1, pace: { window: [0, 1], ease: 'out' } },
       { chapter: 'tarifs', at: 1, value: 1 },
       { chapter: 'bascule', at: 0.3, value: 0, pace: smooth },
     ],
@@ -292,8 +294,8 @@ export const definition: ExperienceDefinition = {
     ],
     // Jauge Avant / Après : elle suit exactement la ligne de lumière.
     clean: [
-      { chapter: 'intervention', at: 0.12, value: 0 },
-      { chapter: 'intervention', at: 0.9, value: 1, pace: linear },
+      { chapter: 'intervention', at: 0.2, value: 0 },
+      { chapter: 'intervention', at: 0.56, value: 1, pace: linear },
     ],
     gauge: [
       { chapter: 'arrivee', at: 0.66, value: 0 },

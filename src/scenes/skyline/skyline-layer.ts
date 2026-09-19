@@ -1,4 +1,4 @@
-import { BackSide, CylinderGeometry, Group, LinearFilter, Mesh, ShaderMaterial, Texture } from 'three';
+import { BackSide, CylinderGeometry, Group, LinearFilter, Mesh, MirroredRepeatWrapping, ShaderMaterial, Texture } from 'three';
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, StageContext, WebGLLayer } from '../../engine/webgl/webgl-stage';
 import { SKY_GLSL, type SharedNight } from '../shared/night-glsl';
@@ -26,6 +26,8 @@ export interface SkylineOptions {
   /** Azimut du centre de la bande (rad) et ouverture angulaire (rad). */
   heading: number;
   spread: number;
+  /** Nombre de copies de l'image sur l'ouverture. Miroir une fois sur deux : aucune couture, aucune répétition lisible. */
+  repeat: number;
   /** Élévation du bas de la bande (m) : la ville se pose un peu sous l'horizon. */
   base: number;
   chapters?: readonly string[];
@@ -63,11 +65,11 @@ const skylineFragment = /* glsl */ `
     // La photographie est un crépuscule magenta ; le site est une nuit. On la désature fortement, on la refroidit,
     // et on ne rallume que ses points lumineux — en ambre, comme tout l'éclairage urbain du site.
     vec3 night = mix(vec3(lum) * vec3(0.72, 0.80, 1.0), photo.rgb, 0.34);
-    vec3 col = night * 0.05 + mix(night, vec3(1.0, 0.82, 0.55), 0.45) * lights * 2.1;
+    vec3 col = night * 0.05 + mix(night, vec3(1.0, 0.82, 0.55), 0.45) * lights * 3.2;
     // Les fondus sont calés sur CE QUE CONTIENT l'image : la ville occupe sa bande médiane. On efface le ciel de la
     // photo (le nôtre est derrière, avec sa Voie lactée) et son premier plan d'eau, qui tomberait sous l'horizon.
-    float top = 1.0 - smoothstep(0.70, 0.99, vUv.y);
-    float bottom = smoothstep(0.20, 0.33, vUv.y);
+    float top = 1.0 - smoothstep(0.58, 0.84, vUv.y);
+    float bottom = smoothstep(0.22, 0.34, vUv.y);
     float alpha = top * bottom * uSkyline;
     // Même brume que le reste du monde.
     col = mix(haze(V) * uLight, col, exp(-pow(uFog * t, 2.0)));
@@ -120,6 +122,10 @@ export function createSkylineLayer(options: SkylineOptions) {
         texture.minFilter = LinearFilter;
         texture.magFilter = LinearFilter;
         texture.generateMipmaps = false;
+        // Répétition EN MIROIR : la ville fait tout le tour sans couture visible et sans qu'on reconnaisse la même
+        // tour deux fois de suite. C'est ce qui supprime définitivement le vide noir autour de la place.
+        texture.wrapS = MirroredRepeatWrapping;
+        texture.repeat.x = options.repeat;
         texture.anisotropy = 4;
         texture.needsUpdate = true;
         uniforms.uPhoto.value = texture;

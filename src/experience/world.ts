@@ -74,7 +74,9 @@ export const WORLD = {
    */
   around: {
     lamps: { side: 23, from: 26, to: 330, every: 27, height: 8.4 },
-    blocks: { count: 22, inner: 170, outer: 620, low: 11, high: 34 },
+    // Plus aucun immeuble procédural : la photographie de la ville s'en charge, et bien mieux. Ils faisaient double
+    // emploi avec elle et ajoutaient un appel de dessin plus un programme de nuanceur pour rien.
+    blocks: { count: 0, inner: 170, outer: 620, low: 11, high: 34 },
     rail: { at: 19.5, length: 62 },
   },
   /**
@@ -103,9 +105,12 @@ export const WORLD = {
    */
   // Azimut NÉGATIF : le cylindre de Three.js commence en +Z, et la caméra du parking regarde vers l'ouest (-X).
   // À +π/2 la bande se retrouvait dans le dos de la caméra, donc invisible.
-  // L'ouverture est calée sur les PROPORTIONS de l'image : à 1,1 π la photo était étirée quatre fois et la ville
-  // devenait une traînée. 1,55 rad (89°) couvre tout ce qu'on voit depuis l'aire, en n'étirant que du double.
-  skyline: { radius: 1150, height: 260, heading: -Math.PI * 0.5, spread: 1.55, base: -86 },
+  /**
+   * La ville fait LE TOUR COMPLET, en quatre copies miroir. Une bande de 89° ne couvrait que le regard vers le mur :
+   * dès qu'un plan tournait, on retombait sur du noir. Quatre copies de 90° chacune n'étirent l'image que du double
+   * et, en miroir, ne laissent voir ni couture ni répétition. C'est ce qui supprime le vide.
+   */
+  skyline: { radius: 1150, height: 260, heading: 0, spread: Math.PI * 2, repeat: 4, base: -86 },
   road: {
     /** Origine de la route (x, z) : la voie de la caméra passe en x = 0. */
     origin: [1.7, -240] as const,

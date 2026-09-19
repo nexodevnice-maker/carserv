@@ -237,7 +237,8 @@ export function createSurroundingsLayer(options: SurroundingsOptions) {
         .multiply(new Matrix4().makeScale(scale.x, scale.y, scale.z)),
     );
   }
-  place(new BoxGeometry(1, 1, 1), make(blockFragment), blocks);
+  // Zéro immeuble : on ne crée ni le maillage ni son programme de nuanceur.
+  if (blocks.length) place(new BoxGeometry(1, 1, 1), make(blockFragment), blocks);
 
   let last = -1;
   const layer: WebGLLayer = {
