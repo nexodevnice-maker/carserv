@@ -50,6 +50,51 @@ export const SKY_GLSL = /* glsl */ `
    */
   const vec3 SKY_MOON = normalize(vec3(-0.42, 0.34, -0.84));
 
+  /** Bruit de valeur 2D, lissé : sert la surface de la lune (mers, cratères, grain). */
+  float moonNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = fract(sin(dot(i, vec2(127.1, 311.7))) * 43758.5453);
+    float b = fract(sin(dot(i + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
+    float c = fract(sin(dot(i + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+    float e = fract(sin(dot(i + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+    return mix(mix(a, b, f.x), mix(c, e, f.x), f.y);
+  }
+
+  /**
+   * LA LUNE, pour de vrai. C'était un disque blanc uniforme — « un gros point dans le ciel » — et il faisait 1,7°
+   * de rayon, soit plus de trois fois la vraie lune. Trois choses font qu'on y croit :
+   * - les MERS : de grandes plages sombres, basse fréquence, qui donnent la figure qu'on connaît ;
+   * - les CRATÈRES et le grain : la lune n'est pas lisse, et c'est ce qui la distingue d'une lampe ;
+   * - l'ASSOMBRISSEMENT DE BORD : une sphère éclairée de face s'éteint sur ses bords. Sans lui, le disque est un
+   *   autocollant. Avec lui, on lit une boule.
+   * Le bord reste net (c'est un astre, pas une lueur), mais fondu sur un cheveu pour ne pas crénelér.
+   */
+  vec3 skyMoon(vec3 d) {
+    float c = max(dot(d, SKY_MOON), 0.0);
+    // Les deux halos existent partout : ce sont eux qui donnent son fond au ciel.
+    vec3 col = vec3(0.26, 0.30, 0.40) * pow(c, 1500.0) * 0.5 + vec3(0.05, 0.06, 0.09) * pow(c, 44.0);
+    const float R = 0.0135;
+    vec3 rt = normalize(cross(SKY_MOON, vec3(0.0, 1.0, 0.0)));
+    vec3 up = cross(rt, SKY_MOON);
+    vec2 m = vec2(dot(d, rt), dot(d, up)) / R;
+    float r2 = dot(m, m);
+    if (r2 > 1.02) return col;
+    float z = sqrt(max(1.0 - min(r2, 1.0), 0.0));
+    // Mers à GRANDE échelle (1,7 → 1,15) : à haute fréquence on lisait du bruit, pas une figure lunaire.
+    float mers = smoothstep(0.42, 0.72, moonNoise(m * 1.15 + 3.7));
+    float crateres = moonNoise(m * 7.0 + 17.0);
+    float grain = moonNoise(m * 22.0) * 0.6 + moonNoise(m * 48.0) * 0.3;
+    // Contraste des mers RESSERRÉ (0,40 → 0,62) et albédo relevé : la lune est un astre clair. Le premier réglage
+    // la laissait à un gris de galet — elle se lisait moins bien que l'ancien disque plat.
+    float albedo = mix(0.98, 0.62, mers) * (0.93 + 0.13 * crateres) * (0.95 + 0.10 * grain);
+    float limbe = mix(0.70, 1.0, pow(z, 0.35));
+    float bord = smoothstep(1.02, 0.97, r2);
+    col += vec3(0.96, 0.965, 0.99) * albedo * limbe * bord * 3.1;
+    return col;
+  }
+
   /**
    * LES ÉTOILES. Une grille de hachage posée sur la direction du regard : une cellule sur sept porte une étoile, à
    * une place tirée au sort mais STABLE. Le piège d'un ciel étoilé calculé, c'est le moirage : si l'étoile est plus
@@ -119,12 +164,9 @@ export const SKY_GLSL = /* glsl */ `
     // et le monde ressemblait à un radeau posé sur du vide.
     col += vec3(0.048, 0.030, 0.015) * exp(-abs(d.y) * 13.0);
     col += vec3(0.009, 0.006, 0.003) * exp(-abs(d.y) * 3.0);
-    float moon = max(dot(d, SKY_MOON), 0.0);
-    col += vec3(0.92, 0.94, 1.0) * smoothstep(0.99955, 0.99982, moon) * 2.4;
-    col += vec3(0.26, 0.30, 0.40) * pow(moon, 900.0) * 0.55;
-    // Halo large RESSERRÉ : à la puissance 14 il pâlissait la moitié du ciel et les étoiles se détachaient sur du
-    // gris. Le ciel doit rester noir — c'est le noir qui fait les étoiles.
-    col += vec3(0.05, 0.06, 0.09) * pow(moon, 44.0);
+    // La lune et ses halos. Halo large RESSERRÉ : à la puissance 14 il pâlissait la moitié du ciel et les étoiles
+    // se détachaient sur du gris. Le ciel doit rester noir — c'est le noir qui fait les étoiles.
+    col += skyMoon(d);
     // Étoiles et planètes : elles s'effacent dans les reflets rugueux, où elles ne feraient que scintiller.
     /*
      * LE CIEL DÉTAILLÉ N'EST CALCULÉ QUE QUAND IL SE VOIT.

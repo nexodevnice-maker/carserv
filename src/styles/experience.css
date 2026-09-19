@@ -606,18 +606,27 @@ html.is-intro {
   pointer-events: none;
 }
 
-/* AU DOIGT, AUCUN POINT D'ACCROCHE. Un accrochage obligatoire happe la page à chaque relâchement du doigt : le
-   récit semblait défiler tout seul, et un geste un peu long se faisait ramener en arrière. Le repos est tenu par
-   l'amorti de la caméra, pas par le navigateur. À la molette et au clavier (pointeur fin), les pas guidés restent :
-   là, c'est un cran par geste, et c'est ce qu'on veut. */
+/* UN GESTE = UN PLAN, AU DOIGT AUSSI.
+   Historique : l'accrochage OBLIGATOIRE (`mandatory`) avait été retiré du tactile parce qu'il happait la page à
+   chaque relâchement — le récit semblait défiler tout seul. Mais sans aucun point d'accroche, un geste un peu
+   vif traverse trois ou quatre cinématiques d'un coup : on ne voit plus rien du récit.
+   La bonne réponse n'est ni l'un ni l'autre : c'est `proximity` + `scroll-snap-stop: always`.
+   - `proximity` n'attire QUE si on est déjà près d'un point : un geste posé n'est jamais happé ;
+   - `scroll-snap-stop: always` interdit d'ENJAMBER un point pendant une lancée, quelle que soit la force du
+     doigt. C'est exactement « un geste, un plan », et c'est le mécanisme de MECA RIVIERA.
+   À la molette et au clavier (pointeur fin), l'accrochage obligatoire reste : un cran = un plan, sans ambiguïté. */
+html.is-guided {
+  scroll-snap-type: y proximity;
+}
+
+.guide-point {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
 @media (pointer: fine) {
   html.is-guided {
     scroll-snap-type: y mandatory;
-  }
-
-  .guide-point {
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
   }
 }
 

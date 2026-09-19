@@ -34,11 +34,11 @@ export const STAGE: StageConfig = {
     // Au téléphone, la netteté EST la qualité : le plancher est remonté à 1,5 (1,25 se voyait immédiatement). Le coût
     // par image a été ramené sous les 16 ms (modèles taillés à 25 appels de dessin) : le cran 2 est un filet, pas un
     // régime de croisière.
-    // Le plancher était à 1,5 : un téléphone qui n'y arrive pas n'avait plus aucune marge et restait à saccader
-    // pour rien. Deux crans de secours en dessous — on ne les atteint que si le rythme le demande vraiment, et la
-    // fluidité vaut mieux que la netteté quand il faut choisir.
+    // Le cran à 1,0 a été RETIRÉ : c'est lui qu'on voyait. À 1,0 sur un écran de téléphone, tout le site devient
+    // visiblement pixelisé — et c'est le reproche qui revient. MECA RIVIERA s'arrête à 1,25 pour cette raison ;
+    // on s'aligne. En dessous, mieux vaut perdre quelques images que rendre le site laid.
     tablet: [2, 1.75, 1.5, 1.25],
-    mobile: [2, 1.75, 1.5, 1.25, 1],
+    mobile: [2, 1.75, 1.5, 1.25],
   },
   layerMargin: 0.02,
   near: 0.1,

@@ -40,17 +40,14 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'galaxie',
     universe: 'territory',
-    // Quatre unités, pas deux : le voyage dans l'univers durait le temps d'un geste. On MONTE au-dessus du disque,
-    // on le TRAVERSE, puis on BASCULE vers le bas — trois mouvements de caméra différents, et une parallaxe réelle
-    // à chaque fois, parce que les étoiles sont un volume et non une image.
-    // Trois unités : le héros, la montée au-dessus du disque, la traversée. Une quatrième avait été tentée — la
-    // bascule vers le bas — et supprimée : à cette altitude il n'y a NI galaxie NI territoire dans le cadre, donc un
-    // défilement qui ne montre rien. La bascule se fait maintenant pendant le vol vers la descente.
-    span: { desktop: 480, mobile: 540 },
-    rests: [0, 0.34, 0.76],
+    // UNE SEULE UNITÉ. Il y en avait trois, et DEUX N'AVAIENT AUCUN TEXTE : on défilait deux fois pour ne rien
+    // apprendre. La règle est « un défilement = une information », et le plongeon dans le cœur faisait en plus
+    // virer l'amas au blanc. Reste le héros : la galaxie en bande, le titre dessus, et on descend.
+    span: { desktop: 200, mobile: 220 },
+    rests: [0],
     panels: [{ id: 'marque', in: -1, out: 0.2 }],
     intent:
-      'LE HÉROS : on est DANS la galaxie fournie — un vrai volume de 50 000 étoiles. On s’élève au-dessus du disque, puis on le traverse en plein : la distance existe, et on la parcourt.',
+      'LE HÉROS : on est DANS la galaxie fournie — un vrai volume de 50 000 étoiles, vu en bande dans le haut du cadre. Le titre se lit sur le noir. Un seul défilement, puis on descend vers le 06.',
   },
   {
     id: 'descente',

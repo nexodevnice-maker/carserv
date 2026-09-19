@@ -869,9 +869,14 @@ export function createPlaceLayer(options: PlaceOptions) {
   repeat(new BoxGeometry(0.2, 0.13, 1.65), kerbStone, stops);
 
   // — Bornes le long de l'allée : le premier plan qui manque aux plans bas.
+  // LES DEUX BORNES FACE AU VÉHICULE SONT RETIRÉES (demande du porteur). Les décaler d'une demi-maille ne suffisait
+  // pas : dans les plans de nez elles encadraient la calandre comme deux piquets jaunes plantés devant le sujet.
+  // Le reste de la file est gardé — c'est elle qui donne la profondeur de l'allée.
   const bollards: [number, number, number][] = [];
-  // Décalées d'une demi-maille : une borne tombait pile devant la face du véhicule et lui barrait le plan de nez.
-  for (let z = -12.6; z <= 13; z += 3.6) bollards.push([length / 2 + 1.4, 0.48, z]);
+  for (let z = -12.6; z <= 13; z += 3.6) {
+    if (Math.abs(z) < 2.5) continue;
+    bollards.push([length / 2 + 1.4, 0.48, z]);
+  }
   repeat(new CylinderGeometry(0.085, 0.105, 0.96, 8), painted, bollards);
 
   // — Grille d'égout et regard : deux objets minuscules, mais ce sont eux qu'on cherche du regard quand on doute.

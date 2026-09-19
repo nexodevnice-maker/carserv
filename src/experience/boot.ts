@@ -252,7 +252,10 @@ export function boot() {
             ...WORLD.vehicles.rental,
             url: '/models/chr.glb',
             channels: { light: 'chrLight' },
-            tint: { match: /Paint/i, color: [0.055, 0.058, 0.068] },
+            // BLANC D'ORIGINE, demandé par le porteur. Métal bas et vernis : une peinture blanche est un
+            // diélectrique — à 0,92 de métal elle virait au chrome gris. Légèrement froid pour que la lampe au
+            // sodium la réchauffe sans la faire tourner au kaki.
+            tint: { match: /Paint/i, color: [0.84, 0.855, 0.88], metalness: 0.04, roughness: 0.26 },
             travel: 'chrTravel',
             noise: sky.uniforms.uNoise.value,
             chapters: ['bascule', 'location', 'rendezvous'],

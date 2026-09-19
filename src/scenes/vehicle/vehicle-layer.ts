@@ -51,11 +51,14 @@ export interface VehicleOptions {
   /** Avance le long du cap (m), pour la route de la location. */
   travel?: string;
   /**
-   * Assombrissement de la carrosserie : les modèles fournis sont en gris clair. La nuit du 06 et la charte (noir,
-   * jaune) demandent une laque sombre — c'est elle qui rend le reflet lisible. On ne touche qu'aux matériaux de
-   * carrosserie, jamais aux optiques ni à l'habitacle.
+   * Peinture imposée : les modèles fournis sont en gris clair, et un gris clair sous une lampe au sodium devient
+   * kaki. On ne touche qu'aux matériaux de carrosserie, jamais aux optiques ni à l'habitacle.
+   *
+   * `metalness` et `roughness` font partie du réglage, et ce n'est pas un détail : une laque NOIRE n'existe que par
+   * ce qu'elle reflète (métal haut, très lisse), tandis qu'une peinture BLANCHE est un diélectrique — au même
+   * réglage métallique elle vire au chrome et perd sa blancheur. Un blanc se rend avec un métal bas et un vernis.
    */
-  tint?: { match: RegExp; color: readonly [number, number, number] };
+  tint?: { match: RegExp; color: readonly [number, number, number]; metalness?: number; roughness?: number };
   /**
    * EFFACEMENT D'EMBLÈME. Certains emblèmes ne portent pas de nom : sur le RS6, les quatre anneaux de la calandre
    * appartiennent au matériau des chromes (9 400 triangles : baguettes, entourages, inserts). Les masquer par le nom
@@ -281,8 +284,12 @@ export function createVehicleLayer(options: VehicleOptions) {
     const beam = FRONT_LIGHT.test(standard.name) ? 'avant' : REAR_LIGHT.test(standard.name) ? 'arriere' : null;
     const cabin = !beam && CABIN.test(standard.name);
     if (cabin) {
-      standard.color?.multiplyScalar(0.11);
-      standard.roughness = Math.max(standard.roughness ?? 0.5, 0.62);
+      // L'habitacle était écrasé à 11 % de sa couleur : il ne restait plus rien des garnitures, et la lueur
+      // d'ambiance orange posée par-dessus devenait TOUTE l'image — d'où l'intérieur « jaune bizarre ». On garde
+      // maintenant l'essentiel de la matière d'origine (cuir, plastiques, surpiqûres, maintenant en 2048) et on se
+      // contente de l'assombrir comme le fait la nuit.
+      standard.color?.multiplyScalar(0.38);
+      standard.roughness = Math.max(standard.roughness ?? 0.5, 0.55);
       standard.metalness = 0.04;
       standard.needsUpdate = true;
     }
@@ -302,8 +309,8 @@ export function createVehicleLayer(options: VehicleOptions) {
     // (elle est terne quand elle est sale, c'est un miroir quand elle est vernie).
     if (options.tint && options.tint.match.test(standard.name)) {
       standard.color?.setRGB(...(options.tint.color as [number, number, number]));
-      standard.metalness = 0.92;
-      standard.roughness = Math.min(standard.roughness ?? 0.3, 0.22);
+      standard.metalness = options.tint.metalness ?? 0.92;
+      standard.roughness = options.tint.roughness ?? Math.min(standard.roughness ?? 0.3, 0.22);
     }
     // Les vitres en transmission imposent une passe de rendu supplémentaire à chaque image : au téléphone, c'est
     // rédhibitoire. Verre sombre translucide à la place — la nuit, c'est ce qu'on voit.
@@ -375,9 +382,19 @@ export function createVehicleLayer(options: VehicleOptions) {
           // contreportes — la bande lumineuse qu'on voit dans une voiture récente, la nuit. Elle est tracée par la
           // hauteur dans le repère du véhicule, donc elle suit la caisse sans aucune géométrie ajoutée.
           float cabinY = vCarWorld.y - uCarOrigin.y;
-          float strip = exp(-pow((cabinY - 0.78) / 0.035, 2.0));
-          totalEmissiveRadiance += vec3(1.0, 0.70, 0.34) * uCabin * 0.09;
-          totalEmissiveRadiance += vec3(1.0, 0.56, 0.20) * strip * uCabin * 0.85;
+          // LE FOND D'AMBIANCE : blanc chaud, très bas. Il était ORANGE et trois fois plus fort — c'est lui qui
+          // teintait tout l'habitacle. Une veilleuse d'habitacle éclaire, elle ne colore pas.
+          totalEmissiveRadiance += vec3(1.0, 0.94, 0.86) * uCabin * 0.045;
+          // LA BANDE DE LED, ROUGE (demande du porteur). Deux hauteurs, comme dans une voiture récente : le filet
+          // du haut de contreporte, et un second, plus diffus, qui éclaire le bas de caisse côté pieds. Un seul
+          // trait pile net faisait autocollant ; c'est le HALO autour du filet qui fait la LED.
+          float ligne = exp(-pow((cabinY - 0.775) / 0.018, 2.0));
+          float halo = exp(-pow((cabinY - 0.775) / 0.048, 2.0));
+          float pieds = exp(-pow((cabinY - 0.60) / 0.05, 2.0));
+          vec3 rouge = vec3(1.0, 0.075, 0.105);
+          // Resserré après capture : le halo à 7,5 cm noyait toute la planche de bord de rouge. Un filet se lit
+          // comme un filet, pas comme un lavis.
+          totalEmissiveRadiance += rouge * (ligne * 1.15 + halo * 0.14 + pieds * 0.12) * uCabin;
         `
               : ''
           }

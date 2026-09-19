@@ -28,10 +28,14 @@ const galaxyVertex = /* glsl */ `
     vColor = color.rgb;
     vec4 view = viewMatrix * modelMatrix * vec4(position, 1.0);
     float dist = -view.z;
-    // Taille apparente : constante en unités du monde, bornée pour rester lisible de près comme de loin.
-    gl_PointSize = clamp(uSize * uPixels / max(dist, 1.0), 1.0, 26.0);
-    // Les étoiles très proches s'estompent : sinon on traverse des taches.
-    vFade = smoothstep(0.0, 1.0, clamp(dist / (uSize * 6.0), 0.0, 1.0)) * uBright;
+    // Taille apparente : constante en unités du monde, BORNÉE BAS. Elle était plafonnée à 26 pixels : dès qu'on
+    // approchait du cœur, chaque étoile devenait un disque de 26 px et l'amas entier virait au bloc blanc — c'est
+    // le « beaucoup trop blanc » qu'on nous signale. Une étoile est un POINT : au-delà d'une douzaine de pixels,
+    // ce n'est plus une étoile, c'est une tache.
+    gl_PointSize = clamp(uSize * uPixels / max(dist, 1.0), 1.0, 13.0);
+    // Les étoiles très proches s'estompent : sinon on traverse des taches. Fondu élargi (6 → 11) pour que
+    // l'approche soit progressive au lieu de saturer d'un coup.
+    vFade = smoothstep(0.0, 1.0, clamp(dist / (uSize * 11.0), 0.0, 1.0)) * uBright;
     gl_Position = projectionMatrix * view;
   }
 `;
@@ -44,7 +48,9 @@ const galaxyFragment = /* glsl */ `
     vec2 d = gl_PointCoord - 0.5;
     float r = dot(d, d) * 4.0;
     if (r > 1.0) discard;
-    float core = exp(-r * 5.5) + exp(-r * 1.6) * 0.35;
+    // Noyau plus serré et traîne plus discrète : un halo large faisait fondre les étoiles voisines les unes dans
+    // les autres, et c'est cette fusion qui blanchissait l'amas. Séparées, elles se comptent.
+    float core = exp(-r * 7.5) + exp(-r * 2.2) * 0.22;
     gl_FragColor = vec4(vColor * core * vFade, 1.0);
   }
 `;

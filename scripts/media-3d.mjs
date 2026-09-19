@@ -25,10 +25,15 @@ const MODELS = [
   // MESURÉ (scripts/qa-perf.mjs) : à 0,4 la RS6 pesait 116 000 triangles par image — les trois quarts du coût de
   // TOUS les plans du nettoyage, sur un modèle qu'on regarde à cinq mètres sur un écran de téléphone. À 0,2 la
   // silhouette et les arêtes de tôle sont identiques à l'œil, et l'iPhone respire.
-  // Textures en 512 : la carrosserie n'en a pas (sa laque est imposée par la scène), et une calandre de 512 px
+  // QUALITÉ RELEVÉE le 19/09 : les deux véhicules « paraissaient pixelisés », et c'était exact — on ne gardait que
+  // 20 % des triangles et des textures de 512 px, sur des véhicules qu'on regarde en macro. La décimation servait à
+  // faire tomber les APPELS DE DESSIN, or ceux-ci viennent de la fusion (flatten + join), pas du taux de triangles :
+  // on peut donc remonter la finesse sans rien payer au dessin. Mesuré : RS6 79 k → 140 872 triangles pour +0,5 Mo,
+  // C-HR 50 k → 130 692 triangles, 25 appels de dessin inchangés.
+  // (Ancien réglage : ratio 0,2 / 0,25 et textures 512.)
   // occupe déjà plus de pixels à l'écran qu'elle n'en a. C'est la moitié de la mémoire vidéo du véhicule.
-  { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', ratio: 0.2, textures: 512, mode: 'vehicle' },
-  { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', ratio: 0.25, textures: 512, mode: 'vehicle' },
+  { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', ratio: 0.6, textures: 2048, mode: 'vehicle' },
+  { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', ratio: 0.65, textures: 2048, mode: 'vehicle' },
   // L'univers : un nuage de 50 000 points colorés. On ne le simplifie pas — on le traverse.
   { id: 'galaxy', src: 'tools/3d/GALAXY/need_some_space.glb', ratio: 1, textures: 1024, mode: 'points' },
 ];

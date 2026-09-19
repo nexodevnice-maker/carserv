@@ -52,33 +52,6 @@ export const shots: readonly ShotDefinition[] = [
     pace: { window: [0, 1], ease: 'inOut' },
   },
   {
-    id: 'montee',
-    chapter: 'galaxie',
-    at: 0.34,
-    intent:
-      'UNITÉ 2 — ON MONTE. La caméra s’élève au-dessus du disque : la galaxie bascule sous nous et on la voit ENFIN pour ce qu’elle est — un plan d’étoiles, pas un fond. Aucun texte.',
-    framing: { position: [2400, 16800, 4800], target: [200, 12600, -2400], fov: 58, shift: [0.06, 0] },
-    ...portrait({ position: [2600, 17600, 5200], target: [200, 12400, -2600], fov: 70, shift: [0, 0.06] }),
-    via: { desktop: [[2100, 12400, 4200]] as Vec3[], tablet: [[2200, 12800, 4400]] as Vec3[], mobile: [[2200, 12800, 4400]] as Vec3[] },
-    pace: { window: [0.02, 0.98], ease: 'inOut' },
-    lead: 0.1,
-    flight: { fov: 10, roll: 0.05, shake: 0.4 },
-  },
-  {
-    id: 'traversee',
-    chapter: 'galaxie',
-    at: 0.76,
-    intent:
-      'UNITÉ 2 — On traverse : la caméra entre dans le bras, les étoiles défilent de part et d’autre, le cœur grandit. C’est ici qu’on comprend que ce ciel a une profondeur. Aucun texte.',
-    framing: { position: [800, 13100, -600], target: [-600, 11700, -7800], fov: 72, shift: [0.06, 0] },
-    ...portrait({ position: [900, 13300, -800], target: [-600, 11600, -8000], fov: 84, shift: [0, 0.04] }),
-    // Le point de passage plonge DANS le disque : c'est en le traversant que la parallaxe se voit.
-    via: { desktop: [[1900, 15400, 3000]] as Vec3[], tablet: [[2000, 15800, 3200]] as Vec3[], mobile: [[2000, 15800, 3200]] as Vec3[] },
-    pace: { window: [0.02, 0.98], ease: 'inOut' },
-    lead: 0.12,
-    flight: { fov: 12, roll: 0.08, shake: 0.5 },
-  },
-  {
     id: 'lueur',
     chapter: 'descente',
     at: 0.5,
