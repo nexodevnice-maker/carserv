@@ -358,6 +358,15 @@ node scripts/qa-live.mjs https://carservice.nexodevnice.workers.dev   # parcours
    backticks cassent), forcer les fins de ligne **LF**, et passer par le shell pour les exécutables `.cmd`.
 6. `npm run deploy` utilise **`wrangler@4.42.0` épinglé** (les versions suivantes verrouillent un cache miniflare).
 7. La production Cloudflare **ignore les requêtes Range**.
+8. **`npm run typecheck` casse le serveur de dev en cours.** Il lance `astro sync`, qui ré-optimise les dépendances
+   de Vite ; le serveur déjà lancé répond alors `504 Outdated Optimize Dep` sur `three`, et la page tombe en repli
+   statique avec un « Failed to fetch dynamically imported module ». Ce n'est pas une erreur du code : **relancer le
+   serveur** (`npx astro dev stop` puis `npm run dev`) après chaque typecheck.
+9. **Dans un worktree git, `node_modules` n'existe pas** : Node le résout en remontant vers la copie principale. Le
+   typecheck et le build marchent, mais deux choses cassent — les polices (`@fontsource`) sont servies en `/@fs/…`
+   hors de la racine Vite et renvoient **403**, ce qui fait échouer les cinq contrôles « console sans erreur »
+   (55/60 au lieu de 60/60) ; et `qa:engine` s'arrête sur `axe-core` introuvable. Une jonction règle `axe-core`, pas
+   les polices (Vite suit le lien jusqu'au chemin réel). **Juger le 60/60 depuis la copie principale.**
 
 ---
 
