@@ -310,6 +310,13 @@ export const definition: ExperienceDefinition = {
     ],
     // La caméra, elle, passe par 60, 78, 180, 296 et 390 m (shots.ts) : on le rattrape, on le double au ras, il
     // reprend la tête et s'éloigne, puis on le rejoint arrêté au bord du 06.
+    // — LE CIRCUIT : il apparaît avec la bascule vers la route et s'éteint au rendez-vous.
+    circuit: [
+      { chapter: 'bascule', at: 0.15, value: 0 },
+      { chapter: 'bascule', at: 0.75, value: 1, pace: smooth },
+      { chapter: 'location', at: 0.95, value: 1 },
+      { chapter: 'rendezvous', at: 0.25, value: 0, pace: smooth },
+    ],
     chrTravel: [
       { chapter: 'bascule', at: 0.9, value: 84 },
       { chapter: 'location', at: 0.18, value: 104, pace: smooth },

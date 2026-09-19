@@ -50,9 +50,47 @@ export const SKY_GLSL = /* glsl */ `
    */
   const vec3 SKY_MOON = normalize(vec3(-0.42, 0.34, -0.84));
 
+  /**
+   * LES ÉTOILES. Une grille de hachage posée sur la direction du regard : une cellule sur sept porte une étoile, à
+   * une place tirée au sort mais STABLE. Le piège d'un ciel étoilé calculé, c'est le moirage : si l'étoile est plus
+   * petite qu'un pixel, elle clignote dès que la caméra bouge. On lui donne donc une taille ANGULAIRE d'environ deux
+   * pixels — assez pour qu'elle tienne en place, assez peu pour rester une étoile.
+   */
+  float skyStars(vec3 d) {
+    vec3 a = abs(d);
+    vec3 p = d / max(a.x, max(a.y, a.z));
+    vec2 uv = a.x > a.y && a.x > a.z ? p.yz : (a.y > a.z ? p.xz : p.xy);
+    vec2 g = uv * 74.0;
+    vec2 id = floor(g);
+    vec2 f = fract(g) - 0.5;
+    float h = fract(sin(dot(id, vec2(127.1, 311.7))) * 43758.5453);
+    if (h < 0.855) return 0.0;
+    vec2 off = vec2(fract(h * 37.0), fract(h * 91.0)) - 0.5;
+    float r = length(f - off * 0.72);
+    return exp(-r * r * 34.0) * (0.22 + fract(h * 13.0) * 1.7);
+  }
+
+  /**
+   * UNE PLANÈTE. Un disque, et surtout sa PHASE : elle est éclairée par la même lune que le reste de la scène, donc
+   * son croissant pointe dans la bonne direction. C'est ce détail qui fait qu'on la croit, et non un rond dans le
+   * ciel. Sans elle, le fond du ciel n'a aucune échelle.
+   */
+  vec3 skyPlanet(vec3 d, vec3 dir, float size, vec3 tint) {
+    float ang = acos(clamp(dot(d, dir), -1.0, 1.0));
+    float disc = smoothstep(size, size * 0.955, ang);
+    if (disc <= 0.0) return vec3(0.0);
+    vec3 right = normalize(cross(dir, vec3(0.0, 1.0, 0.0)));
+    vec3 up = cross(right, dir);
+    vec2 local = vec2(dot(d, right), dot(d, up)) / size;
+    vec3 n = normalize(vec3(local, sqrt(max(0.0, 1.0 - dot(local, local)))));
+    vec3 lightLocal = normalize(vec3(dot(SKY_MOON, right), dot(SKY_MOON, up), dot(SKY_MOON, dir)));
+    float lit = max(dot(n, lightLocal), 0.0);
+    return tint * disc * (0.012 + lit * 0.85);
+  }
+
   vec3 skyLod(vec3 d, float bias) {
     float up = clamp(d.y * 0.5 + 0.5, 0.0, 1.0);
-    vec3 col = mix(vec3(0.006, 0.008, 0.016), vec3(0.014, 0.017, 0.032), up);
+    vec3 col = mix(vec3(0.004, 0.005, 0.011), vec3(0.008, 0.010, 0.020), up);
     // LE DÔME DE LUMIÈRE DE LA VILLE. C'est la seule source de la nuit : un quartier de sodium renvoie sa lueur dans
     // le ciel bien au-dessus de l'horizon, et c'est elle que le sol mouillé, la chaussée et les carrosseries
     // réfléchissent. Elle était dix fois trop faible : hors du halo des candélabres, tout tombait dans le noir absolu
@@ -62,7 +100,14 @@ export const SKY_GLSL = /* glsl */ `
     float moon = max(dot(d, SKY_MOON), 0.0);
     col += vec3(0.92, 0.94, 1.0) * smoothstep(0.99955, 0.99982, moon) * 2.4;
     col += vec3(0.26, 0.30, 0.40) * pow(moon, 900.0) * 0.55;
-    col += vec3(0.055, 0.065, 0.095) * pow(moon, 14.0);
+    // Halo large RESSERRÉ : à la puissance 14 il pâlissait la moitié du ciel et les étoiles se détachaient sur du
+    // gris. Le ciel doit rester noir — c'est le noir qui fait les étoiles.
+    col += vec3(0.05, 0.06, 0.09) * pow(moon, 44.0);
+    // Étoiles et planètes : elles s'effacent dans les reflets rugueux, où elles ne feraient que scintiller.
+    float sharp = exp(-bias * 1.1);
+    col += vec3(0.86, 0.90, 1.0) * skyStars(d) * 0.75 * sharp * smoothstep(-0.06, 0.16, d.y);
+    col += skyPlanet(d, normalize(vec3(0.72, 0.21, -0.66)), 0.042, vec3(0.94, 0.72, 0.46)) * sharp;
+    col += skyPlanet(d, normalize(vec3(-0.78, 0.44, 0.44)), 0.021, vec3(0.62, 0.76, 0.92)) * sharp;
     // Aucune étoile semée ici : une grille de points produit un moiré visible dès qu'on bouge, et les vraies étoiles
     // du site sont la galaxie 3D (scenes/galaxy). Ce ciel-ci ne sert qu'à donner sa lumière aux reflets.
     return col;

@@ -168,6 +168,7 @@ export function boot() {
       import('../scenes/place/place-layer'),
       import('../scenes/map/map-layer'),
       import('../scenes/surroundings/surroundings-layer'),
+      import('../scenes/circuit/circuit-layer'),
       import('../scenes/galaxy/galaxy-layer'),
       import('../scenes/clouds/cloud-layer'),
       import('../scenes/relief/relief-layer'),
@@ -182,6 +183,7 @@ export function boot() {
           { createPlaceLayer },
           { createMapLayer },
           { createSurroundingsLayer },
+          { createCircuitLayer },
           { createGalaxyLayer },
           { createCloudLayer },
           { createReliefLayer },
@@ -262,6 +264,9 @@ export function boot() {
             lamps: WORLD.place.lamps.map(([x, z]) => [x, WORLD.place.lampHeight - 0.4, z] as const),
             lampChannel: 'placeLamp',
           });
+          // LE CIRCUIT : la location ne se raconte plus sur une chaussée dans le noir. Le véhicule roule sur une
+          // piste, entre des vibreurs, devant des gradins qui lui donnent son échelle.
+          const circuit = createCircuitLayer({ night: sky.uniforms, ...WORLD.circuit, chapters: ['bascule', 'location'] });
           const road = createRoadLayer({
             placement: WORLD.road,
             night: sky.uniforms,
@@ -280,7 +285,7 @@ export function boot() {
             experience,
             canvas,
             host: stageEl,
-            layers: [sky, galaxy, territory, relief, around, place, vehicleLight, cleaningCar, road, rentalCar, clouds],
+            layers: [sky, galaxy, territory, relief, around, place, circuit, vehicleLight, cleaningCar, road, rentalCar, clouds],
             config: { ...STAGE, busy: () => registry.busy },
             onReady: () => {
               stageStatus = 'ready';

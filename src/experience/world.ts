@@ -85,6 +85,16 @@ export const WORLD = {
     cleaning: { length: 4.99, at: [0, 0] as const, heading: 0 },
     rental: { length: 4.36, at: [0, -240] as const, heading: NORTH },
   },
+  /**
+   * LE CIRCUIT (scenes/circuit) : la piste sur laquelle roule le véhicule de location. Vibreurs le long des bords,
+   * balisage encastré espacé de dix-huit mètres, gradins couverts avec leur bandeau, mâts d'éclairage derrière.
+   * Le véhicule traverse de z = -250 à z = -700 : la piste couvre exactement cette portée.
+   */
+  circuit: {
+    lane: { x: 0, from: -250, to: -700 },
+    half: 5.5,
+    stands: { side: 15, at: -450, length: 130, tiers: 8 },
+  },
   road: {
     /** Origine de la route (x, z) : la voie de la caméra passe en x = 0. */
     origin: [1.7, -240] as const,
