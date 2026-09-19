@@ -256,6 +256,9 @@ export function boot() {
             // diélectrique — à 0,92 de métal elle virait au chrome gris. Légèrement froid pour que la lampe au
             // sodium la réchauffe sans la faire tourner au kaki.
             tint: { match: /Paint/i, color: [0.84, 0.855, 0.88], metalness: 0.04, roughness: 0.26 },
+            // Plaque « CAR SERVICE | 06 » posée : le modèle n'a aucun matériau de plaque à repeindre. Format
+            // européen (520 x 110 mm), au tiers de la hauteur du véhicule — la hauteur d'un pare-chocs.
+            plateDecal: { width: 0.52, height: 0.11, y: 0.33 },
             travel: 'chrTravel',
             noise: sky.uniforms.uNoise.value,
             chapters: ['bascule', 'location', 'rendezvous'],

@@ -9,6 +9,7 @@ import {
   Matrix4,
   PlaneGeometry,
   ShaderMaterial,
+  TorusGeometry,
 } from 'three';
 import type { ExperienceState } from '../../engine/state/experience-state';
 import type { LayerUpdate, WebGLLayer } from '../../engine/webgl/webgl-stage';
@@ -175,6 +176,9 @@ export function createCircuitLayer(options: CircuitOptions) {
   }
   place(new BoxGeometry(0.9, 0.06, 2), make(kerbFragment), kerbs);
 
+  // Le béton, partagé par les murets du tunnel, les gradins et les mâts : un seul matériau, un seul programme.
+  const concreteWall = make(concreteFragment);
+
   // — LE BALISAGE AU SOL : des feux encastrés, espacés de dix-huit mètres. Espacés, parce qu'un chapelet serré
   // ferait guirlande et mangerait le véhicule.
   const marks: Matrix4[] = [];
@@ -192,20 +196,82 @@ export function createCircuitLayer(options: CircuitOptions) {
   // mètres. C'est ce qui fait la vitesse quand on roule dessus — les vibreurs disent le bord, ces feux disent
   // l'avance. Additifs et posés au ras du sol : ils n'éclairent rien, ils défilent.
   const track: Matrix4[] = [];
-  for (let z = from; Math.abs(z - from) <= Math.abs(to - from); z += step * 9) {
+  // Resserrés de neuf à cinq mètres : à neuf, on comptait les feux un par un au lieu de les voir filer.
+  for (let z = from; Math.abs(z - from) <= Math.abs(to - from); z += step * 5) {
     track.push(new Matrix4().makeTranslation(lane - 1.9, 0.015, z));
     track.push(new Matrix4().makeTranslation(lane + 1.9, 0.015, z));
   }
   const trackMaterial = make(neonFragment, { uTint: { value: [0.68, 0.78, 1.0] } });
   trackMaterial.depthWrite = false;
   trackMaterial.blending = AdditiveBlending;
-  const trackMesh = place(new BoxGeometry(0.26, 0.03, 1.5), trackMaterial, track);
+  const trackMesh = place(new BoxGeometry(0.26, 0.03, 2.2), trackMaterial, track);
   trackMesh.renderOrder = 2;
+
+  /**
+   * LE TUNNEL LUMINEUX. C'est ce qui manquait pour que la piste soit un LIEU et non deux bords dans le noir :
+   * une enfilade d'arches éclairées que le véhicule traverse. Vue depuis la voie, la perspective les empile et
+   * creuse un couloir — c'est la profondeur qui fait la vitesse, plus encore que les feux au sol.
+   *
+   * Deux arches par portique : une épaisse, tenue basse, et une fine posée dessus, plus vive. Une seule arche
+   * donne un arceau de manège ; deux donnent une structure.
+   */
+  const arches: Matrix4[] = [];
+  const archesFines: Matrix4[] = [];
+  const PAS = 11;
+  for (let z = from; Math.abs(z - from) <= Math.abs(to - from); z += step * PAS) {
+    arches.push(new Matrix4().makeTranslation(lane, 0, z));
+    archesFines.push(new Matrix4().makeTranslation(lane, 0, z));
+  }
+  const archRadius = options.half + 0.8;
+  const archMaterial = make(neonFragment, { uTint: { value: [0.30, 0.40, 0.62] } });
+  archMaterial.depthWrite = false;
+  archMaterial.blending = AdditiveBlending;
+  const archMesh = place(new TorusGeometry(archRadius, 0.16, 5, 30, Math.PI), archMaterial, arches);
+  archMesh.renderOrder = 2;
+
+  const archThin = make(neonFragment, { uTint: { value: [0.62, 0.74, 1.0] } });
+  archThin.depthWrite = false;
+  archThin.blending = AdditiveBlending;
+  const archThinMesh = place(new TorusGeometry(archRadius + 0.34, 0.055, 4, 30, Math.PI), archThin, archesFines);
+  archThinMesh.renderOrder = 3;
+
+  /**
+   * LES MURS QUI FERMENT LA PISTE. Sans eux, les arches flottent au-dessus de rien et la voie s'ouvre sur du noir
+   * des deux côtés. Un muret continu au pied de chaque arche ferme le couloir et rend le tunnel crédible : c'est
+   * lui qui arrête le regard, et c'est contre lui que les vibreurs prennent leur sens.
+   */
+  const murs: Matrix4[] = [];
+  const longueur = Math.abs(to - from);
+  const milieu = (from + to) / 2;
+  for (const dir of [1, -1]) {
+    murs.push(
+      new Matrix4()
+        .makeTranslation(lane + dir * (options.half + 0.85), 0.62, milieu)
+        .multiply(new Matrix4().makeScale(0.3, 1.24, longueur)),
+    );
+  }
+  place(new BoxGeometry(1, 1, 1), concreteWall, murs);
+
+  // — LA LISSE LUMINEUSE au sommet du muret : un filet continu qui file avec la voiture. C'est la ligne de fuite
+  // du tunnel, celle qui donne la vitesse quand tout le reste est noir.
+  const lisses: Matrix4[] = [];
+  for (const dir of [1, -1]) {
+    lisses.push(
+      new Matrix4()
+        .makeTranslation(lane + dir * (options.half + 0.85), 1.26, milieu)
+        .multiply(new Matrix4().makeScale(0.34, 0.07, longueur)),
+    );
+  }
+  const lisseMaterial = make(neonFragment, { uTint: { value: [0.46, 0.56, 0.86] } });
+  lisseMaterial.depthWrite = false;
+  lisseMaterial.blending = AdditiveBlending;
+  const lisseMesh = place(new BoxGeometry(1, 1, 1), lisseMaterial, lisses);
+  lisseMesh.renderOrder = 2;
 
   // — LES GRADINS. Des marches qui montent EN S'ÉLOIGNANT de la piste, un toit plat, et sous le toit un bandeau
   // lumineux. C'est lui qu'on voit de loin, et c'est l'échelle de tout le reste.
   const { side, at, length, tiers } = options.stands;
-  const concrete = make(concreteFragment);
+  const concrete = concreteWall;
   const steps: Matrix4[] = [];
   for (const dir of [1, -1]) {
     for (let i = 0; i < tiers; i += 1) {
@@ -232,24 +298,10 @@ export function createCircuitLayer(options: CircuitOptions) {
   }
   place(new BoxGeometry(1, 1, 1), concrete, [...roofs, ...backs]);
 
-  // Le bandeau était posé SOUS LE TOIT, à onze mètres, et long de cent quarante : vu par la tranche depuis la voie,
-  // il traversait tout le cadre en diagonale — on lisait une barre dorée en travers du ciel, pas une tribune. Il
-  // descend au niveau des gradins (il éclaire les places, c'est là qu'il sert) et ne court plus que sur la moitié
-  // de la longueur : il dit « il y a du monde là-haut » sans barrer l'image.
-  const bands: Matrix4[] = [];
-  for (const dir of [1, -1]) {
-    bands.push(
-      new Matrix4()
-        .makeTranslation(lane + dir * (side - 0.6), 0.9 + tiers * 0.42, at)
-        .multiply(new Matrix4().makeScale(0.22, 0.4, length * 0.5)),
-    );
-  }
-  // Teinte BASSE : à pleine intensité, ce bandeau vu par la tranche depuis la voie traversait tout le cadre en
-  // diagonale comme un néon posé en travers de l'image. C'est une arête éclairée, pas une enseigne.
-  const bandMaterial = make(neonFragment, { uTint: { value: [0.34, 0.26, 0.05] } });
-  bandMaterial.depthWrite = false;
-  bandMaterial.blending = AdditiveBlending;
-  place(new BoxGeometry(1, 1, 1), bandMaterial, bands);
+  // LE BANDEAU DES TRIBUNES EST SUPPRIMÉ. C'est lui, la « bande jaune dont on ne sait pas ce que c'est » : vu depuis
+  // la voie, il traversait le cadre en diagonale, et maintenant que la piste est un tunnel FERMÉ il n'a plus aucun
+  // sens — il passait au-dessus du couloir, éclairant des gradins qu'on ne voit plus. Le tunnel donne désormais
+  // l'échelle et le « lieu » que ce bandeau essayait de porter. Les gradins gardent leur silhouette de béton.
 
   // — LES MÂTS derrière les tribunes : on n'en voit que les halos, et c'est tout ce qu'il faut.
   const masts: Matrix4[] = [];

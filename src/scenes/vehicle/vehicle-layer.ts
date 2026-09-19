@@ -72,6 +72,13 @@ export interface VehicleOptions {
    * trou sur le compartiment moteur.
    */
   erase?: { x: readonly [number, number]; y: readonly [number, number]; z: readonly [number, number] };
+  /**
+   * PLAQUE AJOUTÉE. Le RS6 a un matériau de plaque qu'on repeint ; le C-HR, lui, n'en a aucun — toute sa caisse
+   * tient en cinq maillages par matériau. Sa plaque doit donc être une GÉOMÉTRIE posée : deux petits panneaux, un à
+   * chaque extrémité, calés sur la boîte englobante du modèle (donc justes quelle que soit son échelle).
+   * `y` est la hauteur du centre de la plaque, en part de la hauteur du véhicule.
+   */
+  plateDecal?: { width: number; height: number; y: number };
   /** Bruit précalculé partagé (poussière). */
   noise: Texture;
   chapters?: readonly string[];
@@ -215,19 +222,44 @@ function plateTexture() {
   c.lineWidth = 10;
   c.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
   c.textBaseline = 'middle';
-  c.fillStyle = '#f4f4f2';
-  c.font = 'bold 108px "Arial Narrow", system-ui, sans-serif';
-  c.textAlign = 'right';
-  c.fillText('CAR SERVICE', 596, 114);
-  c.fillStyle = '#fdc727';
-  c.fillRect(628, 46, 9, 130);
+
+  /**
+   * LE TEXTE EST MESURÉ, PAS POSÉ À L'AVEUGLE.
+   * « Arial Narrow » n'existe pas partout : là où elle manque, le navigateur prend une police bien plus large et
+   * « CAR SERVICE » débordait de la plaque par la gauche — on lisait « R SERVICE | 06 ». On mesure donc le bloc
+   * entier (texte + filet + numéro), et on réduit la taille jusqu'à ce qu'il tienne, puis on le centre.
+   */
+  const NOM = 'CAR SERVICE';
+  const NUM = '06';
+  const marge = 56;
+  const dispo = canvas.width - marge * 2;
+  let taille = 108;
+  const gabarit = () => {
+    c.font = `bold ${taille}px "Arial Narrow", system-ui, sans-serif`;
+    const nom = c.measureText(NOM).width;
+    const num = c.measureText(NUM).width;
+    return { nom, num, total: nom + 34 + 9 + 34 + num };
+  };
+  let g = gabarit();
+  while (g.total > dispo && taille > 40) {
+    taille -= 2;
+    g = gabarit();
+  }
+  const x0 = (canvas.width - g.total) / 2;
   c.textAlign = 'left';
-  c.fillText('06', 672, 114);
+  c.fillStyle = '#f4f4f2';
+  c.fillText(NOM, x0, 114);
+  c.fillStyle = '#fdc727';
+  c.fillRect(x0 + g.nom + 34, 46, 9, 130);
+  c.fillStyle = '#f4f4f2';
+  c.fillText(NUM, x0 + g.nom + 34 + 9 + 34, 114);
+
   const map = new CanvasTexture(canvas);
   map.colorSpace = SRGBColorSpace;
   map.anisotropy = 8;
   return map;
 }
+
 
 export function createVehicleLayer(options: VehicleOptions) {
   const root = new Group();
@@ -271,6 +303,9 @@ export function createVehicleLayer(options: VehicleOptions) {
   let loaded = false;
   let loading: Promise<void> | null = null;
   let plate: CanvasTexture | null = null;
+  /** Ce que la plaque posée crée en propre : à libérer avec le reste. */
+  const materialsAdded: MeshStandardMaterial[] = [];
+  const addedGeometries: PlaneGeometry[] = [];
   /** Ce que la couche a VRAIMENT fait de chaque matériau (relevé QA : le nom lu par le navigateur, pas par le fichier). */
   const roles: Record<string, string> = {};
   const last = { dirt: -1, scan: -1, polish: -1, light: -1, travel: NaN, beam: -1, cabin: -1 };
@@ -445,6 +480,46 @@ export function createVehicleLayer(options: VehicleOptions) {
     model.updateMatrix();
     const inner = new Group();
     inner.add(model);
+    /**
+     * LA PLAQUE POSÉE, pour les modèles qui n'ont aucun matériau de plaque à repeindre.
+     * Le véhicule est centré dans ce repère, mais SA LONGUEUR NE COURT PAS TOUJOURS SELON X : `axis` dit laquelle
+     * des deux horizontales porte la longueur, et c'est elle qu'il faut suivre. Posée sur x alors que le C-HR est
+     * long selon z, la plaque partait flotter deux mètres et demi sur le côté, hors du cadre — invisible, donc
+     * réputée « absente ». Vérifié en la rendant lumineuse : elle était bien là, au mauvais endroit.
+     */
+    if (options.plateDecal) {
+      const { width: pw, height: ph, y } = options.plateDecal;
+      const hauteur = size.y * scale;
+      // Posée JUSTE EN DEHORS de la boîte englobante : à l_interieur, elle est noyée dans le pare-chocs.
+      const bout0 = options.length / 2 + 0.03;
+      plate ??= plateTexture();
+      // ÉCLAIRÉE PAR SA LAMPE. Une plaque d'immatriculation est rétro-réfléchissante ET éclairée par une veilleuse :
+      // c'est le seul élément d'une voiture qui reste lisible de nuit quand tout le reste est noir. Sans cette
+      // émission, elle disparaissait dans l'ombre de la poupe — techniquement présente, visuellement absente.
+      const plateMat = new MeshStandardMaterial({
+        map: plate,
+        emissiveMap: plate,
+        emissive: 0xffffff,
+        emissiveIntensity: 0.55,
+        roughness: 0.42,
+        metalness: 0.05,
+      });
+      plateMat.name = 'carservice-plaque';
+      materialsAdded.push(plateMat);
+      for (const bout of [1, -1]) {
+        const panneau = new Mesh(new PlaneGeometry(pw, ph), plateMat);
+        if (axis === 'x') {
+          panneau.position.set(bout * bout0, hauteur * y, 0);
+          panneau.rotation.y = bout > 0 ? Math.PI / 2 : -Math.PI / 2;
+        } else {
+          panneau.position.set(0, hauteur * y, bout * bout0);
+          panneau.rotation.y = bout > 0 ? 0 : Math.PI;
+        }
+        panneau.renderOrder = 4;
+        addedGeometries.push(panneau.geometry);
+        inner.add(panneau);
+      }
+    }
     inner.rotation.y = -options.heading + (axis === 'z' ? Math.PI / 2 : 0) + (options.flip ? Math.PI : 0);
     body.add(inner);
     body.position.set(options.at[0], 0, options.at[1]);
@@ -595,6 +670,8 @@ export function createVehicleLayer(options: VehicleOptions) {
       return true;
     },
     dispose() {
+      for (const m of materialsAdded) m.dispose();
+      for (const g of addedGeometries) g.dispose();
       beams.dispose();
     },
   };
