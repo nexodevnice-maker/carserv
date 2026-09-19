@@ -225,14 +225,6 @@ const description =
               ))
             }
           </ul>
-        </div>
-        <div class="panel" style={win('prestations', 'offre')}>
-          <h3 class="title title--small">{copy.prestations.offer}</h3>
-          <ul class="badges" aria-label="Formule">
-            <li class="badge"><BrandIcon name="car" />{offer.label.value}</li>
-            <li class="badge badge--price" data-status={offer.price.status}>{euro(offer.price.value.amount)}</li>
-            <li class="badge"><BrandIcon name="van" />{property.coverage.value}</li>
-          </ul>
           <p class="script">{copy.prestations.script}</p>
         </div>
       </Chapter>

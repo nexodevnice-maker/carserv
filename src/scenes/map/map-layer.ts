@@ -60,6 +60,14 @@ export interface MapOptions {
   bevel: number;
   labels: { number: string; numberAt: readonly [number, number]; sea: string; seaAt: readonly [number, number] };
   font: string;
+  /**
+   * Chapitres où le territoire est dessiné. On ne le voit que d'en haut : le garder allumé pendant tout le récit
+   * coûtait 116 000 triangles et une trentaine d'appels de dessin par image, y compris sur les plans où la caméra
+   * est à un mètre du sol et où il est entièrement caché par le parking.
+   */
+  chapters?: readonly string[];
+  /** Passe de reflet des falaises (deuxième dessin du contour) : inutile au téléphone. */
+  reflection?: boolean;
 }
 
 export interface SharedNight {
@@ -239,7 +247,7 @@ export function createMapLayer(options: MapOptions, night: SharedNight) {
     bevelEnabled: true,
     bevelThickness: bevel,
     bevelSize: bevel,
-    bevelSegments: 3,
+    bevelSegments: 1,
     curveSegments: 1,
   });
   // Plan de la carte → sol : y de la carte vers −z (le nord au loin), extrusion vers le haut, plateau affleurant à y = 0.
@@ -301,7 +309,9 @@ export function createMapLayer(options: MapOptions, night: SharedNight) {
   const reflection = new Mesh(sidesGeometry, material(true, true));
   reflection.renderOrder = -9;
   for (const mesh of [top, cliffs, reflection]) mesh.frustumCulled = false;
-  root.add(reflection, cliffs, top);
+  root.add(cliffs, top);
+  // La passe de reflet des falaises n'est ajoutée qu'au format où on la distingue : elle double le coût du contour.
+  if (options.reflection !== false) root.add(reflection);
 
   // — La France autour du 06 : plaques (hors 06) et traits de frontière (tous les départements).
   const franceUniforms = { ...night, uFade: { value: 0 }, uHome: { value: 0 }, uGold: own.uGold };
@@ -377,6 +387,7 @@ export function createMapLayer(options: MapOptions, night: SharedNight) {
   const last = { reveal: -1, fade: -1 };
   const layer: WebGLLayer = {
     id: 'map',
+    chapters: options.chapters,
     root,
     async init() {
       await document.fonts?.load(`700 200px ${options.font}`).catch(() => undefined);

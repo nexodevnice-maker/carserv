@@ -174,9 +174,11 @@ export const shots: readonly ShotDefinition[] = [
     chapter: 'prestations',
     at: 0.25,
     intent: 'UNITÉ 12 — Ressortir et prendre un peu de hauteur : le véhicule entier, et la première moitié du métier.',
-    framing: { position: [-8.6, 2.0, 9.6], target: [0.4, 1.7, 0], fov: 38, shift: [0.22, 0] },
-    ...portrait({ position: [-7.6, 2.1, 9.8], target: [0.3, 1.8, 0], fov: 48, shift: [0, 0.22] }),
-    via: { desktop: [[-3.6, 1.6, 7.2]] as Vec3[], tablet: [[-3.2, 1.8, 7]] as Vec3[], mobile: [[-3.2, 1.8, 7]] as Vec3[] },
+    // DU CÔTÉ OUVERT DE LA PLACE. Ce plan reculait en x = -7,6, soit DERRIÈRE le mur d'enceinte (x = -5,2) : on
+    // traversait le béton et on se retrouvait dans le noir pendant tout un défilement.
+    framing: { position: [11.2, 2.2, 8.4], target: [0.4, 1.7, 0], fov: 38, shift: [0.22, 0] },
+    ...portrait({ position: [12.0, 2.3, 9.2], target: [0.3, 1.8, 0], fov: 48, shift: [0, 0.22] }),
+    via: { desktop: [[5.4, 1.7, 7.6]] as Vec3[], tablet: [[5.2, 1.8, 7.8]] as Vec3[], mobile: [[5.2, 1.8, 7.8]] as Vec3[] },
     pace: { window: [0.08, 0.92], ease: 'inOut' },
     flight: { fov: 4 },
   },
@@ -190,16 +192,6 @@ export const shots: readonly ShotDefinition[] = [
     pace: { window: [0.08, 0.92], ease: 'inOut' },
     lead: 0.1,
     flight: { fov: 5, roll: 0.05 },
-  },
-  {
-    id: 'offre',
-    chapter: 'prestations',
-    at: 0.85,
-    intent: 'UNITÉ 14 — Reculer dans la nuit : le véhicule propre sous la Voie lactée, la place pour la formule et le déplacement.',
-    framing: { position: [-16, 5.4, 22], target: [1, 1.4, 0], fov: 34, shift: [0.24, 0] },
-    ...portrait({ position: [-12, 6.2, 20], target: [0.8, 1.5, 0], fov: 44, shift: [0, 0.24] }),
-    pace: { window: [0.08, 0.92], ease: 'inOut' },
-    flight: { fov: 6, roll: 0.04 },
   },
   // — LA GRILLE : quatre plans qui font le tour du véhicule propre, un par formule. La caméra monte en même temps
   // que la gamme : au ras du sol sur la formule la plus simple, au-dessus de l'épaule sur la plus complète.

@@ -57,21 +57,31 @@ export function boot() {
   // — Entrée.
   const introStart = performance.now();
   let introDone = !html.classList.contains('is-intro');
-  const hold = () => {
-    if (!introDone && window.scrollY !== 0) window.scrollTo({ top: 0, behavior: 'instant' });
-  };
-  addEventListener('scroll', hold, { passive: true });
-  const liftIntro = () => {
+  /**
+   * LE RIDEAU D'ENTRÉE EST UNE POLITESSE, PAS UNE PRISON.
+   * Il tenait la page à zéro tant que la scène n'était pas prête — jusqu'à 4,5 s — en RENVOYANT le défilement à 0 à
+   * chaque tentative. Sur un téléphone lent, la scène met justement plus longtemps : le visiteur faisait défiler et
+   * se retrouvait au début, encore et encore. C'était le pire défaut du site.
+   * Désormais : le moindre geste (doigt, molette, touche, défilement) lève le rideau SUR-LE-CHAMP, et le rideau ne
+   * touche plus jamais à la position de la page.
+   */
+  const lift = (immediate: boolean) => {
     if (introDone) return;
-    const wait = Math.max(0, 1200 - (performance.now() - introStart));
+    const wait = immediate ? 0 : Math.max(0, 1200 - (performance.now() - introStart));
     window.setTimeout(() => {
+      if (introDone) return;
       introDone = true;
       html.classList.remove('is-intro');
-      removeEventListener('scroll', hold);
+      for (const type of GESTURES) removeEventListener(type, onGesture);
       experience.invalidate();
     }, wait);
   };
-  window.setTimeout(liftIntro, 4500);
+  const GESTURES = ['scroll', 'wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
+  const onGesture = () => lift(true);
+  for (const type of GESTURES) addEventListener(type, onGesture, { passive: true });
+  const liftIntro = () => lift(false);
+  // Filet : si la scène n'arrive jamais, le rideau tombe seul. Deux secondes, pas quatre et demie.
+  window.setTimeout(liftIntro, 2200);
   const setIntroProgress = (value: number) => html.style.setProperty('--intro', value.toFixed(3));
   setIntroProgress(0.08);
 
@@ -202,6 +212,8 @@ export function boot() {
               bevel: WORLD.map.bevel,
               labels: { number: '06', numberAt: WORLD.map.numberAt, sea: copy.zone.sea, seaAt: WORLD.map.seaAt },
               font: '"Barlow Condensed", "Arial Narrow", sans-serif',
+              chapters: ['galaxie', 'descente', 'ville', 'arrivee'],
+              reflection: desktop,
             },
             sky.uniforms,
           );

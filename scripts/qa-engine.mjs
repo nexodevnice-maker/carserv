@@ -274,9 +274,12 @@ console.log(`\nBUREAU 1440×900 — ${BASE}/lab/engine`);
   await page.waitForTimeout(500);
   const lost = (await info(page)).stage;
   await page.evaluate(() => window.__lab.restoreContext());
-  await page.waitForTimeout(800);
+  // Le navigateur rend le contexte quand il veut, et la scène ne redessine qu'ensuite : on ATTEND une image de plus
+  // au lieu de conclure d'un délai fixe. Une machine sans carte graphique met plusieurs secondes.
   await settleAt(page, 0.12);
-  await page.waitForTimeout(300);
+  await page
+    .waitForFunction((before) => window.__experience.info().stage?.renders > before, lost.renders, { timeout: 15000, polling: 200 })
+    .catch(() => {});
   const restored = (await info(page)).stage;
   check(G, 'contexte WebGL perdu puis rétabli', lost.lost === true && restored.lost === false && restored.renders > lost.renders, `${lost.renders} → ${restored.renders} rendus`);
   await page.screenshot({ path: `${OUT}/desktop-restored.png` });

@@ -22,12 +22,15 @@ mkdirSync(OUT, { recursive: true });
  * maximale (DPR 2) au lieu de retomber à 1,25, ce qui rendait tout le site flou.
  */
 const MODELS = [
-  { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', ratio: 0.4, textures: 1024, mode: 'vehicle' },
-  { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', ratio: 0.4, textures: 1024, mode: 'vehicle' },
+  // MESURÉ (scripts/qa-perf.mjs) : à 0,4 la RS6 pesait 116 000 triangles par image — les trois quarts du coût de
+  // TOUS les plans du nettoyage, sur un modèle qu'on regarde à cinq mètres sur un écran de téléphone. À 0,2 la
+  // silhouette et les arêtes de tôle sont identiques à l'œil, et l'iPhone respire.
+  // Textures en 512 : la carrosserie n'en a pas (sa laque est imposée par la scène), et une calandre de 512 px
+  // occupe déjà plus de pixels à l'écran qu'elle n'en a. C'est la moitié de la mémoire vidéo du véhicule.
+  { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', ratio: 0.2, textures: 512, mode: 'vehicle' },
+  { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', ratio: 0.25, textures: 512, mode: 'vehicle' },
   // L'univers : un nuage de 50 000 points colorés. On ne le simplifie pas — on le traverse.
   { id: 'galaxy', src: 'tools/3d/GALAXY/need_some_space.glb', ratio: 1, textures: 1024, mode: 'points' },
-  // La ville de nuit : 2 000 triangles, 21 textures de façades. Tout le poids est dans les images.
-  { id: 'city', src: 'tools/3d/CITY/city-raw.glb', ratio: 1, textures: 1024, mode: 'scene' },
 ];
 
 for (const model of MODELS) {

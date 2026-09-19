@@ -1276,9 +1276,13 @@ html.is-intro {
   align-content: end;
 }
 
+/* UNE CASE À PART ENTIÈRE dès qu'un prix est affiché : le filet gauche ne suffisait pas à détacher la formule du
+   décor 3D qui passe derrière. Cadre fermé, fond sombre, coins adoucis — c'est le cadre de la grille du porteur. */
 .pack {
-  border-left: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
-  padding-left: clamp(0.9rem, 4vw, 1.4rem);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 14px;
+  padding: clamp(1rem, 4.5vw, 1.5rem) clamp(1rem, 4.5vw, 1.4rem);
+  background: linear-gradient(180deg, rgb(8 8 9 / 0.86), rgb(8 8 9 / 0.66));
 }
 
 .pack__rank {
@@ -1354,6 +1358,6 @@ html.is-intro {
 
 /* Le dernier palier : celui qui couvre l'intérieur ET l'extérieur. Un filet plein, pas un fond ni une ombre. */
 .panel--tarif-fort .pack {
-  border-left-color: var(--accent);
-  border-left-width: 3px;
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
 }

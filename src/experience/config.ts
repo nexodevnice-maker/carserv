@@ -34,8 +34,11 @@ export const STAGE: StageConfig = {
     // Au téléphone, la netteté EST la qualité : le plancher est remonté à 1,5 (1,25 se voyait immédiatement). Le coût
     // par image a été ramené sous les 16 ms (modèles taillés à 25 appels de dessin) : le cran 2 est un filet, pas un
     // régime de croisière.
-    tablet: [2, 1.75, 1.5],
-    mobile: [2, 1.75, 1.5],
+    // Le plancher était à 1,5 : un téléphone qui n'y arrive pas n'avait plus aucune marge et restait à saccader
+    // pour rien. Deux crans de secours en dessous — on ne les atteint que si le rythme le demande vraiment, et la
+    // fluidité vaut mieux que la netteté quand il faut choisir.
+    tablet: [2, 1.75, 1.5, 1.25],
+    mobile: [2, 1.75, 1.5, 1.25, 1],
   },
   layerMargin: 0.02,
   near: 0.1,

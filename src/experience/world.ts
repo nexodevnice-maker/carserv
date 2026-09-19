@@ -18,11 +18,11 @@ export const WORLD = {
   skyYaw: 1.32,
   north: NORTH,
   /**
-   * Hauteur des falaises du 06 au-dessus de la mer de nuit. Le plateau affleure à y = 0 : la place, la route et le
-   * véhicule sont DESSUS, la mer est 30 m plus bas. C'est ce qui fait qu'on se pose sur un territoire, et pas sur
-   * une dalle posée dans le vide.
+   * Le sol du monde est au niveau de la place (0 m), comme le plateau du 06. La carte s'éteint dès qu'on est au sol
+   * (on ne la voit que d'en haut) : si le sol était 30 m plus bas, le parking se remettrait à flotter à l'instant
+   * même où elle disparaît.
    */
-  seaDepth: 30,
+  seaDepth: 0,
   /**
    * LE 06 — le contour officiel du département (relevé IGN, scripts/content-map.mjs), extrudé à l'échelle du monde.
    * On le traverse en descendant de la galaxie : il est le dernier palier avant la place, et c'est lui qui dit
@@ -106,9 +106,13 @@ export const WORLD = {
       { center: [0, 1500, 1400], size: [7000, 260, 7000], count: 130, scale: [900, 2000], hole: [50, 700, 560] },
       { center: [0, 420, 300], size: [2200, 200, 2400], count: 40, scale: [160, 380] },
     ],
+    // Au téléphone, chaque nuage est un panneau transparent qui peut couvrir tout l'écran : ce n'est pas le nombre de
+    // triangles qui coûte, c'est le nombre de fois que le MÊME PIXEL est repeint. 92 panneaux, c'était jusqu'à 92
+    // couches sur un seul pixel — le genre de charge qui fait fondre un iPhone. Moins de nuages, plus grands : même
+    // ciel, trois fois moins de remplissage.
     mobile: [
-      { center: [0, 1500, 1400], size: [7000, 260, 7000], count: 70, scale: [1200, 2600], hole: [50, 700, 560] },
-      { center: [0, 420, 300], size: [2200, 200, 2400], count: 22, scale: [200, 440] },
+      { center: [0, 1500, 1400], size: [7000, 260, 7000], count: 24, scale: [2000, 3800], hole: [50, 700, 560] },
+      { center: [0, 420, 300], size: [2200, 200, 2400], count: 9, scale: [320, 620] },
     ],
   } satisfies Record<'desktop' | 'mobile', CloudField[]>,
 };

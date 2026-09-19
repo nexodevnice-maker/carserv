@@ -323,16 +323,39 @@ export async function createWebGLStage(options: {
   });
   visibility.observe(host);
 
+  /**
+   * PERTE DE CONTEXTE 3D — ce qui arrive vraiment sur un téléphone à court de mémoire.
+   *
+   * On basculait aussitôt en repli statique : la scène disparaissait, la page changeait de mise en page, et le
+   * défilement se déplaçait tout seul. De l'extérieur, le site avait planté et repartait du début. Pire : même
+   * quand le navigateur rendait le contexte une seconde plus tard, plus aucune image n'était dessinée — le repli
+   * avait sorti la vue du champ, donc la boucle restait éteinte pour de bon.
+   *
+   * Désormais : on attend. Un contexte perdu est presque toujours rendu dans la seconde ; on ne renonce qu'au bout
+   * de quatre. Et au retour, tout est redessiné depuis zéro.
+   */
+  let lostTimer = 0;
   const onLost = (event: Event) => {
     event.preventDefault();
     if (disposed) return;
     lost = true;
     host.classList.add('is-webgl-lost');
-    options.onFallback?.('context-lost');
+    clearTimeout(lostTimer);
+    lostTimer = window.setTimeout(() => {
+      if (lost && !disposed) options.onFallback?.('context-lost');
+    }, 4000);
   };
   const onRestored = () => {
+    clearTimeout(lostTimer);
+    if (disposed) return;
     lost = false;
     host.classList.remove('is-webgl-lost');
+    // Le contexte est NEUF : l'état interne de Three.js ne décrit plus rien, et toutes les couches doivent être
+    // redessinées. Sans cette remise à plat, la scène restait noire même contexte rétabli.
+    renderer.resetState();
+    for (const layer of layers) layer.resize?.(ctx);
+    active = true;
+    dirty = true;
     ctx.invalidate();
   };
   canvas.addEventListener('webglcontextlost', onLost);

@@ -101,14 +101,15 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'prestations',
     universe: 'cleaning',
-    span: { desktop: 260, mobile: 280 },
-    rests: [0.25, 0.55, 0.85],
+    // Deux unités, pas trois : la troisième affichait une formule à 50 € NON CONFIRMÉE, que la vraie grille
+    // tarifaire remplace. Un défilement de moins, et plus aucun prix incertain à côté des prix réels.
+    span: { desktop: 210, mobile: 230 },
+    rests: [0.3, 0.72],
     panels: [
-      { id: 'interieur-exterieur', in: 0.02, out: 0.4 },
-      { id: 'finition-produits', in: 0.44, out: 0.7 },
-      { id: 'offre', in: 0.74, out: 0.985 },
+      { id: 'interieur-exterieur', in: 0.02, out: 0.46 },
+      { id: 'finition-produits', in: 0.5, out: 0.985 },
     ],
-    intent: 'Le tour du véhicule propre : tout ce que fait l’entreprise, puis la formule et le déplacement.',
+    intent: 'Le tour du véhicule propre : tout ce que fait l’entreprise, des deux côtés de la place.',
   },
   {
     id: 'tarifs',
