@@ -232,12 +232,16 @@ export function createCircuitLayer(options: CircuitOptions) {
   }
   place(new BoxGeometry(1, 1, 1), concrete, [...roofs, ...backs]);
 
+  // Le bandeau était posé SOUS LE TOIT, à onze mètres, et long de cent quarante : vu par la tranche depuis la voie,
+  // il traversait tout le cadre en diagonale — on lisait une barre dorée en travers du ciel, pas une tribune. Il
+  // descend au niveau des gradins (il éclaire les places, c'est là qu'il sert) et ne court plus que sur la moitié
+  // de la longueur : il dit « il y a du monde là-haut » sans barrer l'image.
   const bands: Matrix4[] = [];
   for (const dir of [1, -1]) {
     bands.push(
       new Matrix4()
-        .makeTranslation(lane + dir * (side - 0.6), 0.9 + tiers * 0.85 + 2.2, at)
-        .multiply(new Matrix4().makeScale(0.22, 0.5, length * 0.94)),
+        .makeTranslation(lane + dir * (side - 0.6), 0.9 + tiers * 0.42, at)
+        .multiply(new Matrix4().makeScale(0.22, 0.4, length * 0.5)),
     );
   }
   // Teinte BASSE : à pleine intensité, ce bandeau vu par la tranche depuis la voie traversait tout le cadre en

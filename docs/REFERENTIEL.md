@@ -323,7 +323,8 @@ Faits commerciaux (`src/domain/`) — extrait des statuts :
 
 | Fait | Valeur | Statut |
 |---|---|---|
-| Formule intérieur + extérieur | 50 € | **TO_CONFIRM** (portée et actualité) |
+| Grille tarifaire nettoyage | 40 / 75 / 90 / 110 € | CONFIRMED (`tools/flyers/PRICE.png`, 18/09/2026) |
+| Ancienne mention « intérieur + extérieur 50 € » | — | **TO_CONFIRM et non affichée** : donnée morte, remplacée par la grille |
 | Location C-HR | 70 € / jour, 400 € / 7 j, 700 € / 15 j | CONFIRMED (flyer LOC) |
 | Conditions location | assurance comprise, kilométrage illimité, hybride économe, confort & sécurité, 7J/7 | CONFIRMED |
 | Prestations | intérieur, extérieur, finition premium, produits professionnels | CONFIRMED |
@@ -408,22 +409,20 @@ node scripts/qa-live.mjs https://carservice.nexodevnice.workers.dev   # parcours
 
 **Dette technique**
 
-4. `src/pages/lab/engine.astro` et `src/lab/` (banc d'essai du moteur) sont **publiés** : à retirer avant mise en
-   production réelle. Ils utilisent encore le pipeline vidéo (`media.generated.json`, `SEQUENCE_BUDGET`, les fichiers
-   `public/media/*`), seule raison pour laquelle ce pipeline existe encore.
-5. Le paquet publié pèse ~24 Mo, dont la vidéo et la séquence d'images qui ne servent plus qu'au laboratoire.
-6. `scripts/media-passage.mjs` et `scripts/lib/align.mjs` (recalage des images avant/après) ne servent plus au site.
+4. ~~Le banc d'essai était publié~~ **Réglé le 19/09.** `/lab/engine` et `public/media/transformation` sont
+   construits (la QA s'appuie dessus en développement) puis **retirés du paquet** par l'intégration
+   `sansBancDEssai` d'`astro.config.mjs`. Le `robots.txt` ne suffisait pas : il déconseille aux robots, il
+   n'interdit à personne. **Paquet publié : 23 Mo → 8,1 Mo.**
+5. `scripts/media-passage.mjs` et `scripts/lib/align.mjs` (recalage des images avant/après) ne servent plus au site.
 
 **Pistes d'amélioration identifiées, non faites**
 
 7. Reflet du véhicule sur la chaussée mouillée (aujourd'hui seuls les feux se reflètent).
 8. Sons (aucun pour l'instant), et une vraie prise de rendez-vous côté serveur si le porteur veut un suivi.
-9. **Les quatre anneaux du constructeur sont lisibles sur la calandre du RS6** (plan `avant`, unité 10). Ce n'est pas
-   un détail de rendu : c'est une entorse à la règle 2 du §2. Le filtre de `vehicle-layer.ts` masque les matériaux
-   nommés `badge|logo|emblem` — et il masque bien `BadgeA_Material1` — mais les anneaux visibles à l'écran sont une
-   géométrie portée par un matériau `Grille*A`, que le nom ne trahit pas. Les identifier demande de masquer les
-   meshes de calandre un par un et de regarder ; les masquer tous crèverait la calandre. **À lever avant toute
-   publication réelle.**
+9. **Les roues ne tournent pas.** Le C-HR parcourt trois cents mètres, roues figées. Ce n'est pas un oubli : le
+   modèle fourni est fusionné en **cinq maillages par matériau**, roues comprises dans la caisse — il n'y a rien à
+   faire tourner. Il faudrait recouper le modèle hors ligne (isoler les sommets des roues par grappes de position).
+   Le RS6, lui, a bien un matériau de roue isolable — mais il ne bouge jamais.
 
 ---
 

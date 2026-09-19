@@ -472,3 +472,52 @@ de l'horloge : même endroit, même image, à l'aller comme au retour.
 (unité 10). Le filtre `badge|logo|emblem` masque bien `BadgeA_Material1`, mais ces anneaux-là sont portés par un
 matériau `Grille*A` que le nom ne trahit pas. C'est une entorse à la règle de vérité, à lever avant publication
 réelle (REFERENTIEL §13.9).
+
+
+---
+
+## 19/09/2026 — L'emblème sans nom, le banc d'essai hors du paquet
+
+**Les quatre anneaux.** La règle du projet interdit de mettre en avant un logo constructeur, et le filtre de
+`vehicle-layer.ts` masque les matériaux nommés `badge|logo|emblem`. Il masquait bien `BadgeA_Material1` — et les
+anneaux restaient à l'écran, en plein centre d'un plan de face. Ils appartiennent au matériau des **chromes**, une
+seule pièce de 9 400 triangles qui porte aussi les baguettes, les entourages et les inserts : ni le nom du matériau
+ni celui du maillage ne permettent de les isoler.
+
+Ils sont donc effacés par la **géométrie** : une boîte en coordonnées monde (`WORLD.vehicles.cleaning.erase`), et un
+`discard` dans le nuanceur. La boîte s'arrête juste derrière la saillie des anneaux — on retrouve le panneau lisse de
+la calandre, pas un trou sur le compartiment moteur.
+
+**Comment les bornes ont été trouvées, et l'erreur qui a coûté cher.** Premier essai : encoder la position locale en
+couleur et échantillonner les pixels. Résultat faux, et faux de façon crédible — toutes les zones donnaient le même
+x. La cause : la sonde capturait 1,2 s après le saut, **avant que le modèle 3D soit décodé**. Je mesurais le mur du
+fond. Pire, la même course faisait apparaître ou disparaître la voiture d'une capture à l'autre, ce qui se lisait
+tour à tour comme « l'effacement ne marche pas » et « l'effacement a tout mangé ». Deux heures pour un symptôme qui
+n'existait pas.
+
+La leçon tient en une ligne : **une sonde qui n'attend pas explicitement le média attend le hasard**. La sonde
+attend désormais `vehicle-cleaning: ready`. Les bornes ont ensuite été trouvées par dichotomie à l'écran — on efface
+une tranche, on capture, on regarde où elle tombe, on resserre — ce qui est mesuré dans le même rendu, donc fiable.
+
+**Le banc d'essai.** `/lab/engine` était en ligne, accessible à qui connaissait l'adresse, avec les quinze
+mégaoctets de vidéo et de séquence d'images dont il est le seul consommateur (65 % du paquet). Le supprimer était
+tentant — sauf que `npm run qa:engine` s'appuie dessus : c'est le banc de mesure de la piste, de l'état, de la
+caméra, du GPU et de l'accessibilité. Supprimer le banc, c'était supprimer le contrôle qualité.
+
+Il est donc **construit puis retiré du paquet** (`sansBancDEssai`, `astro.config.mjs`, au `astro:build:done`) : présent
+en développement, absent en ligne. Le `robots.txt` ne suffisait pas — il déconseille aux robots, il n'interdit à
+personne. **Paquet publié : 23 Mo → 8,1 Mo.**
+
+**La passe d'image ne s'éteint plus en route.** Elle était coupée dès le deuxième cran de définition. Mais son coût a
+été mesuré et il est **sous le bruit de la mesure**. Couper quelque chose de gratuit ne faisait que provoquer une
+rupture visible en plein parcours — halo, étalonnage et vignette disparaissant d'un coup, sans fondu. Elle ne
+s'éteint plus qu'au tout dernier cran.
+
+**Le bandeau des tribunes** était à onze mètres et long de cent quarante : vu par la tranche depuis la voie, il
+traversait tout le cadre en diagonale. On lisait une barre dorée en travers du ciel, pas une tribune. Il descend au
+niveau des gradins — c'est là qu'un bandeau sert, il éclaire les places — et ne court plus que sur la moitié de la
+longueur.
+
+**Constaté, pas corrigé : les roues ne tournent pas.** Le modèle de location est fusionné en **cinq maillages par
+matériau**, roues comprises dans la caisse : il n'y a rien à faire tourner. Il faudrait recouper le modèle hors ligne.
+Le RS6 a bien un matériau de roue isolable — mais il ne bouge jamais.

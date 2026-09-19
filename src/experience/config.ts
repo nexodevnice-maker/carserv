@@ -61,13 +61,15 @@ export const STAGE: StageConfig = {
    * un fond noir avec des taches claires dessus. Les valeurs sont volontairement basses — il s'agit de faire croire
    * à une optique, pas d'ajouter un effet.
    *
-   * `maxLevel: 1` : le halo survit à un cran de définition en moins, pas à deux. Passé là, le téléphone rame pour de
-   * vrai et la fluidité vaut mieux que la photographie.
+   * `maxLevel: 3` : la passe ne s'éteint qu'au tout dernier cran. Elle était coupée dès le deuxième — mais son coût
+   * a été MESURÉ et il est sous le bruit de la mesure (deux relevés encadrants donnent 25,4 et 28,4 ms, l'écart va
+   * dans le mauvais sens). Couper quelque chose de gratuit ne fait que provoquer une rupture visible en plein
+   * parcours : halo, étalonnage et vignette disparaissaient d'un coup, sans fondu. On garde un cran de secours.
    * `grain: 0,012` ≈ trois valeurs sur 255 : c'est d'abord un TRAMAGE. Sans lui, le dégradé du ciel et le cône de
    * brume des candélabres se découpent en bandes sur un écran 8 bits — le défaut le plus visible d'une image sombre.
    */
   post: {
-    maxLevel: 1,
+    maxLevel: 3,
     scale: 4,
     // Seuil en valeur d'écran : au-dessus, une source « déborde ». À 0,5, les phares, les lampes, la ligne d'or, le
     // liseré des tarifs et les étoiles débordent ; la carrosserie et le béton, non.
@@ -99,7 +101,8 @@ export const MEDIA_POLICY: Record<Format, MediaPolicy> = {
 
 /**
  * Séquences d'images : mémoire bornée (images décodées ≈ 3 Mo chacune en 540 × 854).
- * Le site n'affiche plus de séquence ; seul le laboratoire (src/pages/lab) s'en sert pour éprouver le moteur.
+ * Le site n'affiche plus de séquence ; seul le banc d'essai du moteur (src/pages/lab) s'en sert. Ce banc est servi en
+ * développement — la QA s'appuie dessus — mais il est RETIRÉ du paquet publié (astro.config.mjs).
  */
 export const SEQUENCE_BUDGET: Record<Format, { window: number; decoded: number; concurrency: number }> = {
   desktop: { window: 24, decoded: 12, concurrency: 6 },

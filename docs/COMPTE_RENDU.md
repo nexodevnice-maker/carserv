@@ -95,18 +95,28 @@ téléphone.
    image**, et la passe s'efface d'elle-même si le téléphone perd un cran de définition.
    **L'occlusion ambiante n'est pas faite** (c'est le morceau cher).
 
+5. **Les anneaux du constructeur sont partis de la calandre.** Ils n'avaient pas de matériau à eux
+   (ils appartenaient aux chromes, une seule pièce de 9 400 triangles), donc aucun filtre par nom ne
+   pouvait les attraper. Ils sont effacés par la géométrie, à la mesure : on retrouve un panneau lisse,
+   chromes et inserts intacts.
+6. **Le bandeau des tribunes ne barre plus le ciel.** Il était à onze mètres et long de cent quarante :
+   vu de la voie il traversait le cadre en diagonale. Il descend au niveau des gradins et ne court plus
+   que sur la moitié de la longueur.
+7. **Le banc d'essai n'est plus en ligne.** Il était accessible à qui connaissait l'adresse, avec les
+   quinze mégaoctets de vidéo dont il est le seul consommateur. Il reste en développement (la QA s'appuie
+   dessus) mais il est retiré du paquet. **Paquet publié : 23 Mo → 8,1 Mo.**
+8. **La passe d'image ne s'éteint plus en cours de route.** Elle était coupée dès le deuxième cran de
+   définition — or son coût est sous le bruit de la mesure. Elle ne s'éteint qu'au tout dernier cran.
+
 ### Défauts connus que je n'ai pas encore levés
 
-5. **Les quatre anneaux du constructeur sont lisibles sur la calandre** du véhicule de démonstration.
-   C'est une entorse à la règle du projet (aucun logo constructeur mis en avant). Le filtre par nom
-   masque bien le matériau « Badge », mais ces anneaux-là sont portés par un matériau de calandre que
-   le nom ne trahit pas. **À lever avant toute publication réelle.**
-6. **Le bandeau des tribunes traverse le ciel en diagonale** sur certains plans du circuit : on lit une
-   barre dorée, pas une tribune.
-7. **Carrosserie plate en gros plan** : les exports Sketchfab n'ont pas le micro-relief d'une vraie
-   tôle. Une carte de normales générée corrigerait ça.
-8. **La descente reste sombre.** La carte du 06 se lit, mais l'ensemble manque de matière entre
-   l'univers et la place.
+9. **Les roues ne tournent pas.** Le modèle de location est fusionné en cinq maillages par matériau,
+   roues comprises dans la caisse : il n'y a rien à faire tourner. Il faudrait recouper le modèle.
+10. **Carrosserie plate en gros plan** : les exports Sketchfab n'ont pas le micro-relief d'une vraie
+    tôle. Une carte de normales générée corrigerait ça.
+11. **La descente reste sombre.** La carte du 06 se lit, mais l'ensemble manque de matière entre
+    l'univers et la place.
+12. **Aucune occlusion ambiante** : c'est le dernier morceau de cinéma qui manque.
 
 ### Avant toute publication réelle
 
@@ -120,7 +130,9 @@ téléphone.
 
 ## 5. Dans quel ordre je continuerais
 
-1. **Les anneaux sur la calandre** : c'est une règle du projet, pas un goût.
-2. **Le bandeau des tribunes**, qui barre le ciel du circuit.
-3. L'occlusion ambiante (le seul morceau de cinéma qui manque encore).
+1. **Les faits commerciaux manquants** : téléphone, courriel, mentions légales, caution, procédure de
+   réservation, photos réelles du C-HR, droits des modèles 3D. Rien de tout cela ne s'invente — il n'y a
+   que vous pour les fournir, et ils bloquent une vraie mise en service.
+2. **Les roues qui tournent** (recouper le modèle de location).
+3. L'occlusion ambiante (le dernier morceau de cinéma qui manque).
 4. Le calendrier serveur, dès que la clé d'envoi est posée.

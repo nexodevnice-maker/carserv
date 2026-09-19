@@ -56,6 +56,19 @@ export interface VehicleOptions {
    * carrosserie, jamais aux optiques ni à l'habitacle.
    */
   tint?: { match: RegExp; color: readonly [number, number, number] };
+  /**
+   * EFFACEMENT D'EMBLÈME. Certains emblèmes ne portent pas de nom : sur le RS6, les quatre anneaux de la calandre
+   * appartiennent au matériau des chromes (9 400 triangles : baguettes, entourages, inserts). Les masquer par le nom
+   * crèverait toute la calandre. On les efface donc par la GÉOMÉTRIE : une boîte, en mètres, dans le repère du
+   * monde, en mètres (le véhicule de la démonstration ne bouge jamais). Les fragments dedans ne sont pas dessinés.
+   *
+   * Bornes trouvées par DICHOTOMIE à l'écran : on efface une tranche, on capture, on regarde où elle tombe, on
+   * resserre. C'est la seule méthode qui tienne — un encodage de la position en couleur avait été tenté et donnait
+   * des valeurs fausses, parce que la capture partait avant que le modèle soit décodé et mesurait le mur du fond.
+   * La boîte s'arrête juste derrière la saillie des anneaux : on retrouve le panneau lisse de la calandre, pas un
+   * trou sur le compartiment moteur.
+   */
+  erase?: { x: readonly [number, number]; y: readonly [number, number]; z: readonly [number, number] };
   /** Bruit précalculé partagé (poussière). */
   noise: Texture;
   chapters?: readonly string[];
@@ -77,6 +90,10 @@ interface VehicleUniforms {
   uCarOrigin: { value: Vector3 };
   uCarForward: { value: Vector2 };
   uHalf: { value: number };
+  /** Boîte d'effacement (min, max) dans le repère du véhicule, et son interrupteur. */
+  uEraseMin: { value: Vector3 };
+  uEraseMax: { value: Vector3 };
+  uErase: { value: number };
 }
 
 const PATCH_VERTEX = /* glsl */ `
@@ -102,8 +119,17 @@ const PATCH_FRAGMENT_HEAD = /* glsl */ `
   uniform vec3 uCarOrigin;
   uniform vec2 uCarForward;
   uniform float uHalf;
+  uniform vec3 uEraseMin;
+  uniform vec3 uEraseMax;
+  uniform float uErase;
   varying vec3 vCarWorld;
   varying vec3 vCarNormal;
+
+  /** Vrai dans la boîte d'effacement : le fragment n'est pas dessiné (emblème sans nom de matériau). */
+  bool carErased() {
+    if (uErase < 0.5) return false;
+    return all(greaterThan(vCarWorld, uEraseMin)) && all(lessThan(vCarWorld, uEraseMax));
+  }
 
   /** Position le long du véhicule (m) : + vers l'avant, − vers l'arrière. */
   float carAxis() {
@@ -234,6 +260,9 @@ export function createVehicleLayer(options: VehicleOptions) {
     uCarOrigin: { value: new Vector3(options.at[0], 0, options.at[1]) },
     uCarForward: { value: forward },
     uHalf: { value: options.length / 2 },
+    uEraseMin: { value: new Vector3(...(options.erase ? [options.erase.x[0], options.erase.y[0], options.erase.z[0]] : [0, 0, 0])) },
+    uEraseMax: { value: new Vector3(...(options.erase ? [options.erase.x[1], options.erase.y[1], options.erase.z[1]] : [0, 0, 0])) },
+    uErase: { value: options.erase ? 1 : 0 },
   };
   let stage: StageContext | null = null;
   let loaded = false;
@@ -294,6 +323,7 @@ export function createVehicleLayer(options: VehicleOptions) {
         .replace(
           '#include <map_fragment>',
           /* glsl */ `
+          if (carErased()) discard;
           #include <map_fragment>
           float carX = carAxis();
           float cleaned = carCleaned(carX);

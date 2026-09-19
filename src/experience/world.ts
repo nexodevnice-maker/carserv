@@ -85,7 +85,18 @@ export const WORLD = {
    * cette échelle, roues au sol. `heading` : azimut du capot. La location roule dans la voie de la caméra (x = 0).
    */
   vehicles: {
-    cleaning: { length: 4.99, at: [0, 0] as const, heading: 0 },
+    cleaning: {
+      length: 4.99,
+      at: [0, 0] as const,
+      heading: 0,
+      erase: { x: [2.4, 3.5] as const, y: [0.56, 0.75] as const, z: [-0.2, 0.2] as const },
+      /**
+       * Les quatre anneaux du constructeur, sur la calandre. Ils n'ont pas de matériau à eux : ils appartiennent aux
+       * chromes (une seule pièce de 9 400 triangles qui porte aussi les baguettes et les entourages), donc le filtre
+       * par nom ne peut rien. On les efface par la géométrie. Bornes relevées à l'écran, pas estimées : encodage de
+       * la position locale en couleur, puis échantillonnage des pixels des anneaux.
+       */
+    },
     rental: { length: 4.36, at: [0, -240] as const, heading: NORTH },
   },
   /**
