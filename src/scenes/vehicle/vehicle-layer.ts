@@ -45,7 +45,7 @@ export interface VehicleOptions {
    * Canaux lus. `light` : présence (0–1). Les autres sont ceux de la démonstration du nettoyage ; absents, le véhicule
    * est simplement propre et verni (le véhicule de location).
    */
-  channels: { light: string; dirt?: string; scan?: string; polish?: string; beam?: string };
+  channels: { light: string; dirt?: string; scan?: string; polish?: string; beam?: string; cabin?: string };
   /** Avance le long du cap (m), pour la route de la location. */
   travel?: string;
   /**
@@ -66,6 +66,8 @@ interface VehicleUniforms {
   uCleanBase: { value: number };
   /** Allumage des optiques (canal `headlight`) : 0 éteint, 1 plein feu. */
   uBeam: { value: number };
+  /** Éclairage d'ambiance de l'habitacle (canal `cabin`). */
+  uCabin: { value: number };
   uScanFront: { value: number };
   uScanOn: { value: number };
   uPolish: { value: number };
@@ -90,6 +92,7 @@ const PATCH_FRAGMENT_HEAD = /* glsl */ `
   uniform float uDirt;
   uniform float uCleanBase;
   uniform float uBeam;
+  uniform float uCabin;
   uniform float uScanFront;
   uniform float uScanOn;
   uniform float uPolish;
@@ -156,6 +159,8 @@ const PLATE = /plate/i;
 /** Les optiques du modèle : l'avant (xénon, blanc froid) et l'arrière (rouge). */
 const FRONT_LIGHT = /LightA|headlight|head_light/i;
 const REAR_LIGHT = /red_glass|taillight|tail_light|rearlight/i;
+/** Les garnitures de l'habitacle : sièges, contreportes, planche de bord. */
+const CABIN = /Interior/i;
 
 /** La plaque « CAR SERVICE | 06 », dessinée une fois. Fond sombre, filet jaune, deux blocs de texte. */
 function plateTexture() {
@@ -204,6 +209,7 @@ export function createVehicleLayer(options: VehicleOptions) {
     uDirt: { value: 0 },
     uCleanBase: { value: 1 },
     uBeam: { value: 0 },
+    uCabin: { value: 0 },
     uScanFront: { value: 99 },
     uScanOn: { value: 0 },
     uPolish: { value: 0 },
@@ -218,7 +224,7 @@ export function createVehicleLayer(options: VehicleOptions) {
   let plate: CanvasTexture | null = null;
   /** Ce que la couche a VRAIMENT fait de chaque matériau (relevé QA : le nom lu par le navigateur, pas par le fichier). */
   const roles: Record<string, string> = {};
-  const last = { dirt: -1, scan: -1, polish: -1, light: -1, travel: NaN, beam: -1 };
+  const last = { dirt: -1, scan: -1, polish: -1, light: -1, travel: NaN, beam: -1, cabin: -1 };
 
   /** Poussière, scan et vernis dans tous les matériaux du modèle : aucune texture ajoutée, seuls les paramètres bougent. */
   const patch = (material: Material) => {
@@ -227,11 +233,12 @@ export function createVehicleLayer(options: VehicleOptions) {
     // bleu — c'est ce bleu qui fait lire « xénon » et pas « ampoule »), feux rouges à l'arrière. Ce n'est pas une
     // décoration : c'est le signe que la voiture est prête à repartir.
     const beam = FRONT_LIGHT.test(standard.name) ? 'avant' : REAR_LIGHT.test(standard.name) ? 'arriere' : null;
+    const cabin = !beam && CABIN.test(standard.name);
     roles[standard.name || '(sans nom)'] = beam ? `optique ${beam}` : 'caisse';
     // Three.js met les programmes en cache d'après les PARAMÈTRES du matériau : deux matériaux réglés pareil
     // partagent le même programme, même si leur `onBeforeCompile` injecte un code différent. L'optique héritait donc
     // du programme de la carrosserie, sans la ligne qui l'allume — et restait éteinte. La clé lève l'ambiguïté.
-    standard.customProgramCacheKey = () => `carservice:${beam ?? 'caisse'}`;
+    standard.customProgramCacheKey = () => `carservice:${beam ?? (cabin ? 'habitacle' : 'caisse')}`;
     if (beam) {
       standard.roughness = 0.14;
       standard.metalness = 0.1;
@@ -305,6 +312,15 @@ export function createVehicleLayer(options: VehicleOptions) {
             float glow = exp(-pow((carX - uScanFront) / 0.11, 2.0)) * 0.5;
             float wake = exp(-pow((carX - uScanFront - 0.5) / 0.55, 2.0)) * 0.08;
             totalEmissiveRadiance += vec3(1.0, 0.8, 0.3) * (line * 5.0 + glow + wake) * uScanOn;
+          }
+          ${
+            cabin
+              ? /* glsl */ `
+          // L'HABITACLE. Une lueur chaude, très basse, posée sur les garnitures — la lumière d'ambiance qu'on laisse
+          // allumée la nuit. Elle monte avec le canal cabin : on entre dans la voiture, la voiture s'allume.
+          totalEmissiveRadiance += vec3(1.0, 0.72, 0.36) * uCabin * 0.42;
+        `
+              : ''
           }
           ${
             beam
@@ -461,10 +477,15 @@ export function createVehicleLayer(options: VehicleOptions) {
       const polish = options.channels.polish ? (state.channels[options.channels.polish] ?? 0) : 1;
       const travel = options.travel ? (state.channels[options.travel] ?? 0) : 0;
       const beam = options.channels.beam ? (state.channels[options.channels.beam] ?? 0) : 0;
-      if (dirt === last.dirt && scan === last.scan && polish === last.polish && light === last.light && travel === last.travel && beam === last.beam)
+      const cabin = options.channels.cabin ? (state.channels[options.channels.cabin] ?? 0) : 0;
+      if (
+        dirt === last.dirt && scan === last.scan && polish === last.polish && light === last.light &&
+        travel === last.travel && beam === last.beam && cabin === last.cabin
+      )
         return false;
-      Object.assign(last, { dirt, scan, polish, light, travel, beam });
+      Object.assign(last, { dirt, scan, polish, light, travel, beam, cabin });
       uniforms.uBeam.value = beam;
+      uniforms.uCabin.value = cabin;
       uniforms.uDirt.value = dirt;
       // Avant tout relevé, une caisse sans poussière est propre PARTOUT : sinon le vernis de l'ouverture n'existe pas.
       uniforms.uCleanBase.value = scan <= 0.001 && dirt <= 0.001 ? 1 : 0;

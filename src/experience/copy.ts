@@ -30,6 +30,7 @@ export const copy = {
     text: 'La même laque, éteinte par la poussière : elle ne renvoie plus rien. C’est l’état dans lequel on prend un véhicule.',
   },
   passage: { index: '03', title: 'Le passage', after: 'Derrière la ligne : plus une trace.' },
+  face: { index: '04', title: 'De face', text: 'Propre, phares allumés. La même distance qu’avant le passage — la comparaison se fait sans y penser.' },
   apres: {
     index: '04',
     title: 'Après',

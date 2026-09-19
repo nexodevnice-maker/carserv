@@ -44,8 +44,11 @@ export const shots: readonly ShotDefinition[] = [
       'UNITÉ 1 — LE HÉROS : on est DANS la galaxie. Pas devant une image : dedans. Le cœur est droit devant, les bras s’ouvrent de part et d’autre, et les étoiles proches passent à côté de nous.',
     // Cadrage RELEVÉ, pas deviné (scripts/qa-frame.mjs) : d'ici, le cœur de la galaxie occupe le haut du cadre, les
     // étoiles se détachent une à une, et le tiers bas reste un ciel noir — c'est là que le titre se lit.
-    framing: { position: [2050, 9400, 3900], target: [-180, 10190, -3850], fov: 56, shift: [0.08, 0] },
-    ...portrait({ position: [1810, 9560, 3460], target: [-180, 10190, -3850], fov: 63, shift: [0, 0.10] }),
+    // BIEN SOUS LE DISQUE, et loin. La caméra était posée au bord du cœur : il remplissait la moitié haute d'un seul
+    // bloc blanc. D'ici, la galaxie est une BANDE dans le haut du cadre, et tout le reste est du noir avec des
+    // étoiles dedans — c'est là qu'on voyage.
+    framing: { position: [2400, 3600, 5600], target: [-200, 8000, -3200], fov: 56, shift: [0.08, 0] },
+    ...portrait({ position: [2200, 3800, 5200], target: [-200, 8200, -3200], fov: 62, shift: [0, 0.10] }),
     pace: { window: [0, 1], ease: 'inOut' },
   },
   {
@@ -198,9 +201,21 @@ export const shots: readonly ShotDefinition[] = [
     pace: { window: [0, 1], ease: 'linear' },
   },
   {
+    id: 'face-propre',
+    chapter: 'transformation',
+    at: 0.16,
+    intent:
+      'UNITÉ 13 — LA FACE, PROPRE, PHARES ALLUMÉS. On n’avait jamais vu la voiture de face une fois nettoyée : c’est pourtant l’image qu’on garde. Même hauteur de phare qu’à l’unité « Avant », donc la comparaison est directe.',
+    framing: { position: [7.9, 0.76, 1.5], target: [2.2, 0.72, 0], fov: 40, shift: [0.14, 0] },
+    ...portrait({ position: [8.3, 0.78, 1.6], target: [2.2, 0.72, 0], fov: 50, shift: [0, 0.06] }),
+    via: [[9.8, 1.2, 4.6]] as Vec3[],
+    pace: { window: [0.04, 0.96], ease: 'inOut' },
+    flight: { fov: 5 },
+  },
+  {
     id: 'reflets',
     chapter: 'transformation',
-    at: 0.35,
+    at: 0.52,
     intent:
       'UNITÉ 7 — LA PREUVE : la laque rend l’univers entier — le ciel de l’unité 1, cette fois dans la carrosserie. Trois quarts avant au ras du sol mouillé, rochers au premier plan.',
     framing: { position: [10.4, 0.66, 7.6], target: PREUVE.target, fov: 38, shift: [0.2, 0] },

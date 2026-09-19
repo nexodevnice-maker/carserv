@@ -31,8 +31,10 @@ export function createVehicleLightLayer(options: {
   const root = new Group();
   root.name = 'vehicle-light';
   // Clé froide venue d'en haut à gauche (la nuit), contre-jour chaud venu du nord (la galaxie est de ce côté).
-  const key = new DirectionalLight(0xbcd0f0, 0);
-  key.position.set(-6, 9, 7);
+  // Clé froide placée SUR LA LUNE (shared/night-glsl, SKY_MOON) : si la lumière vient d'ailleurs que l'astre qu'on
+  // voit dans le ciel et dans les reflets, l'œil le sent immédiatement.
+  const key = new DirectionalLight(0xccdcf8, 0);
+  key.position.set(-4.2, 3.4, -8.4);
   const rim = new DirectionalLight(0xffdca6, 0);
   rim.position.set(5, 1.6, -9);
   root.add(key, rim);

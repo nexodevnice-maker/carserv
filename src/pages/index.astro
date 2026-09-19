@@ -180,6 +180,11 @@ const description =
       </Chapter>
 
       <Chapter id="transformation" universe="cleaning" span={chapter('transformation').span} labelledby="titre-apres">
+        <div class="panel" style={win('transformation', 'face')}>
+          <p class="index"><span>{copy.face.index}</span></p>
+          <h3 class="title title--small">{copy.face.title}</h3>
+          <p class="text">{copy.face.text}</p>
+        </div>
         <div class="panel" style={win('transformation', 'apres')}>
           <p class="index"><span>{copy.apres.index}</span></p>
           <h2 id="titre-apres" class="title">{copy.apres.title}</h2>

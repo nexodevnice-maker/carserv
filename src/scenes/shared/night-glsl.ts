@@ -42,6 +42,14 @@ export const SKY_GLSL = /* glsl */ `
    * Le paramètre de flou (reflet rugueux) est conservé dans la signature — toutes les couches l'appellent — mais une
    * nuit calculée n'a pas de niveaux de détail : elle est lisse par construction.
    */
+  /**
+   * LA LUNE. Une nuit sans lune est une nuit sans fond : tout ce qui n'est pas sous un candélabre tombe au noir, et
+   * le décor s'arrête au bord de la flaque de lumière. Elle est posée ici, dans le ciel partagé — donc elle éclaire
+   * le fond de la scène ET elle apparaît dans tout ce qui réfléchit : le sol mouillé, la chaussée, la carrosserie.
+   * Trois couches : le disque net, le halo serré autour, et la lueur large qui pâlit tout ce côté du ciel.
+   */
+  const vec3 SKY_MOON = normalize(vec3(-0.42, 0.34, -0.84));
+
   vec3 skyLod(vec3 d, float bias) {
     float up = clamp(d.y * 0.5 + 0.5, 0.0, 1.0);
     vec3 col = mix(vec3(0.006, 0.008, 0.016), vec3(0.014, 0.017, 0.032), up);
@@ -51,6 +59,10 @@ export const SKY_GLSL = /* glsl */ `
     // et le monde ressemblait à un radeau posé sur du vide.
     col += vec3(0.048, 0.030, 0.015) * exp(-abs(d.y) * 13.0);
     col += vec3(0.009, 0.006, 0.003) * exp(-abs(d.y) * 3.0);
+    float moon = max(dot(d, SKY_MOON), 0.0);
+    col += vec3(0.92, 0.94, 1.0) * smoothstep(0.99955, 0.99982, moon) * 2.4;
+    col += vec3(0.26, 0.30, 0.40) * pow(moon, 900.0) * 0.55;
+    col += vec3(0.055, 0.065, 0.095) * pow(moon, 14.0);
     // Aucune étoile semée ici : une grille de points produit un moiré visible dès qu'on bouge, et les vraies étoiles
     // du site sont la galaxie 3D (scenes/galaxy). Ce ciel-ci ne sert qu'à donner sa lumière aux reflets.
     return col;

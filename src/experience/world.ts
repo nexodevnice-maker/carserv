@@ -68,6 +68,16 @@ export const WORLD = {
     lampHeight: 7.2,
   },
   /**
+   * LES ALENTOURS (scenes/surroundings) : ce qu'il y a autour de la place. Une file de lampadaires qui part vers
+   * l'horizon — c'est elle qui donne la profondeur, bien plus que n'importe quel décor —, une glissière le long de
+   * l'aire, et des immeubles lointains aux fenêtres allumées qu'on devine sans jamais s'en approcher.
+   */
+  around: {
+    lamps: { side: 23, from: 26, to: 330, every: 27, height: 8.4 },
+    blocks: { count: 22, inner: 170, outer: 620, low: 11, high: 34 },
+    rail: { at: 19.5, length: 62 },
+  },
+  /**
    * Les deux véhicules (modèles 3D fournis, tools/3d). Longueurs réelles des modèles concernés : le modèle est mis à
    * cette échelle, roues au sol. `heading` : azimut du capot. La location roule dans la voie de la caméra (x = 0).
    */

@@ -448,12 +448,15 @@ const placeFragment = /* glsl */ `
     vec3 reflection = skyLod(R, mix(3.2, 0.3, wet)) * uLight * min(fresnel, 0.6) * mix(0.25, 1.0, wet);
     // L'enrobé sous la nuit : presque noir. Sous un candélabre : une vraie flaque de lumière chaude.
     vec3 lamp = vec3(1.0, 0.86, 0.6) * pool;
-    vec3 base = asphalt * arm.r * (0.22 + 3.4 * pool);
+    // Hors des flaques de lumière, l'enrobé de l'aire doit valoir CELUI DU SOL AUTOUR : à 0,22 la dalle était plus
+    // claire que le monde et se découpait comme un rectangle posé dessus.
+    vec3 base = asphalt * arm.r * (0.09 + 3.4 * pool);
     // La peinture jaune brille sous la lampe ; la crasse (le sombre du calque) mange l'enrobé au lieu de l'éclairer.
     vec3 paint = lines.rgb * (0.4 + 4.2 * pool);
     vec3 col = mix(base, paint, lines.a * 0.92) + reflection + lamp * 0.16;
     // Bords fondus : la dalle n'a pas de contour visible, elle devient le sol du monde.
-    vec2 edge = smoothstep(vec2(0.0), vec2(0.06), vUv) * smoothstep(vec2(1.0), vec2(0.94), vUv);
+    // Fondu de bord large (16 % de l'aire, soit une dizaine de mètres) : à 6 % la découpe restait visible de loin.
+    vec2 edge = smoothstep(vec2(0.0), vec2(0.16), vUv) * smoothstep(vec2(1.0), vec2(0.84), vUv);
     float alpha = edge.x * edge.y * uPlace;
     col = mix(haze(V) * uLight, col, exp(-pow(uFog * t, 2.0)));
     gl_FragColor = vec4(col * alpha, alpha);

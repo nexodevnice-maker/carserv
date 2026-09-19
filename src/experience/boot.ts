@@ -167,6 +167,7 @@ export function boot() {
       import('../scenes/sky/sky-layer'),
       import('../scenes/place/place-layer'),
       import('../scenes/map/map-layer'),
+      import('../scenes/surroundings/surroundings-layer'),
       import('../scenes/galaxy/galaxy-layer'),
       import('../scenes/clouds/cloud-layer'),
       import('../scenes/relief/relief-layer'),
@@ -180,6 +181,7 @@ export function boot() {
           { createSkyLayer },
           { createPlaceLayer },
           { createMapLayer },
+          { createSurroundingsLayer },
           { createGalaxyLayer },
           { createCloudLayer },
           { createReliefLayer },
@@ -199,6 +201,13 @@ export function boot() {
           // La place : l'endroit où le véhicule est garé. Un vrai lieu de nuit (enrobé mouillé, places peintes,
           // candélabres) plutôt qu'un objet posé sur un sol abstrait.
           const place = createPlaceLayer({ night: sky.uniforms, ...WORLD.place, asphalt: ROAD_ASPHALT });
+          // Le DEHORS de la place. Sans lui, on arrive sur une dalle éclairée posée dans du noir : le lieu n'a pas
+          // d'extérieur, donc il n'existe pas.
+          const around = createSurroundingsLayer({
+            night: sky.uniforms,
+            ...WORLD.around,
+            chapters: ['ville', 'arrivee', 'intervention', 'transformation', 'prestations', 'tarifs', 'bascule'],
+          });
           // LE 06 : le territoire qu'on traverse avant de se poser. Son plateau est le sol du monde, ses falaises
           // tombent sur la mer de nuit. Aucune carte de France autour : le canal `franceLight` n'existe pas, donc
           // le pays reste éteint — c'est le département qu'on veut, pas une infographie.
@@ -227,7 +236,7 @@ export function boot() {
             ...WORLD.vehicles.cleaning,
             url: '/models/rs6.glb',
             buffer: carFile,
-            channels: { dirt: 'dirt', scan: 'scan', polish: 'polish', light: 'carLight', beam: 'headlight' },
+            channels: { dirt: 'dirt', scan: 'scan', polish: 'polish', light: 'carLight', beam: 'headlight', cabin: 'cabin' },
             tint: { match: /Coloured|Paint/i, color: [0.035, 0.037, 0.046] },
             noise: sky.uniforms.uNoise.value,
             // Les chapitres où la couche est active. 'ville', 'arrivee' et 'tarifs' manquaient : le véhicule
@@ -271,7 +280,7 @@ export function boot() {
             experience,
             canvas,
             host: stageEl,
-            layers: [sky, galaxy, territory, relief, place, vehicleLight, cleaningCar, road, rentalCar, clouds],
+            layers: [sky, galaxy, territory, relief, around, place, vehicleLight, cleaningCar, road, rentalCar, clouds],
             config: { ...STAGE, busy: () => registry.busy },
             onReady: () => {
               stageStatus = 'ready';

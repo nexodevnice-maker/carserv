@@ -99,10 +99,11 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'transformation',
     universe: 'cleaning',
-    span: { desktop: 250, mobile: 260 },
-    rests: [0.35, 0.85],
+    span: { desktop: 380, mobile: 410 },
+    rests: [0.16, 0.52, 0.85],
     panels: [
-      { id: 'apres', in: 0.08, out: 0.62 },
+      { id: 'face', in: 0.02, out: 0.3 },
+      { id: 'apres', in: 0.34, out: 0.64 },
       { id: 'interieur', in: 0.68, out: 0.985 },
     ],
     intent: 'La preuve : la laque rend l’univers entier — le même ciel qu’à l’ouverture, cette fois dans la carrosserie. Puis l’habitacle, vu de l’intérieur.',
@@ -274,8 +275,18 @@ export const definition: ExperienceDefinition = {
     // — LES PHARES. Ils s'allument quand le relevé a fini de passer : la voiture est propre, elle est prête, elle
     // s'allume. Avant, rien — une carrosserie sale aux phares allumés ne raconte rien.
     headlight: [
-      { chapter: 'intervention', at: 0.9, value: 0 },
-      { chapter: 'transformation', at: 0.2, value: 1, pace: { window: [0, 1], ease: 'out' } },
+      { chapter: 'intervention', at: 0.15, value: 0 },
+      // La ligne de lumière descend de l'AVANT vers l'arrière : les optiques s'allument quand elle vient de les
+      // traverser, pas une fois tout terminé. C'est le relevé qui rallume la voiture, sous nos yeux.
+      { chapter: 'intervention', at: 0.42, value: 1, pace: { window: [0, 1], ease: 'out' } },
+      { chapter: 'tarifs', at: 1, value: 1 },
+      { chapter: 'bascule', at: 0.3, value: 0, pace: smooth },
+    ],
+    // — L'HABITACLE S'ALLUME quand on entre dedans. Une voiture dont on visite l'intérieur, la nuit, portes fermées,
+    // a forcément son éclairage d'ambiance allumé : sans lui on filme une grotte.
+    cabin: [
+      { chapter: 'transformation', at: 0.5, value: 0 },
+      { chapter: 'transformation', at: 0.72, value: 1, pace: smooth },
       { chapter: 'tarifs', at: 1, value: 1 },
       { chapter: 'bascule', at: 0.3, value: 0, pace: smooth },
     ],
