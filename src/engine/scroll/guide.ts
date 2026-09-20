@@ -153,6 +153,17 @@ export function createGuide({ track, timeline, rests, locked = () => false, scro
   const SEUIL_DOIGT = 26;
   let touchY: number | null = null;
   /**
+   * UN BALAYAGE N'EST PAS UN CLIC.
+   *
+   * Depuis qu'on coupe le panoramique natif (`touch-action`), plus aucun défilement du navigateur ne vient annuler
+   * le clic à la fin d'un geste : un balayage parti sur un lien l'ACTIVE. C'est ce qui renvoyait brutalement en
+   * arrière au milieu du récit — le logo du bandeau fixe est un lien, il occupe le haut de l'écran, et le pouce
+   * passe dessus. Mesuré : neuf mille cinq cents pixels en arrière d'un seul geste.
+   * On note donc l'instant du dernier balayage et on avale le clic qui le suit. Une tape, elle, ne franchit jamais
+   * le seuil : les liens, les onglets et les champs répondent exactement comme avant.
+   */
+  let balayageA = -1;
+  /**
    * CE QUI GARDE LA MAIN SUR LE GESTE : seulement ce qui défile TOUT SEUL dans une autre direction (la bande de
    * dates du rendez-vous). Rien d'autre.
    * Première version : on rendait la main dès que le geste partait d'un lien, d'un champ ou d'un bouton. Mauvais
@@ -179,9 +190,17 @@ export function createGuide({ track, timeline, rests, locked = () => false, scro
     const delta = depart - fin;
     // Sous le seuil, c'est une tape ou un tremblement : on ne bouge pas.
     if (Math.abs(delta) < SEUIL_DOIGT) return;
+    balayageA = performance.now();
     const dir = Math.sign(delta);
     if (!active(dir)) return;
     stepTo(dir);
+  };
+  /** Avale le clic né d'un balayage. En capture : avant tout autre écouteur, et avant le navigateur. */
+  const onClickCapture = (event: MouseEvent) => {
+    if (performance.now() - balayageA > 500) return;
+    balayageA = -1;
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   addEventListener('wheel', onWheel, { passive: false });
@@ -189,6 +208,7 @@ export function createGuide({ track, timeline, rests, locked = () => false, scro
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('touchstart', onTouch, { passive: true });
   addEventListener('touchend', onTouchEnd, { passive: true });
+  document.addEventListener('click', onClickCapture, true);
   document.addEventListener('click', onClick);
   const unmeasure = timeline.onMeasure(place);
   place();
@@ -204,6 +224,7 @@ export function createGuide({ track, timeline, rests, locked = () => false, scro
       removeEventListener('scroll', onScroll);
       removeEventListener('touchstart', onTouch);
       removeEventListener('touchend', onTouchEnd);
+      document.removeEventListener('click', onClickCapture, true);
       document.removeEventListener('click', onClick);
       unmeasure();
       for (const el of elements) el.remove();

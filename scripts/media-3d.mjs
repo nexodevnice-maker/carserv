@@ -33,9 +33,14 @@ const MODELS = [
   // Le C-HR est REDESCENDU (0,65 → 0,32 ; 2048 → 1024) après mesure sur téléphone : on ne le voit jamais en macro,
   // seulement de dos ou de trois quarts dans un tunnel sombre. 130 692 → 64 339 triangles et 1,7 → 0,87 Mo, sans
   // différence visible à l'écran — c'est le RS6, lui, qu'on regarde à un mètre.
+  // MESURÉ ENSUITE, et c'est une correction à moi : le plafond de texture ne sert presque à rien sur ces deux
+  // modèles. Leurs images SOURCES font 512 px et moins pour le RS6 (16 Mo de mémoire vidéo en tout) — la chaîne ne
+  // fait que réduire, jamais agrandir. Monter le plafond à 2048 n'avait donc rien changé : le gain de netteté
+  // venait du TAUX DE TRIANGLES et du plancher de définition, pas des textures. Le plafond est laissé à 1024, qui
+  // est la vraie limite utile ici.
   // (Ancien réglage : ratio 0,2 / 0,25 et textures 512.)
   // occupe déjà plus de pixels à l'écran qu'elle n'en a. C'est la moitié de la mémoire vidéo du véhicule.
-  { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', ratio: 0.6, textures: 2048, mode: 'vehicle' },
+  { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', ratio: 0.6, textures: 1024, mode: 'vehicle' },
   { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', ratio: 0.32, textures: 1024, mode: 'vehicle' },
   // L'univers : un nuage de 50 000 points colorés. On ne le simplifie pas — on le traverse.
   { id: 'galaxy', src: 'tools/3d/GALAXY/need_some_space.glb', ratio: 1, textures: 1024, mode: 'points' },

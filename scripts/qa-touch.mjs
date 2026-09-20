@@ -114,4 +114,33 @@ const champ = await page.evaluate(() => {
 console.log('');
 console.log(`Formulaire de rendez-vous : ${champ}`);
 
+// — UN BALAYAGE PARTI SUR UN LIEN. C'est le bug qui renvoyait brutalement en arrière : le bandeau est fixe en haut
+// de l'écran, son logo est un lien, et depuis qu'on coupe le panoramique natif plus aucun défilement ne vient
+// annuler le clic. Un balayage doit AVANCER ; seule une tape doit activer le lien.
+console.log('');
+console.log('Balayage parti sur un lien du bandeau :');
+const liens = await page.evaluate(() => {
+  const o = {};
+  for (const s of ['.site-header__brand', '.tab--cleaning', '.tab--rental']) {
+    const el = document.querySelector(s);
+    if (el) { const r = el.getBoundingClientRect(); o[s] = { x: Math.round(r.x + r.width / 2), y: Math.round(Math.max(r.y + r.height / 2, 6)), href: el.getAttribute('href') }; }
+  }
+  return o;
+});
+let pieges = 0;
+for (const [sel, z] of Object.entries(liens)) {
+  await page.evaluate((v) => { window.__experience.seek(v); window.__experience.settle(); }, rests[20]);
+  await page.waitForTimeout(1400);
+  const avant = (await etat()).y;
+  const env = (t, yy) => cdp.send('Input.dispatchTouchEvent', { type: t, touchPoints: t === 'touchEnd' ? [] : [{ x: z.x, y: yy, id: 1 }] });
+  await env('touchStart', z.y);
+  await env('touchMove', z.y - 150);
+  await env('touchMove', z.y - 300);
+  await env('touchEnd', z.y - 300);
+  await page.waitForTimeout(2000);
+  const apres = (await etat()).y;
+  if (apres < avant) { pieges++; console.log(`  !! ${sel} [${z.href}] renvoie en arrière : ${avant} → ${apres}`); }
+}
+console.log(pieges === 0 ? '  aucun lien ne vole le geste : tous avancent d un plan' : `  ${pieges} lien(s) volent le geste`);
+
 await browser.close();
