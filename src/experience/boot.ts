@@ -65,16 +65,28 @@ export function boot() {
    * Désormais : le moindre geste (doigt, molette, touche, défilement) lève le rideau SUR-LE-CHAMP, et le rideau ne
    * touche plus jamais à la position de la page.
    */
+  const close = () => {
+    if (introDone) return;
+    introDone = true;
+    html.classList.remove('is-intro');
+    for (const type of GESTURES) removeEventListener(type, onGesture);
+    experience.invalidate();
+  };
+  /**
+   * LEVÉE SUR-LE-CHAMP, ET VRAIMENT SUR-LE-CHAMP.
+   * La levée immédiate passait par un `setTimeout(…, 0)` : le geste qui lève le rideau était donc encore traité
+   * comme VERROUILLÉ, les pas guidés le laissaient filer, et la page partait d'un défilement natif de plusieurs
+   * centaines de pixels. Résultat : le tout premier geste franchissait deux unités au lieu d'une — exactement le
+   * « on scrolle et ça part trop loin » qu'on nous décrit. Les écouteurs de geste sont posés AVANT ceux des pas
+   * guidés : en fermant le rideau de façon synchrone, le même geste est déjà guidé quand il leur parvient.
+   */
   const lift = (immediate: boolean) => {
     if (introDone) return;
-    const wait = immediate ? 0 : Math.max(0, 1200 - (performance.now() - introStart));
-    window.setTimeout(() => {
-      if (introDone) return;
-      introDone = true;
-      html.classList.remove('is-intro');
-      for (const type of GESTURES) removeEventListener(type, onGesture);
-      experience.invalidate();
-    }, wait);
+    if (immediate) {
+      close();
+      return;
+    }
+    window.setTimeout(close, Math.max(0, 1200 - (performance.now() - introStart)));
   };
   const GESTURES = ['scroll', 'wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
   const onGesture = () => lift(true);
@@ -225,7 +237,8 @@ export function boot() {
               bevel: WORLD.map.bevel,
               labels: { number: '06', numberAt: WORLD.map.numberAt, sea: copy.zone.sea, seaAt: WORLD.map.seaAt },
               font: '"Barlow Condensed", "Arial Narrow", sans-serif',
-              chapters: ['galaxie', 'descente', 'ville', 'arrivee'],
+              // « arrivee » retiré : posé sur la place, on voit le sol de la place, pas le plateau du 06 qui la porte.
+              chapters: ['galaxie', 'descente', 'ville'],
               reflection: desktop,
             },
             sky.uniforms,
@@ -234,7 +247,10 @@ export function boot() {
           const galaxy = createGalaxyLayer({ url: '/models/galaxy.glb', buffer: galaxyFile, ...WORLD.galaxy });
           // Le relief : ce qui donne un CORPS au lieu photographié. Sans lui, la caméra peut voler des kilomètres
           // sans que rien ne bouge derrière — une image 360° n'a pas de profondeur.
-          const relief = createReliefLayer({ night: sky.uniforms, ...WORLD.relief });
+          // CHAPITRES DÉCLARÉS. Sans eux, une couche est visible PARTOUT : le relief se dessinait à chaque image, y
+          // compris dans les macros sur le parking où les montagnes sont entièrement cachées par le mur d'enceinte
+          // et la ligne d'horizon photographiée. Il ne sert que tant qu'on est en l'air.
+          const relief = createReliefLayer({ night: sky.uniforms, ...WORLD.relief, chapters: ['galaxie', 'descente', 'ville'] });
           // Le véhicule de la démonstration : sali, scanné, verni, visité de l'intérieur. Il ne quitte jamais sa place.
           cleaningCar = createVehicleLayer({
             ...WORLD.vehicles.cleaning,

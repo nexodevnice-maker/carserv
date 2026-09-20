@@ -30,10 +30,13 @@ const MODELS = [
   // faire tomber les APPELS DE DESSIN, or ceux-ci viennent de la fusion (flatten + join), pas du taux de triangles :
   // on peut donc remonter la finesse sans rien payer au dessin. Mesuré : RS6 79 k → 140 872 triangles pour +0,5 Mo,
   // C-HR 50 k → 130 692 triangles, 25 appels de dessin inchangés.
+  // Le C-HR est REDESCENDU (0,65 → 0,32 ; 2048 → 1024) après mesure sur téléphone : on ne le voit jamais en macro,
+  // seulement de dos ou de trois quarts dans un tunnel sombre. 130 692 → 64 339 triangles et 1,7 → 0,87 Mo, sans
+  // différence visible à l'écran — c'est le RS6, lui, qu'on regarde à un mètre.
   // (Ancien réglage : ratio 0,2 / 0,25 et textures 512.)
   // occupe déjà plus de pixels à l'écran qu'elle n'en a. C'est la moitié de la mémoire vidéo du véhicule.
   { id: 'rs6', src: 'tools/3d/RS6/2020_audi_rs6_avant.glb', ratio: 0.6, textures: 2048, mode: 'vehicle' },
-  { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', ratio: 0.65, textures: 2048, mode: 'vehicle' },
+  { id: 'chr', src: 'tools/3d/TOYOTA/source/MDL14246_reversed.glb', ratio: 0.32, textures: 1024, mode: 'vehicle' },
   // L'univers : un nuage de 50 000 points colorés. On ne le simplifie pas — on le traverse.
   { id: 'galaxy', src: 'tools/3d/GALAXY/need_some_space.glb', ratio: 1, textures: 1024, mode: 'points' },
 ];

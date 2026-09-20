@@ -40,11 +40,11 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'galaxie',
     universe: 'territory',
-    // UNE SEULE UNITÉ. Il y en avait trois, et DEUX N'AVAIENT AUCUN TEXTE : on défilait deux fois pour ne rien
-    // apprendre. La règle est « un défilement = une information », et le plongeon dans le cœur faisait en plus
-    // virer l'amas au blanc. Reste le héros : la galaxie en bande, le titre dessus, et on descend.
-    span: { desktop: 200, mobile: 220 },
-    rests: [0],
+    // DEUX UNITÉS. Il y en avait trois au départ, dont deux sans aucun texte et un plongeon dans le cœur qui
+    // faisait virer l'amas au blanc. On les a supprimées ; le porteur veut retrouver le VOYAGE, mais loin de la
+    // zone dense : une dérive latérale où les étoiles proches sortent du cadre, et le cœur tenu au bord de l'image.
+    span: { desktop: 120, mobile: 130 },
+    rests: [0, 0.58],
     panels: [{ id: 'marque', in: -1, out: 0.2 }],
     intent:
       'LE HÉROS : on est DANS la galaxie fournie — un vrai volume de 50 000 étoiles, vu en bande dans le haut du cadre. Le titre se lit sur le noir. Un seul défilement, puis on descend vers le 06.',
@@ -54,7 +54,7 @@ export const chapters: readonly Chapter[] = [
     // On descend vers le NETTOYAGE, pas vers la location : l'univers « bascule » allumait l'onglet LOCATION en rouge
     // pendant toute la descente, et l'en-tête racontait l'inverse de la scène.
     universe: 'territory',
-    span: { desktop: 220, mobile: 230 },
+    span: { desktop: 110, mobile: 120 },
     rests: [0.5],
     panels: [],
     intent: 'Le regard bascule : sous la galaxie, une lueur. Ce n’est pas une étoile — c’est une ville. Aucun texte.',
@@ -62,7 +62,7 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'ville',
     universe: 'territory',
-    span: { desktop: 240, mobile: 250 },
+    span: { desktop: 110, mobile: 120 },
     rests: [0.45],
     panels: [{ id: 'ville', in: 0.18, out: 0.985 }],
     intent: 'La ville de nuit, ses tours allumées, et la galaxie encore au-dessus. On descend entre les immeubles.',
@@ -70,7 +70,7 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'arrivee',
     universe: 'cleaning',
-    span: { desktop: 560, mobile: 620 },
+    span: { desktop: 400, mobile: 440 },
     rests: [0.14, 0.34, 0.54, 0.74, 0.94],
     panels: [
       { id: 'deplacement', in: 0.02, out: 0.22 },
@@ -85,7 +85,7 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'intervention',
     universe: 'cleaning',
-    span: { desktop: 300, mobile: 310 },
+    span: { desktop: 220, mobile: 240 },
     rests: [0.18, 0.56, 0.9],
     panels: [
       { id: 'lavage', in: 0.04, out: 0.7 },
@@ -96,7 +96,7 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'transformation',
     universe: 'cleaning',
-    span: { desktop: 380, mobile: 410 },
+    span: { desktop: 230, mobile: 250 },
     rests: [0.16, 0.52, 0.85],
     panels: [
       { id: 'face', in: 0.02, out: 0.3 },
@@ -110,7 +110,7 @@ export const chapters: readonly Chapter[] = [
     universe: 'cleaning',
     // Deux unités, pas trois : la troisième affichait une formule à 50 € NON CONFIRMÉE, que la vraie grille
     // tarifaire remplace. Un défilement de moins, et plus aucun prix incertain à côté des prix réels.
-    span: { desktop: 210, mobile: 230 },
+    span: { desktop: 165, mobile: 180 },
     rests: [0.3, 0.72],
     panels: [
       { id: 'interieur-exterieur', in: 0.02, out: 0.46 },
@@ -121,7 +121,7 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'tarifs',
     universe: 'cleaning',
-    span: { desktop: 420, mobile: 470 },
+    span: { desktop: 320, mobile: 350 },
     rests: [0.12, 0.37, 0.62, 0.88],
     panels: [
       { id: 'basic', in: 0.02, out: 0.24 },
@@ -135,7 +135,7 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'bascule',
     universe: 'bridge',
-    span: { desktop: 220, mobile: 220 },
+    span: { desktop: 110, mobile: 120 },
     rests: [0.9],
     panels: [{ id: 'autre-route', in: 0.72, out: 0.985 }],
     intent: 'Le déplacement devient une route : chute verrouillée sur la galaxie, la chaussée monte à la rencontre de la caméra.',
@@ -143,7 +143,7 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'location',
     universe: 'rental',
-    span: { desktop: 440, mobile: 460 },
+    span: { desktop: 330, mobile: 360 },
     rests: [0.18, 0.44, 0.7, 0.93],
     panels: [
       { id: 'jour', in: 0.03, out: 0.3 },
@@ -156,7 +156,7 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'rendezvous',
     universe: 'action',
-    span: { desktop: 240, mobile: 280 },
+    span: { desktop: 155, mobile: 170 },
     rests: [0.5],
     panels: [{ id: 'agenda', in: 0.08, out: 0.985 }],
     intent: 'Le seul écran sans 3D : la nuit s’éteint, un calendrier prend l’écran, la demande part par courriel.',
@@ -164,7 +164,7 @@ export const chapters: readonly Chapter[] = [
   {
     id: 'contact',
     universe: 'action',
-    span: { desktop: 160, mobile: 170 },
+    span: { desktop: 110, mobile: 120 },
     rests: [0.6],
     panels: [{ id: 'action', in: 0.3, out: 2 }],
     intent: 'Le bord du territoire, la galaxie devant : un seul geste, vers le seul canal confirmé.',

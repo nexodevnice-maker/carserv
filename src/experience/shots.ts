@@ -52,6 +52,25 @@ export const shots: readonly ShotDefinition[] = [
     pace: { window: [0, 1], ease: 'inOut' },
   },
   {
+    id: 'derive',
+    chapter: 'galaxie',
+    at: 0.58,
+    intent:
+      'UNITÉ 2 — LA DÉRIVE. On se déplace LE LONG de la galaxie, jamais vers elle : les étoiles proches traversent le cadre et en sortent, les lointaines tiennent. C’est la parallaxe qui dit la profondeur, pas le rapprochement.',
+    // ON TRANSLATE, ON NE S'APPROCHE PAS. La caméra garde EXACTEMENT le cadrage du héros — même direction de
+    // regard, même distance au cœur — et glisse de cinq mille unités sur le côté. Résultat : la galaxie reste où
+    // elle est dans l'image (on ne rentre jamais dans la zone blanche) tandis que les étoiles PROCHES balaient le
+    // cadre et en sortent. C'est la seule parallaxe qui se voit sans rien brûler.
+    // Deux essais écartés : viser vers l'extérieur du disque ne montrait plus que du vide, et entrer dans le
+    // disque ramenait la masse blanche.
+    framing: { position: [7200, 3650, 5500], target: [4800, 8050, -2900], fov: 60, shift: [0.06, 0] },
+    ...portrait({ position: [7400, 3700, 5700], target: [5000, 8100, -2700], fov: 70, shift: [0, 0.09] }),
+    via: { desktop: [[4600, 3700, 5350]] as Vec3[], tablet: [[4700, 3700, 5450]] as Vec3[], mobile: [[4800, 3720, 5550]] as Vec3[] },
+    pace: { window: [0.02, 0.98], ease: 'inOut' },
+    lead: 0.1,
+    flight: { fov: 6, roll: 0.04, shake: 0.3 },
+  },
+  {
     id: 'lueur',
     chapter: 'descente',
     at: 0.5,

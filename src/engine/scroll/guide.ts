@@ -80,6 +80,9 @@ export function createGuide({ track, timeline, rests, locked = () => false, scro
     event.preventDefault();
     const now = performance.now();
     // Les crans qui suivent (élan du pavé, molette qui tourne encore) appartiennent au même geste.
+    // Essayé et ÉCARTÉ : prolonger le verrou à 450 ms pour absorber une molette tournée longtemps. Mesuré, le
+    // résultat allait dans le mauvais sens (trois unités au lieu de deux) et variait d'un essai à l'autre — ce
+    // réglage-là n'est pas la bonne prise. Un geste délibéré vaut une unité, c'est vérifié sur les trente.
     if (now < stepLock) {
       stepLock = Math.max(stepLock, now + 200);
       return;

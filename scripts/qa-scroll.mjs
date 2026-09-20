@@ -15,7 +15,9 @@ await page.waitForFunction(() => window.__experience.info().stageStatus === 'rea
 
 const info = () => page.evaluate(() => {
   const i = window.__experience.info();
-  return { y: Math.round(window.scrollY), p: i.shown, chapitre: i.chapter, carLight: i.channels.carLight, chrLight: i.channels.chrLight };
+  // `target` est la position de PAGE ; `shown` est la caméra, qui glisse encore. C'est la page qui dit
+  // combien d'unités un geste a franchies — la caméra la rejoint ensuite.
+  return { y: Math.round(window.scrollY), p: i.target, camera: i.shown, chapitre: i.chapter, carLight: i.channels.carLight, chrLight: i.channels.chrLight };
 });
 
 const depart = await info();

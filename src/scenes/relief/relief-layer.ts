@@ -135,6 +135,8 @@ export interface ReliefOptions {
   rocks: { count: number; inner: number; outer: number; small: number; large: number };
   /** Couloir interdit (la route) : |x − lane| < width et z entre les deux bornes. */
   corridor: { lane: number; width: number; from: number; to: number };
+  /** Chapitres où le relief est visible. Absent, il serait dessiné à chaque image — y compris caché par le mur. */
+  chapters?: readonly string[];
 }
 
 export function createReliefLayer(options: ReliefOptions) {
@@ -199,6 +201,7 @@ export function createReliefLayer(options: ReliefOptions) {
   let last = -1;
   const layer: WebGLLayer = {
     id: 'relief',
+    chapters: options.chapters,
     root,
     init(_ctx: StageContext) {},
     update(state: Readonly<ExperienceState>): LayerUpdate {
