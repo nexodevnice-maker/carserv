@@ -7,9 +7,14 @@ import { property } from '../domain/property';
  * seul canal confirmé. Sur téléphone : marque et Instagram ; l'action vit dans la barre du bas (MobileBar).
  */
 const instagram = shown(property.channels.instagram);
+// ANCRES VÉRIFIÉES CONTRE LES CHAPITRES RÉELS. « #avant » et « #zone » désignaient des chapitres supprimés depuis
+// des semaines : les deux liens ne faisaient rien, et un lien qui ne fait rien est pire qu'un lien absent — on
+// croit que le site est cassé. Les identifiants existants sont ceux de src/experience/chapters.ts : galaxie,
+// descente, ville, arrivee, intervention, transformation, prestations, tarifs, bascule, location, rendezvous,
+// contact.
 const nav = [
-  { href: '#avant', label: 'Nettoyage' },
-  { href: '#zone', label: 'Le 06' },
+  { href: '#arrivee', label: 'Nettoyage' },
+  { href: '#tarifs', label: 'Tarifs' },
   { href: '#location', label: 'Location' },
   { href: '#contact', label: 'Contact' },
 ];
