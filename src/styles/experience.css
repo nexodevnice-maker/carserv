@@ -619,6 +619,22 @@ html.is-guided {
   scroll-snap-type: y proximity;
 }
 
+/* AU DOIGT, LE NAVIGATEUR NE DÉFILE PLUS DU TOUT.
+   C'est LA correction du « un scroll = une action » sur téléphone. Tant qu'on laissait le défilement natif, le
+   navigateur ajoutait son INERTIE après le relâchement : un geste vif lançait la page sur plusieurs centaines de
+   pixels et traversait trois ou quatre cinématiques. Aucune accroche CSS ne rattrape ça — `proximity` n'attire que
+   de près, et `scroll-snap-stop: always` n'est honoré ni partout ni pendant une lancée.
+   `pinch-zoom` coupe le panoramique vertical (donc l'inertie) et laisse le pincement : le geste est lu par
+   `engine/scroll/guide.ts`, qui avance d'UN plan au relâchement, sans tenir compte de la vitesse. */
+html.is-guided {
+  touch-action: pinch-zoom;
+}
+
+/* Ce qui doit garder son propre défilement le déclare : la bande de dates du rendez-vous glisse à l'horizontale. */
+.rdv__days {
+  touch-action: pan-x pinch-zoom;
+}
+
 .guide-point {
   scroll-snap-align: start;
   scroll-snap-stop: always;

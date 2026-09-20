@@ -136,16 +136,59 @@ export function createGuide({ track, timeline, rests, locked = () => false, scro
     if (navigating) settle();
     update();
   };
-  const onTouch = () => {
-    if (!navigating) return;
-    navigating = false;
-    update();
+  /**
+   * AU DOIGT : UN GESTE, UN PLAN — QUELLE QUE SOIT LA FORCE.
+   *
+   * C'était le défaut de fond, et il ne se voyait pas à la molette : il n'existait AUCUN pas guidé pour le tactile.
+   * Le doigt était laissé au défilement natif, et donc à l'INERTIE du navigateur : un geste vif lançait la page sur
+   * plusieurs centaines de pixels après le relâchement, traversant trois ou quatre cinématiques. L'accroche CSS ne
+   * pouvait rien : `proximity` n'attire que de près, et `scroll-snap-stop` n'est honoré ni partout ni toujours
+   * pendant une lancée.
+   *
+   * La seule réponse sûre est de ne PAS laisser le navigateur défiler : `touch-action: pinch-zoom` (styles) coupe le
+   * panoramique vertical — donc l'inertie — et on lit le geste nous-mêmes. Au relâchement, un pas, un seul, dans le
+   * sens du geste. La VITESSE ET L'AMPLITUDE N'ENTRENT PAS DANS LE CALCUL : c'est exactement ce qui est demandé.
+   * Le pincement reste possible, et tout ce qui est interactif (champ, lien, bouton, bande de dates) garde la main.
+   */
+  const SEUIL_DOIGT = 26;
+  let touchY: number | null = null;
+  /**
+   * CE QUI GARDE LA MAIN SUR LE GESTE : seulement ce qui défile TOUT SEUL dans une autre direction (la bande de
+   * dates du rendez-vous). Rien d'autre.
+   * Première version : on rendait la main dès que le geste partait d'un lien, d'un champ ou d'un bouton. Mauvais
+   * réflexe — sur l'écran de rendez-vous le formulaire occupe TOUT le cadre, donc plus aucun balayage n'avançait et
+   * on restait bloqué à l'avant-dernier plan. Un BALAYAGE n'est pas une TAPE : le seuil de vingt-six pixels les
+   * sépare déjà, et les champs comme les boutons continuent de répondre au doigt posé.
+   */
+  const gereSonGeste = (target: EventTarget | null) => Boolean((target as Element | null)?.closest?.('.rdv__days'));
+
+  const onTouch = (event: TouchEvent) => {
+    if (navigating) {
+      navigating = false;
+      update();
+    }
+    touchY = event.touches.length === 1 && !gereSonGeste(event.target) ? (event.touches[0]?.clientY ?? null) : null;
+  };
+  const onTouchEnd = (event: TouchEvent) => {
+    const depart = touchY;
+    touchY = null;
+    // Un doigt restant (pincement en cours) : ce n'est pas un geste de défilement.
+    if (depart === null || event.touches.length > 0) return;
+    const fin = event.changedTouches[0]?.clientY;
+    if (fin === undefined) return;
+    const delta = depart - fin;
+    // Sous le seuil, c'est une tape ou un tremblement : on ne bouge pas.
+    if (Math.abs(delta) < SEUIL_DOIGT) return;
+    const dir = Math.sign(delta);
+    if (!active(dir)) return;
+    stepTo(dir);
   };
 
   addEventListener('wheel', onWheel, { passive: false });
   addEventListener('keydown', onKey);
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('touchstart', onTouch, { passive: true });
+  addEventListener('touchend', onTouchEnd, { passive: true });
   document.addEventListener('click', onClick);
   const unmeasure = timeline.onMeasure(place);
   place();
@@ -160,6 +203,7 @@ export function createGuide({ track, timeline, rests, locked = () => false, scro
       removeEventListener('keydown', onKey);
       removeEventListener('scroll', onScroll);
       removeEventListener('touchstart', onTouch);
+      removeEventListener('touchend', onTouchEnd);
       document.removeEventListener('click', onClick);
       unmeasure();
       for (const el of elements) el.remove();
